@@ -1,0 +1,33 @@
+{
+  "name": "@diagraph/visualizer",
+  "version": "0.0.1",
+  "description": "",
+  "scripts": {
+    "build": "wireit",
+    "build:dev": "wireit",
+    "dev": "wireit"
+  },
+  "wireit": {
+    "build:dev": {
+      "command": "nodemon -e ts --ignore './src/**/*.test.ts' --watch './src/**/*' -x \"pnpm run build\""
+    },
+    "dev": {
+      "command": "vite -c ./vite.config.ts"
+    },
+    "build": {
+      "command": "vite build -c ./vite.config.ts"
+    }
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "dagre": "^0.8.5",
+    "lit": "^3.0.0"
+  },
+  "devDependencies": {
+    "nodemon": "^3.0.1",
+    "vite": "^4.5.0",
+    "wireit": "^0.14.1"
+  }
+}
