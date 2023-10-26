@@ -20,7 +20,9 @@ class Diagraph:
         self.depth_map_by_depth = depth_map_by_depth
 
     def run(self, *args, **kwargs) -> DiagraphTraversal:
-        return DiagraphTraversal(self, *args, **kwargs)
+        traversal = DiagraphTraversal(self)
+        traversal.run(*args, **kwargs)
+        return traversal
 
     def _repr_html_(self) -> str:
         return render_repr_html(self.dg)
@@ -36,15 +38,22 @@ class Diagraph:
     def __getitem__(
         self, key: Node | int
     ) -> Optional[DiagraphNode | tuple[DiagraphNode]]:
+        depth_map_by_depth = self.depth_map_by_depth
+        depth_map_by_key = self.depth_map_by_key
+        if isinstance(key, slice):
+            if key.step is not None:
+                raise Exception("Slicing with a step is not supported")
+            start, stop = key.start, key.stop
+            raise Exception("Slicing not implemented yet")
         if isinstance(key, int):
-            _nodes: list[Node] = list(self.depth_map_by_depth.get(key, set()))
-            if _nodes is None:
-                return _nodes
-            _nodes2: list[DiagraphNode] = [DiagraphNode(n, key) for n in _nodes]
-            _nodes3: tuple[DiagraphNode] = tuple(_nodes2)
-            return _nodes3
+            if key < 0:
+                key = max(depth_map_by_depth.keys()) + 1 + key
+            nodes: list[Node] = list(depth_map_by_depth.get(key, set()))
+            if nodes is None:
+                return nodes
+            return tuple([DiagraphNode(n, key) for n in nodes])
         elif isinstance(key, Node):
-            depth = self.depth_map_by_key.get(key, None)
+            depth = depth_map_by_key.get(key, None)
             if depth is None:
                 return None
             return DiagraphNode(key, depth)

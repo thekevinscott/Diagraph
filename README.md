@@ -33,7 +33,7 @@ Start with a function:
 
 ```python
 def tell_me_a_joke():
-  return openai.completion('Computer! Tell me a joke about tomatoes.')
+  return openai.completion([{ "role": "user", "content": 'Computer! Tell me a joke about tomatoes.' }])
 
 print(tell_me_a_joke()) # Why did the tomato turn red? Because it saw the salad dressing!
 ```
@@ -349,7 +349,21 @@ traversal.run(explanation, only=True)
 traversal[explanation].run(only=True)
 ```
 
-In this case, only the `explanation` function will be executed; however, all downstream node caches will be cleared. If you would like to preserve state, make a copy of the traversal with `traversal[:]` prior to execution.
+In this case, only the `explanation` function will be executed; however, all downstream node caches will be cleared. 
+
+`run()` returns a new instance of a traversal:
+
+```
+traversal2 = traversal[explanation].run()
+```
+
+You can also specify indices:
+
+```python
+traversal[-2].run()
+```
+
+This will re-execute all nodes for a given depth.
 
 ### Control Flows
 
@@ -389,3 +403,23 @@ def shakespearify(joke: Depends(the_joke_maker)) -> str:
 
 Diagraph(shakespearify)
 ```
+
+## Changing LLM model
+
+```python
+gpt4 = OpenAI(model='gpt-4', temperature=0.2)
+
+@prompt(llm=gpt4)
+def fn():
+  return 'tell me a joke'
+```
+
+## Integrations
+
+- Weights & Biases
+- Mermaidjs
+- Magnetic
+- Marvin
+- LLM (Simon's library)
+- Langchain
+- LlamaIndex
