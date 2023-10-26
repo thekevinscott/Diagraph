@@ -25,8 +25,33 @@ def config(_func=None, *, llm=None, error=None, return_type=None):
     print(decorator)
 
     if _func is None:
-        print("1")
+        # print("1")
         return decorator
     else:
-        print("2")
+        # print("2")
         return decorator(_func)
+
+
+def prompt(_func=None, *, llm=None, error=None, return_type=None):
+    if llm is None:
+        llm = OpenAI()
+
+    def decorator(func):
+        @functools.wraps(func)
+        def wrapper_fn(*args, **kwargs):
+            generated_prompt = func(*args, **kwargs)
+            result = llm.run(generated_prompt)
+            return result
+
+        return wrapper_fn
+
+    setattr(_func, IS_DECORATED_KEY, True)
+    setattr(decorator, "__fn__", _func)
+
+    if _func is None:
+        setattr(decorator, "__fn__", _func)
+        return decorator
+    else:
+        _decorator = decorator(_func)
+        setattr(_decorator, "__fn__", _func)
+        return _decorator

@@ -1,6 +1,6 @@
 from typing import Callable, Optional
 import networkx as nx
-from .visualization import render_repr_html
+from ..visualization import render_repr_html
 
 
 class DiagraphTraversal:

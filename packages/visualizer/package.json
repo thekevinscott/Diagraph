@@ -1,7 +1,8 @@
 {
-  "name": "@diagraph/visualizer",
+  "name": "diagraph",
   "version": "0.0.1",
   "description": "",
+  "main": "./dist/diagraph.js",
   "scripts": {
     "build": "wireit",
     "build:dev": "wireit",
@@ -28,6 +29,7 @@
   "devDependencies": {
     "nodemon": "^3.0.1",
     "vite": "^4.5.0",
+    "vite-plugin-dts": "^3.6.1",
     "wireit": "^0.14.1"
   }
 }
