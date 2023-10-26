@@ -1,8 +1,10 @@
-from typing import Annotated, Optional, Callable, Any
+from typing import Callable, Any
 
 
 class Depends:
-    def __init__(self, dependency: Optional[Callable[..., Any]] = None):
+    dependency: Callable[..., Any]
+
+    def __init__(self, dependency: Callable[..., Any]):
         self.dependency = dependency
 
     def __repr__(self) -> str:

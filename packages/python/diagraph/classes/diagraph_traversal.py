@@ -1,47 +1,146 @@
-from typing import Callable, Optional
-import networkx as nx
-from ..visualization import render_repr_html
+from __future__ import annotations
+
+# from .diagraph import Diagraph
+from ..utils.annotations import get_dependency, is_annotated
+from ..decorators.prompt import UserHandledException
+from typing import Callable, Optional, Any
+
+from .diagraph_traversal_node import DiagraphTraversalNode
+
+from .types import Node, Result
+
+# from .diagraph import Diagraph
+from .graph import Graph
+
+
+def validate_node_ancestors(nodes: tuple[Node]):
+    for node in nodes:
+        for ancestor in node.ancestors:
+            if ancestor.result is None:
+                raise Exception(
+                    "An ancestor is missing a result, run the traversal first"
+                )
+
+
+class DiagraphTraversalResults:
+    __traversal__: DiagraphTraversal
+    __results__: dict[int, Any]
+
+    def __init__(self, traversal):
+        self.__traversal__ = traversal
+        self.__results__ = {}
+
+    def __getitem__(self, key: Node) -> Any:
+        int_rep = self.__traversal__.__graph__.get_key_for_node(key)
+        return self.__results__.get(int_rep)
+
+    def __setitem__(self, key: Node, val: Any) -> Any:
+        int_rep = self.__traversal__.__graph__.get_key_for_node(key)
+        self.__results__[int_rep] = val
 
 
 class DiagraphTraversal:
-    results = {}
-    kwargs = {}
+    __graph__: Graph
+    terminal_nodes: tuple[Node]
+    output: Optional[Result | list[Result]]
+    results: DiagraphTraversalResults
+    __updated_refs__: dict[Node, Node]
+    log: Optional[Callable[[str, str, Node], None]]
+    error: Optional[Callable[[str, str, Node], None]]
 
-    def _repr_html_(self):
-        return render_repr_html(self.template.dg)
+    # def _repr_html_(self):
+    #     return render_repr_html(self.diagraph.dg)
 
-    def __init__(self, template, *input_args, log=None, **kwargs):
-        self.template = template
-        self.run(*input_args)
-        self.kwargs = kwargs
+    def __init__(self, diagraph: Any, log=None, error=None):
+        self.__graph__ = diagraph.__graph__[:]
+        self.terminal_nodes = diagraph.terminal_nodes
+        self.results = DiagraphTraversalResults(self)
+        self.__updated_refs__ = {}
+        self.log = log
+        self.error = error
+        self.output = None
 
-    def run(self, *input_args):
-        # add teh ability to accept a function in input args, and automatically
-        # differentiate between string input / function (node) input / array (functions argument) inputs
-        # add an `only` option that will only run that specific node
-        nodes = list(reversed(list(nx.topological_sort(self.template.dg))))
-        if len(nodes) == 0:
-            raise Exception("No graph")
+    def run(self, *input_args, **kwargs):
+        return self.__run_from__(0, *input_args, **kwargs)
 
-        node = None
+    def __run_from__(self, key: Node | int, *input_args, **kwargs):
+        node = self[key]
+        if not isinstance(node, tuple):
+            node = (node,)
+        starting_nodes = node
+        validate_node_ancestors(starting_nodes)
 
-        for node in nodes:
-            args = []
-            for i, item in enumerate(node.__annotations__.items()):
-                key, val = item
-                if key != "return":
-                    if val is str:
-                        args.append(input_args[i])  # THIS WONT ALWAYS WORK
-                    else:
-                        dep = val.dependency
-                        args.append(dep.result)
-            node.result = node(*args, **self.kwargs)
+        next_layer = set(starting_nodes)
+        ran = set()
+        try:
+            while next_layer:
+                layer = set()
+                # results: list[Result] = []
+                for node in next_layer:
+                    if node not in ran:
+                        ran.add(node)
+                        fn_key = node.fn
+                        result = self.__run_node__(node, *input_args, **kwargs)
+                        self.results[fn_key] = result
+                        # results.append(result)
+                    if node.children:
+                        for child in node.children:
+                            layer.add(child)
 
-        if node is None:
-            raise Exception("No node")
+                if len(layer):
+                    next_layer = layer
+                else:
+                    break
+        except UserHandledException:
+            pass
 
-        self.output = node.result
+        results = [self.results[node] for node in self.terminal_nodes]
+
+        if len(results) == 1:
+            self.output = results[0]
+        else:
+            self.output = results
+
         return self.output
 
-    def __getitem__(self, node_key: str) -> Optional[Callable]:
-        return self.template.dg.nodes[node_key]
+    def __run_node__(self, node: Node, *input_args, **kwargs):
+        args = []
+        arg_index = 0
+        fn = self.__updated_refs__.get(node.fn, node.fn)
+        for key, val in fn.__annotations__.items():
+            if key != "return":
+                if is_annotated(val):
+                    dep = get_dependency(val)
+                    args.append(self.__get_result__(dep))
+                else:
+                    if arg_index > len(input_args) - 1:
+                        raise Exception(f'No argument provided for "{key}"')
+                    args.append(input_args[arg_index])
+                    arg_index += 1
+        setattr(fn, "__log__", self.log)
+        setattr(fn, "__error__", self.error)
+        return fn(*args, **kwargs)
+
+    def __getitem__(
+        self, key: Node | int
+    ) -> DiagraphTraversalNode | tuple[DiagraphTraversalNode]:
+        # if isinstance(key, Node):
+        #     key = self.__upd
+        result = self.__graph__[key]
+        if isinstance(result, list):
+            nodes = [DiagraphTraversalNode(self, node) for node in result]
+            return tuple(nodes)
+        elif isinstance(key, Node):
+            return DiagraphTraversalNode(self, key)
+        raise Exception(f"Unknown type: {type(key)}")
+
+    def __setitem__(self, old_fn_def: Node, new_fn_def: Node):
+        self.__graph__[old_fn_def] = new_fn_def
+        self.__update_ref__(old_fn_def, new_fn_def)
+
+    def __update_ref__(self, old_fn_def: Node, new_fn_def: Node):
+        self.__updated_refs__[old_fn_def] = new_fn_def
+
+    def __get_result__(self, key: Node):
+        key = self.__updated_refs__.get(key, key)
+        return self.results[key]

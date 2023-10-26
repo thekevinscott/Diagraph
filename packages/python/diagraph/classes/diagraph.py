@@ -1,29 +1,34 @@
+from __future__ import annotations
 from typing import Callable, Optional, overload
-from .types import Node
-import networkx as nx
 
-from ..utils import build_graph, build_nx_graph
-from ..visualization import render_repr_html
+from ..utils.build_graph import build_graph
+
+from .graph import Graph
+from .types import Node
+
 from .diagraph_traversal import DiagraphTraversal
 from .diagraph_node import DiagraphNode
 
 
 class Diagraph:
-    dg: nx.DiGraph
-    depth_map_by_key: dict[Node, int]
-    depth_map_by_depth: dict[int, set[Node]]
+    __graph__: Graph
+    terminal_nodes: tuple[Node]
+    log: Optional[Callable[[str, str, Node], None]]
+    error: Optional[Callable[[str, str, Node], None]]
 
-    def __init__(self, *terminal_nodes: Node) -> None:
-        dg, depth_map_by_key, depth_map_by_depth = build_nx_graph(*terminal_nodes)
-        self.dg = dg
-        self.depth_map_by_key = depth_map_by_key
-        self.depth_map_by_depth = depth_map_by_depth
+    def __init__(self, *terminal_nodes: Node, log=None, error=None) -> None:
+        self.__graph__ = Graph(build_graph(*terminal_nodes))
+        self.terminal_nodes = terminal_nodes
+        self.log = log
+        self.error = error
 
     def run(self, *args, **kwargs) -> DiagraphTraversal:
-        return DiagraphTraversal(self, *args, **kwargs)
+        traversal = DiagraphTraversal(self, log=self.log, error=self.error)
+        traversal.run(*args, **kwargs)
+        return traversal
 
-    def _repr_html_(self) -> str:
-        return render_repr_html(self.dg)
+    # def _repr_html_(self) -> str:
+    #     return render_repr_html(self.dg)
 
     @overload
     def __getitem__(self, key: int) -> Optional[tuple[DiagraphNode]]:
@@ -33,22 +38,11 @@ class Diagraph:
     def __getitem__(self, key: Node) -> Optional[DiagraphNode]:
         ...
 
-    def __getitem__(
-        self, key: Node | int
-    ) -> Optional[DiagraphNode | tuple[DiagraphNode]]:
-        if isinstance(key, int):
-            _nodes: list[Node] = list(self.depth_map_by_depth.get(key, set()))
-            if _nodes is None:
-                return _nodes
-            _nodes2: list[DiagraphNode] = [DiagraphNode(n, key) for n in _nodes]
-            _nodes3: tuple[DiagraphNode] = tuple(_nodes2)
-            return _nodes3
+    def __getitem__(self, key: Node | int) -> DiagraphNode | tuple[DiagraphNode]:
+        result = self.__graph__[key]
+        if isinstance(result, list):
+            nodes = [DiagraphNode(self.__graph__, node) for node in result]
+            return tuple(nodes)
         elif isinstance(key, Node):
-            depth = self.depth_map_by_key.get(key, None)
-            if depth is None:
-                return None
-            return DiagraphNode(key, depth)
-        else:
-            raise Exception(
-                f"Unknown key provided to index: {key}. You must provide a valid function or integer."
-            )
+            return DiagraphNode(self.__graph__, key)
+        raise Exception(f"Unknown type: {type(key)}")
