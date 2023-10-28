@@ -38,4 +38,5 @@ jobs:
           repository-url: https://test.pypi.org/legacy/
 
 permissions:
+  id-token: write
   contents: read

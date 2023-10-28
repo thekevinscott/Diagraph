@@ -26,4 +26,5 @@ jobs:
           packages-dir: ./packages/python/build
 
 permissions:
+  id-token: write
   contents: read
