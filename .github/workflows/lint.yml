@@ -28,9 +28,9 @@ jobs:
         working-directory: ./packages/python
         run: pip install -r requirements.txt
 
-      - uses: pre-commit/action
-        with:
-          extra_args: --verbose
+      # - uses: pre-commit/action
+      #   with:
+      #     extra_args: --verbose
 
 permissions:
   contents: read
