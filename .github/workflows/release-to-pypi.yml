@@ -23,7 +23,7 @@ jobs:
         uses: pypa/gh-action-pypi-publish@b7f401de30cb6434a1e19f805ff006643653240e
         with:
           verbose: true
-          packages-dir: ./packages/python/build
+          packages-dir: ./packages/python/dist 
 
 permissions:
   id-token: write

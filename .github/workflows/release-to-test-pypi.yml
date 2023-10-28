@@ -33,7 +33,7 @@ jobs:
       - name: Publish
         uses: pypa/gh-action-pypi-publish@b7f401de30cb6434a1e19f805ff006643653240e
         with:
-          packages-dir: ./packages/python
+          packages-dir: ./packages/python/dist 
           verbose: true
           repository-url: https://test.pypi.org/legacy/
 
