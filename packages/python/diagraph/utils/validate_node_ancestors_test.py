@@ -26,7 +26,7 @@ def describe_validate_node_ancestors():
         diagraph = Diagraph(d1)
         traversal = DiagraphTraversal(diagraph)
         starting_nodes = (traversal[d1],)
-        with pytest.raises(Exception) as e_info:
+        with pytest.raises(Exception):
             validate_node_ancestors(starting_nodes)
 
     def test_it_validates_a_single_filled_ancestor():
@@ -72,7 +72,7 @@ def describe_validate_node_ancestors():
         traversal = DiagraphTraversal(diagraph)
         traversal[d1].result = "foo"
         starting_nodes = (traversal[d2],)
-        with pytest.raises(Exception) as e_info:
+        with pytest.raises(Exception):
             validate_node_ancestors(starting_nodes)
         traversal[d0].result = "foo"
         validate_node_ancestors(starting_nodes)
@@ -91,7 +91,7 @@ def describe_validate_node_ancestors():
         traversal = DiagraphTraversal(diagraph)
         traversal[d0].result = "foo"
         starting_nodes = (traversal[d2],)
-        with pytest.raises(Exception) as e_info:
+        with pytest.raises(Exception):
             validate_node_ancestors(starting_nodes)
         traversal[d1].result = "foo"
         validate_node_ancestors(starting_nodes)

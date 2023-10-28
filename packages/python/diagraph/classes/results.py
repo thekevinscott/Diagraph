@@ -5,7 +5,7 @@ from .types import Node
 
 
 class DiagraphTraversalResults:
-    __traversal__: "DiagraphTraversal"
+    __traversal__: Any
     __results__: dict[int, Any]
 
     def __init__(self, traversal):
