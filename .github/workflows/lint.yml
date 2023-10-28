@@ -9,23 +9,22 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+      - uses: actions/setup-python@v4
+        with:
+          python-version: 3.11
+          cache: pip
+          cache-dependency-path: ./packages/python/requirements.txt
 
-      - run: ls
+      - run: python -m pip install -U pip setuptools wheel 
+        working-directory: ./packages/python
 
-      # - uses: actions/setup-python
-      #   with:
-      #     python-version: '3.11'
+      - name: Install dependencies
+        run: python -m pip install -r requirements.txt
+        working-directory: ./packages/python
 
-      # - run: python -m pip install -U pip setuptools wheel
-      #   working-directory: ./packages/python
-
-      # - name: Install dependencies
-      #   working-directory: ./packages/python
-      #   run: pip install -r requirements.txt
-
-      # - uses: pre-commit/action
-      #   with:
-      #     extra_args: --verbose
+      - uses: pre-commit/action
+        with:
+          extra_args: --verbose
 
 permissions:
   contents: read
