@@ -41,8 +41,8 @@ class Diagraph:
     def __getitem__(self, key: Node | int) -> DiagraphNode | tuple[DiagraphNode]:
         result = self.__graph__[key]
         if isinstance(result, list):
-            nodes = [DiagraphNode(self.__graph__, node) for node in result]
+            nodes = [DiagraphNode(self, node, None) for node in result]
             return tuple(nodes)
         elif isinstance(key, Node):
-            return DiagraphNode(self.__graph__, key)
+            return DiagraphNode(self, key, None)
         raise Exception(f"Unknown type: {type(key)}")

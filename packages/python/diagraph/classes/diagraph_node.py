@@ -1,4 +1,5 @@
 from __future__ import annotations
+from typing import Any, Optional
 import tiktoken
 
 # To get the tokeniser corresponding to a specific model in the OpenAI API:
@@ -8,11 +9,15 @@ from .graph import Graph
 
 
 class DiagraphNode:
+    diagraph: Any
+    traversal: Any
     __graph__: Graph
     __key__: Node
 
-    def __init__(self, graph: Graph, key: Node):
-        self.__graph__ = graph
+    def __init__(self, diagraph, key: Node, traversal: Optional[Any]):
+        self.diagraph = diagraph
+        self.traversal = traversal
+        self.__graph__ = diagraph.__graph__
         self.__key__ = key
 
     @property
@@ -22,14 +27,14 @@ class DiagraphNode:
     @property
     def ancestors(self):
         return [
-            DiagraphNode(self.__graph__, node)
+            DiagraphNode(self.diagraph, node, self.traversal)
             for node in self.__graph__.out_edges(self.__key__)
         ]
 
     @property
     def children(self):
         return [
-            DiagraphNode(self.__graph__, node)
+            DiagraphNode(self.diagraph, node, self.traversal)
             for node in self.__graph__.in_edges(self.__key__)
         ]
 
@@ -86,15 +91,12 @@ class DiagraphNode:
         return len(enc.encode(prompt))
 
     def run(self, *input_args):
-        self.diagraph.__run_from__(self.fn, *input_args)
-
-    # def __repr__(self):
-    #     return inspect.getsource(self.fn)
+        self.traversal.__run_from__(self.fn, *input_args)
 
     @property
     def result(self):
-        return self.diagraph.results[self.fn]
+        return self.traversal.results[self.fn]
 
     @result.setter
     def result(self, value):
-        self.diagraph.results[self.fn] = value
+        self.traversal.results[self.fn] = value
