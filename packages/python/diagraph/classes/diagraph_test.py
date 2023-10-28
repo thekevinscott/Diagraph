@@ -28,14 +28,6 @@ def describe_nodes():
         assert isinstance(node, DiagraphNode)
         assert node.fn == foo
 
-    # def test_it_gets_back_a_string_representation_of_a_node():
-    #     def foo():
-    #         return "foo"
-
-    #     node = Diagraph(foo)[foo]
-    #     assert isinstance(node, DiagraphNode)
-    #     assert str(node) == inspect.getsource(foo)
-
 
 def describe_indexing():
     def test_it_gets_back_a_node_wrapper_for_an_index():

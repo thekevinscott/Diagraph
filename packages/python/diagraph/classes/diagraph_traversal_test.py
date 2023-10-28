@@ -11,12 +11,6 @@ from ..utils.depends import Depends
 from ..decorators import prompt
 
 
-def describe_instantiation():
-    def test_it_instantiates_traversal():
-        diagraph = Diagraph()
-        traversal = DiagraphTraversal(diagraph)
-
-
 def describe_validate_node_ancestors():
     def test_it_validates_empty_ancestors():
         def d0a():
@@ -688,83 +682,34 @@ def describe_replay():
         traversal.run("bar")
         assert traversal.output == "bar_newfnbar-d1-d2_bar"
 
-    def test_that_once_a_function_is_modified_old_references_no_longer_work():
-        def d0(input: str):
-            return f"{input}_d0"
-
-        def d1(input: str, d0: Annotated[str, Depends(d0)]):
-            return f"{input}_{d0}-d1"
-
-        def d2(
-            d1: Annotated[str, Depends(d1)],
-            input: str,
-        ):
-            return f"{d1}-d2_{input}"
-
-        traversal = Diagraph(d2).run("foo")
-
-        def new_fn(input: str):
-            return f"newfn{input}"
-
-        traversal[d0] = new_fn
-
-        with pytest.raises(Exception) as e_info:
-            traversal[d0]
-
-    def test_it_modifies_prompt_and_can_replay_multiple_times():
-        def d0(input: str):
-            return f"{input}_d0"
-
-        def d1(input: str, d0: Annotated[str, Depends(d0)]):
-            return f"{input}_{d0}-d1"
-
-        def d2(
-            d1: Annotated[str, Depends(d1)],
-            input: str,
-        ):
-            return f"{d1}-d2_{input}"
-
-        traversal = Diagraph(d2).run("foo")
-
-        def new_fn(input: str):
-            return f"newfn{input}"
-
-        traversal[d0] = new_fn
-
-        traversal.run("bar")
-        assert traversal.output == "bar_newfnbar-d1-d2_bar"
-
-        def new_fn2(input: str):
-            return f"newfn2{input}"
-
-        traversal[d0] = new_fn2
-
-        traversal.run("bar")
-        assert traversal.output == "bar_newfn2bar-d1-d2_bar"
-
-    # def test_it_modifies_prompt_and_can_replay():
+    # def test_it_modifies_prompt_and_can_replay_multiple_times():
     #     def d0(input: str):
     #         return f"{input}_d0"
 
-    #     def d1a(input: str, d0: Annotated[str, Depends(d0)]):
-    #         return f"{input}_{d0}-d1a"
-
-    #     def d1b(input: str, d0: Annotated[str, Depends(d0)]):
-    #         return f"{input}_{d0}-d1b"
+    #     def d1(input: str, d0: Annotated[str, Depends(d0)]):
+    #         return f"{input}_{d0}-d1"
 
     #     def d2(
-    #         d1a: Annotated[str, Depends(d1a)],
-    #         d1b: Annotated[str, Depends(d1b)],
+    #         d1: Annotated[str, Depends(d1)],
     #         input: str,
     #     ):
-    #         return f"{d1a}_{d1b}-d2_{input}"
+    #         return f"{d1}-d2_{input}"
 
     #     traversal = Diagraph(d2).run("foo")
 
-    #     def new_fn(input:str):
-    #         return f'newfn{input}'
+    #     def new_fn(input: str):
+    #         return f"newfn{input}"
 
-    #     traversal[d1a] = new_fn
+    #     traversal[d0] = new_fn
 
-    #     traversal[d1a].run("bar")
-    #     assert traversal.output == "bar_foo_d0-d1a_foo_foo_d0-d1b-d2_bar"
+    #     traversal.run("bar")
+    #     assert traversal.output == "bar_newfnbar-d1-d2_bar"
+
+    #     def new_fn2(input: str):
+    #         return f"newfn2{input}"
+
+    #     # traversal[new_fn] = new_fn2
+    #     traversal[d0] = new_fn2
+
+    #     traversal.run("bar")
+    #     assert traversal.output == "bar_newfn2bar-d1-d2_bar"

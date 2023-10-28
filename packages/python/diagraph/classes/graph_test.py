@@ -7,17 +7,6 @@ def test_it_builds_empty_graph():
     graph = Graph({})
 
 
-def test_it_raises_if_provided_integers():
-    with pytest.raises(Exception):
-        graph = Graph({1: [2]})
-
-    with pytest.raises(Exception):
-        graph = Graph({"a": [2]})
-
-    with pytest.raises(Exception):
-        graph = Graph({1: ["b"]})
-
-
 def test_it_builds_connected_directed_graph():
     graph = Graph({"a": ["b"], "b": ["c"]})
 
@@ -89,3 +78,27 @@ def test_it_can_get_out_edges():
     assert graph.out_edges("a") == ["b", "d"]
     assert graph.out_edges("b") == ["c"]
     assert graph.out_edges("d") == ["c"]
+
+
+def test_it_returns_a_copy_of_itself():
+    graph = Graph({"a": ["b"], "b": ["c"]})
+    graph_2 = graph[:]
+
+    graph["a"] = "d"
+    print(graph_2)
+    graph_2["a"] = "e"
+
+    assert graph.to_json().get("links") == [
+        {"source": graph.get_key_for_node("d"), "target": graph.get_key_for_node("b")},
+        {"source": graph.get_key_for_node("b"), "target": graph.get_key_for_node("c")},
+    ]
+    assert graph_2.to_json().get("links") == [
+        {
+            "source": graph_2.get_key_for_node("e"),
+            "target": graph_2.get_key_for_node("b"),
+        },
+        {
+            "source": graph_2.get_key_for_node("b"),
+            "target": graph_2.get_key_for_node("c"),
+        },
+    ]

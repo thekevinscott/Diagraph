@@ -2,12 +2,13 @@ from __future__ import annotations
 import inspect
 from typing import Any
 
-from .diagraph_traversal import DiagraphTraversal
+# from .diagraph_traversal import DiagraphTraversal
 from .diagraph_node import DiagraphNode
 
 
 class DiagraphTraversalNode(DiagraphNode):
-    traversal: DiagraphTraversal
+    traversal: Any
+    # DiagraphTraversal
 
     def __init__(self, traversal, key):
         super().__init__(traversal.__graph__, key)

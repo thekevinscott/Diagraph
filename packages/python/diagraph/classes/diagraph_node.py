@@ -11,7 +11,6 @@ import inspect
 
 class DiagraphNode:
     __graph__: Graph
-    __diagraph__: Any
     __key__: Node
 
     def __init__(self, graph: Graph, key: Node):
@@ -29,10 +28,12 @@ class DiagraphNode:
             for node in self.__graph__.out_edges(self.__key__)
         ]
 
-    # @property
-    # def depth(self):
-    #     pass
-    #     # return self.traversal.results.get(self.__fn__)
+    @property
+    def children(self):
+        return [
+            DiagraphNode(self.__graph__, node)
+            for node in self.__graph__.in_edges(self.__key__)
+        ]
 
     # @result.setter
     # def result(self, value):
@@ -85,3 +86,17 @@ class DiagraphNode:
                     kwargs[key] = f""
         prompt = self.fn.__fn__(**kwargs)
         return len(enc.encode(prompt))
+
+    def run(self, *input_args):
+        self.diagraph.__run_from__(self.fn, *input_args)
+
+    # def __repr__(self):
+    #     return inspect.getsource(self.fn)
+
+    @property
+    def result(self):
+        return self.diagraph.results[self.fn]
+
+    @result.setter
+    def result(self, value):
+        self.diagraph.results[self.fn] = value

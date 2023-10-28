@@ -316,14 +316,14 @@ An `error` can be of the following types:
 You can handle streaming logs as an argument to `@prompt`:
 
 ```python
-@prompt(log=lambda chunk, fn, event: print(chunk))
+@prompt(log=lambda event, chunk, fn: print(chunk))
 def improvement(joke: Depends(tell_me_a_joke), explanation: Depends(explanation)) -> ImprovementReturnType:
   return f'The given joke is "{joke}". An explanation of the joke is "{explanation}". What would make the joke funnier?'
 ```
 
-- `chunk` is the bit of text returned from the LLM.
-- `fn` is the node being operated upon.
 - `event` is an enum that can be `start`, `data`, or `end`.
+- `chunk` is the bit of text returned from the LLM. Will be None for `start` and `end`.
+- `fn` is the node being operated upon.
 
 ### Time Travel & Replay
 
