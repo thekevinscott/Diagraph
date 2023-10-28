@@ -22,16 +22,9 @@ jobs:
         run: python -m pip install -r requirements.txt
         working-directory: ./packages/python
 
-      - run: python -m pytest
-        working-directory: ./packages/python
-
-      - name: Upload coverage to Codecov  # https://github.com/codecov/codecov-action
-        uses: codecov/codecov-action@eaaf4bedf32dbdc6b720b63067d99c4d77d6047d
-        if: matrix.enable_coverage
+      - uses: pre-commit/action
         with:
-          verbose: true
-          files: ./packages/python/coverage.xml
-          fail_ci_if_error: false  # https://github.com/codecov/codecov-action/issues/557
+          extra_args: --verbose
 
 permissions:
   contents: read
