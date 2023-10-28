@@ -1,0 +1,91 @@
+import pytest
+from .graph import Graph
+import networkx as nx
+
+
+def test_it_builds_empty_graph():
+    graph = Graph({})
+
+
+def test_it_raises_if_provided_integers():
+    with pytest.raises(Exception):
+        graph = Graph({1: [2]})
+
+    with pytest.raises(Exception):
+        graph = Graph({"a": [2]})
+
+    with pytest.raises(Exception):
+        graph = Graph({1: ["b"]})
+
+
+def test_it_builds_connected_directed_graph():
+    graph = Graph({"a": ["b"], "b": ["c"]})
+
+    dump = graph.to_json()
+    assert dump.get("links") == [
+        {"source": graph.get_key_for_node("a"), "target": graph.get_key_for_node("b")},
+        {"source": graph.get_key_for_node("b"), "target": graph.get_key_for_node("c")},
+    ]
+
+
+def test_it_raises_for_a_slice():
+    graph = Graph({"a": ["b"], "b": ["c"]})
+
+    with pytest.raises(Exception):
+        graph[1:2]
+
+    with pytest.raises(Exception):
+        graph[1:2:2]
+
+
+def test_it_indexes_by_depth():
+    graph = Graph({"a": ["b"], "b": ["c"]})
+
+    assert graph[0] == ["c"]
+    assert graph[1] == ["b"]
+    assert graph[2] == ["a"]
+    assert graph[-3] == ["c"]
+    assert graph[-2] == ["b"]
+    assert graph[-1] == ["a"]
+
+
+def test_it_indexes_by_depth_with_a_diamond():
+    graph = Graph({"a": ["b", "c"], "b": ["d"], "c": ["d"]})
+
+    assert graph[0] == ["d"]
+    assert graph[1] == ["b", "c"]
+    assert graph[2] == ["a"]
+    assert graph[-3] == ["d"]
+    assert graph[-2] == ["b", "c"]
+    assert graph[-1] == ["a"]
+
+
+def test_it_can_update_nodes():
+    graph = Graph({"a": ["b"], "b": ["c"]})
+
+    graph["a"] = "d"
+
+    dump = graph.to_json()
+    assert dump.get("links") == [
+        {"source": graph.get_key_for_node("d"), "target": graph.get_key_for_node("b")},
+        {"source": graph.get_key_for_node("b"), "target": graph.get_key_for_node("c")},
+    ]
+
+
+def test_it_can_get_in_edges():
+    graph = Graph({"a": ["b"], "b": ["c"]})
+
+    assert graph.in_edges("c") == ["b"]
+    assert graph.in_edges("b") == ["a"]
+
+    graph = Graph({"a": ["b"], "b": ["c"], "d": ["c"]})
+
+    assert graph.in_edges("c") == ["b", "d"]
+
+
+def test_it_can_get_out_edges():
+    graph = Graph({"a": ["b", "d"], "b": ["c"], "d": ["c"]})
+
+    assert graph.out_edges("a") == ["b", "d"]
+    assert graph.out_edges("b") == ["c"]
+    assert graph.out_edges("d") == ["c"]

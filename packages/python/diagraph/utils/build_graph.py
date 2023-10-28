@@ -32,9 +32,6 @@ def build_depth_map(dg: nx.DiGraph):
     nodes: list[tuple[Node, int]] = [
         (n, 0) for n in dg.nodes() if dg.out_degree(n) == 0
     ]
-    for node in nodes:
-        print("node", node)
-    print("=" * 40)
     i = 0
     for node, depth in nodes:
         i += 1
@@ -60,5 +57,6 @@ def build_nx_graph(
     graph = build_graph(*nodes)
     dg = nx.DiGraph(graph)
     depth_map_by_key, depth_map_by_depth = build_depth_map(dg)
+    dg = nx.convert_node_labels_to_integers(dg, label_attribute="fn")
 
     return dg, depth_map_by_key, depth_map_by_depth

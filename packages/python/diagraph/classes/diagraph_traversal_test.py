@@ -5,7 +5,7 @@ from more_itertools import side_effect
 import pytest
 import inspect
 from .diagraph import Diagraph
-from .diagraph_traversal import DiagraphTraversal
+from .diagraph_traversal import DiagraphTraversal, validate_node_ancestors
 from .diagraph_node import DiagraphNode
 from ..utils.depends import Depends
 from ..decorators import prompt
@@ -17,17 +17,107 @@ def describe_instantiation():
         traversal = DiagraphTraversal(diagraph)
 
 
+def describe_validate_node_ancestors():
+    def test_it_validates_empty_ancestors():
+        def d0a():
+            return "d0a"
+
+        diagraph = Diagraph(d0a)
+        traversal = DiagraphTraversal(diagraph)
+        starting_nodes = tuple(traversal[0])
+        validate_node_ancestors(starting_nodes)
+
+    def test_it_validates_a_single_empty_ancestor():
+        def d0():
+            return "d0"
+
+        def d1(d0: Annotated[str, Depends(d0)]):
+            return "d1"
+
+        diagraph = Diagraph(d1)
+        traversal = DiagraphTraversal(diagraph)
+        starting_nodes = (traversal[d1],)
+        with pytest.raises(Exception) as e_info:
+            validate_node_ancestors(starting_nodes)
+
+    def test_it_validates_a_single_filled_ancestor():
+        def d0():
+            return "d0"
+
+        def d1(d0: Annotated[str, Depends(d0)]):
+            return "d1"
+
+        diagraph = Diagraph(d1)
+        traversal = DiagraphTraversal(diagraph)
+        traversal[d0].result = "foo"
+        starting_nodes = (traversal[d1],)
+        validate_node_ancestors(starting_nodes)
+
+    def test_it_validates_a_single_filled_ancestor_and_ignores_previous():
+        def d0():
+            return "d0"
+
+        def d1(d0: Annotated[str, Depends(d0)]):
+            return "d1"
+
+        def d2(d1: Annotated[str, Depends(d1)]):
+            return "d2"
+
+        diagraph = Diagraph(d2)
+        traversal = DiagraphTraversal(diagraph)
+        traversal[d1].result = "foo"
+        starting_nodes = (traversal[d2],)
+        validate_node_ancestors(starting_nodes)
+
+    def test_it_validates_multiple_ancestors():
+        def d0():
+            return "d0"
+
+        def d1():
+            return "d1"
+
+        def d2(d0: Annotated[str, Depends(d0)], d1: Annotated[str, Depends(d1)]):
+            return "d2"
+
+        diagraph = Diagraph(d2)
+        traversal = DiagraphTraversal(diagraph)
+        traversal[d1].result = "foo"
+        starting_nodes = (traversal[d2],)
+        with pytest.raises(Exception) as e_info:
+            validate_node_ancestors(starting_nodes)
+        traversal[d0].result = "foo"
+        validate_node_ancestors(starting_nodes)
+
+    def test_it_validates_multiple_connected_ancestors():
+        def d0():
+            return "d0"
+
+        def d1(d0: Annotated[str, Depends(d0)]):
+            return "d1"
+
+        def d2(d0: Annotated[str, Depends(d0)], d1: Annotated[str, Depends(d1)]):
+            return "d2"
+
+        diagraph = Diagraph(d2)
+        traversal = DiagraphTraversal(diagraph)
+        traversal[d0].result = "foo"
+        starting_nodes = (traversal[d2],)
+        with pytest.raises(Exception) as e_info:
+            validate_node_ancestors(starting_nodes)
+        traversal[d1].result = "foo"
+        validate_node_ancestors(starting_nodes)
+
+
 def describe_run():
     def test_it_can_run_a_single_fn(mocker):
-        stub = mocker.stub()
+        d0 = mocker.stub()
 
-        diagraph = Diagraph(stub)
-
+        diagraph = Diagraph(d0)
         traversal = DiagraphTraversal(diagraph)
 
-        assert stub.call_count == 0
+        assert d0.call_count == 0
         traversal.run()
-        assert stub.call_count == 1
+        assert d0.call_count == 1
 
     def test_it_can_run_a_single_dependency(mocker):
         l0 = mocker.stub()
@@ -70,34 +160,6 @@ def describe_run():
         assert l2.call_count == 1
         l1.assert_called_with(l0.return_value)
         l2.assert_called_with(l1.return_value)
-
-    def test_it_can_run_function_with_multiple_dependencies(mocker):
-        l0 = mocker.stub()
-        l0.return_value = "l0"
-
-        l1 = mocker.stub()
-        l1.return_value = "l1"
-        l2 = mocker.stub()
-        l2.return_value = "l2"
-        l1.__annotations__ = {"l0": Annotated[str, Depends(l0)]}
-        l2.__annotations__ = {
-            "l0": Annotated[str, Depends(l0)],
-            "l1": Annotated[str, Depends(l1)],
-        }
-
-        diagraph = Diagraph(l2)
-
-        traversal = DiagraphTraversal(diagraph)
-
-        assert l0.call_count == 0
-        assert l1.call_count == 0
-        assert l2.call_count == 0
-        traversal.run()
-        assert l0.call_count == 1
-        assert l1.call_count == 1
-        assert l2.call_count == 1
-        l1.assert_called_with(l0.return_value)
-        l2.assert_called_with(l0.return_value, l1.return_value)
 
     def test_it_calls_functions_in_order(mocker):
         def l0():
@@ -404,22 +466,22 @@ def describe_inputs():
 
 
 def describe_running_from_an_index():
-    # def test_it_throws_if_running_from_an_index_not_yet_run(mocker):
-    #     l0 = mocker.stub()
-    #     l0.return_value = "l0"
-    #     l1 = mocker.stub()
-    #     l1.return_value = "l1"
-    #     l2 = mocker.stub()
-    #     l2.return_value = "l2"
-    #     l1.__annotations__ = {"l0": Annotated[str, Depends(l0)]}
-    #     l2.__annotations__ = {"l1": Annotated[str, Depends(l1)]}
+    def test_it_throws_if_running_from_an_index_not_yet_run(mocker):
+        l0 = mocker.stub()
+        l0.return_value = "l0"
+        l1 = mocker.stub()
+        l1.return_value = "l1"
+        l2 = mocker.stub()
+        l2.return_value = "l2"
+        l1.__annotations__ = {"l0": Annotated[str, Depends(l0)]}
+        l2.__annotations__ = {"l1": Annotated[str, Depends(l1)]}
 
-    #     diagraph = Diagraph(l2)
+        diagraph = Diagraph(l2)
 
-    #     traversal = DiagraphTraversal(diagraph)
+        traversal = DiagraphTraversal(diagraph)
 
-    #     with pytest.raises(Exception) as e_info:
-    #         traversal[l1].run()
+        with pytest.raises(Exception) as e_info:
+            traversal[l1].run("foobar")
 
     def test_it_runs_from_the_first_function_if_specified(mocker):
         def d0(input: str):
@@ -437,29 +499,272 @@ def describe_running_from_an_index():
         diagraph = Diagraph(d2)
 
         traversal = DiagraphTraversal(diagraph)
-
-        # traversal[d0].run()
+        node = traversal[d0]
+        traversal[d0].run("foo")
         assert traversal.output == "foo_foo_foo_d0-d1-d2"
 
-    # def test_it_runs_from_an_index(mocker):
-    #     l0 = mocker.stub()
-    #     l0.return_value = "l0"
-    #     l1 = mocker.stub()
-    #     l1.return_value = "l1"
-    #     l2 = mocker.stub()
-    #     l2.return_value = "l2"
-    #     l1.__annotations__ = {"l0": Annotated[str, Depends(l0)]}
-    #     l2.__annotations__ = {"l1": Annotated[str, Depends(l1)]}
+    def test_it_runs_from_the_second_function_if_results_are_present(mocker):
+        def d0(input: str):
+            return f"{input}_d0"
 
-    #     diagraph = Diagraph(l2)
+        def d1(input: str, d0: Annotated[str, Depends(d0)]):
+            return f"{input}_{d0}-d1"
+
+        def d2(
+            d1: Annotated[str, Depends(d1)],
+            input: str,
+        ):
+            return f"{input}_{d1}-d2"
+
+        traversal = Diagraph(d2).run("foo")
+
+        traversal[d1].run("bar")
+        assert traversal.output == "bar_bar_foo_d0-d1-d2"
+
+    def test_it_runs_from_the_left_of_a_diamond(mocker):
+        def d0(input: str):
+            return f"{input}_d0"
+
+        def d1a(input: str, d0: Annotated[str, Depends(d0)]):
+            return f"{input}_{d0}-d1a"
+
+        def d1b(input: str, d0: Annotated[str, Depends(d0)]):
+            return f"{input}_{d0}-d1b"
+
+        def d2(
+            d1a: Annotated[str, Depends(d1a)],
+            d1b: Annotated[str, Depends(d1b)],
+            input: str,
+        ):
+            return f"{d1a}_{d1b}-d2_{input}"
+
+        traversal = Diagraph(d2).run("foo")
+
+        traversal[d1a].run("bar")
+        assert traversal.output == "bar_foo_d0-d1a_foo_foo_d0-d1b-d2_bar"
+
+    # def test_it_runs_from_the_first_index_if_provided(mocker):
+    #     def d0(input: str):
+    #         return f"{input}_d0"
+
+    #     def d1(input: str, d0: Annotated[str, Depends(d0)]):
+    #         return f"{input}_{d0}-d1"
+
+    #     def d2(
+    #         d1: Annotated[str, Depends(d1)],
+    #         input: str,
+    #     ):
+    #         return f"{input}_{d1}-d2"
+
+    #     diagraph = Diagraph(d2)
 
     #     traversal = DiagraphTraversal(diagraph)
+    #     traversal[0].run("foo")
+    #     assert traversal.output == "foo_foo_foo_d0-d1-d2"
 
-    #     assert l0.call_count == 0
-    #     assert l1.call_count == 0
-    #     assert l2.call_count == 0
-    #     traversal.run(l2)
-    #     assert l0.call_count == 0
-    #     assert l1.call_count == 0
-    #     assert l2.call_count == 1
-    #     l2.assert_called_with(l1.return_value)
+
+def describe_replay():
+    def test_it_gets_result_from_a_node():
+        def d0(input: str):
+            return f"{input}_d0"
+
+        def d1a(input: str, d0: Annotated[str, Depends(d0)]):
+            return f"{input}_{d0}-d1a"
+
+        def d1b(input: str, d0: Annotated[str, Depends(d0)]):
+            return f"{input}_{d0}-d1b"
+
+        def d2(
+            d1a: Annotated[str, Depends(d1a)],
+            d1b: Annotated[str, Depends(d1b)],
+            input: str,
+        ):
+            return f"{d1a}_{d1b}-d2_{input}"
+
+        traversal = Diagraph(d2).run("foo")
+
+        assert traversal[d1a].result == "foo_foo_d0-d1a"
+
+    def test_it_allows_execution_from_final_node_if_previous_result_is_explicitly_set():
+        def d0(input: str):
+            return f"{input}_d0"
+
+        def d1(input: str, d0: Annotated[str, Depends(d0)]):
+            return f"{input}_{d0}-d1"
+
+        def d2(d1: Annotated[str, Depends(d1)], input: str):
+            return f"{d1}-d2-{input}"
+
+        diagraph = Diagraph(d2)
+
+        traversal = DiagraphTraversal(diagraph)
+
+        traversal[d1].result = "newresult"
+
+        traversal[d2].run("bar")
+        assert traversal.output == "newresult-d2-bar"
+
+    def test_it_modifies_result():
+        def d0(input: str):
+            return f"{input}_d0"
+
+        def d1(input: str, d0: Annotated[str, Depends(d0)]):
+            return f"{input}_{d0}-d1"
+
+        def d2(
+            d1: Annotated[str, Depends(d1)],
+            input: str,
+        ):
+            return f"{input}_{d1}-d2"
+
+        diagraph = Diagraph(d2)
+
+        traversal = DiagraphTraversal(diagraph)
+
+        traversal[d1].result = "newresult"
+
+        traversal[d2].run("bar")
+        assert traversal.output == "bar_newresult-d2"
+
+    def test_it_modifies_result_and_can_replay_in_a_diamond():
+        def d0(input: str):
+            return f"{input}_d0"
+
+        def d1a(input: str, d0: Annotated[str, Depends(d0)]):
+            return f"{input}_{d0}-d1a"
+
+        def d1b(input: str, d0: Annotated[str, Depends(d0)]):
+            return f"{input}_{d0}-d1b"
+
+        def d2(
+            d1a: Annotated[str, Depends(d1a)],
+            d1b: Annotated[str, Depends(d1b)],
+            input: str,
+        ):
+            return "*".join(
+                [
+                    d1a,
+                    d1b,
+                    "d2",
+                    input,
+                ]
+            )
+
+        traversal = Diagraph(d2).run("foo")
+
+        traversal[d0].result = "newresult"
+
+        traversal[d1a].run("bar")
+
+        assert traversal.output == "*".join(
+            [
+                "bar_newresult-d1a",
+                "foo_foo_d0-d1b",
+                "d2",
+                "bar",
+            ]
+        )
+
+    def test_it_modifies_prompt_and_can_replay():
+        def d0(input: str):
+            return f"{input}_d0"
+
+        def d1(input: str, d0: Annotated[str, Depends(d0)]):
+            return f"{input}_{d0}-d1"
+
+        def d2(
+            d1: Annotated[str, Depends(d1)],
+            input: str,
+        ):
+            return f"{d1}-d2_{input}"
+
+        traversal = Diagraph(d2).run("foo")
+
+        def new_fn(input: str):
+            return f"newfn{input}"
+
+        traversal[d0] = new_fn
+
+        traversal.run("bar")
+        assert traversal.output == "bar_newfnbar-d1-d2_bar"
+
+    def test_that_once_a_function_is_modified_old_references_no_longer_work():
+        def d0(input: str):
+            return f"{input}_d0"
+
+        def d1(input: str, d0: Annotated[str, Depends(d0)]):
+            return f"{input}_{d0}-d1"
+
+        def d2(
+            d1: Annotated[str, Depends(d1)],
+            input: str,
+        ):
+            return f"{d1}-d2_{input}"
+
+        traversal = Diagraph(d2).run("foo")
+
+        def new_fn(input: str):
+            return f"newfn{input}"
+
+        traversal[d0] = new_fn
+
+        with pytest.raises(Exception) as e_info:
+            traversal[d0]
+
+    def test_it_modifies_prompt_and_can_replay_multiple_times():
+        def d0(input: str):
+            return f"{input}_d0"
+
+        def d1(input: str, d0: Annotated[str, Depends(d0)]):
+            return f"{input}_{d0}-d1"
+
+        def d2(
+            d1: Annotated[str, Depends(d1)],
+            input: str,
+        ):
+            return f"{d1}-d2_{input}"
+
+        traversal = Diagraph(d2).run("foo")
+
+        def new_fn(input: str):
+            return f"newfn{input}"
+
+        traversal[d0] = new_fn
+
+        traversal.run("bar")
+        assert traversal.output == "bar_newfnbar-d1-d2_bar"
+
+        def new_fn2(input: str):
+            return f"newfn2{input}"
+
+        traversal[d0] = new_fn2
+
+        traversal.run("bar")
+        assert traversal.output == "bar_newfn2bar-d1-d2_bar"
+
+    # def test_it_modifies_prompt_and_can_replay():
+    #     def d0(input: str):
+    #         return f"{input}_d0"
+
+    #     def d1a(input: str, d0: Annotated[str, Depends(d0)]):
+    #         return f"{input}_{d0}-d1a"
+
+    #     def d1b(input: str, d0: Annotated[str, Depends(d0)]):
+    #         return f"{input}_{d0}-d1b"
+
+    #     def d2(
+    #         d1a: Annotated[str, Depends(d1a)],
+    #         d1b: Annotated[str, Depends(d1b)],
+    #         input: str,
+    #     ):
+    #         return f"{d1a}_{d1b}-d2_{input}"
+
+    #     traversal = Diagraph(d2).run("foo")
+
+    #     def new_fn(input:str):
+    #         return f'newfn{input}'
+
+    #     traversal[d1a] = new_fn
+
+    #     traversal[d1a].run("bar")
+    #     assert traversal.output == "bar_foo_d0-d1a_foo_foo_d0-d1b-d2_bar"

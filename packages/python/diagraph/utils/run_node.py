@@ -9,8 +9,10 @@ def run_node(node: Node, results: dict[Node, Result], *input_args, **kwargs):
         if key != "return":
             if is_annotated(val):
                 dep = get_dependency(val)
-                args.append(results.get(dep))
+                args.append(results[dep])
             else:
+                if arg_index > len(input_args) - 1:
+                    raise Exception(f'No argument provided for "{key}"')
                 args.append(input_args[arg_index])
                 arg_index += 1
     return node(*args, **kwargs)

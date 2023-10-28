@@ -25,20 +25,16 @@ def describe_nodes():
         diagraph = Diagraph(foo)
 
         node = diagraph[foo]
-        assert node is not None
         assert isinstance(node, DiagraphNode)
-        assert node.__fn__ == foo
+        assert node.fn == foo
 
-    def test_it_gets_back_a_string_representation_of_a_node():
-        def foo():
-            return "foo"
+    # def test_it_gets_back_a_string_representation_of_a_node():
+    #     def foo():
+    #         return "foo"
 
-        diagraph = Diagraph(foo)
-
-        node = diagraph[foo]
-        assert node is not None
-        assert isinstance(node, DiagraphNode)
-        assert str(node) == inspect.getsource(foo)
+    #     node = Diagraph(foo)[foo]
+    #     assert isinstance(node, DiagraphNode)
+    #     assert str(node) == inspect.getsource(foo)
 
 
 def describe_indexing():
@@ -55,16 +51,16 @@ def describe_indexing():
         diagraph = Diagraph(baz)
 
         node = diagraph[0]
-        assert node is not None and isinstance(node, tuple)
-        assert node[0].__fn__ == foo
+        assert isinstance(node, tuple)
+        assert node[0].fn == foo
 
         node = diagraph[2]
-        assert node is not None and isinstance(node, tuple)
-        assert node[0].__fn__ == baz
+        assert isinstance(node, tuple)
+        assert node[0].fn == baz
 
         node = diagraph[-1]
-        assert node is not None and isinstance(node, tuple)
-        assert node[0].__fn__ == baz
+        assert isinstance(node, tuple)
+        assert node[0].fn == baz
 
     def test_it_gets_back_a_tuple_for_parallels():
         def l0():
@@ -85,8 +81,8 @@ def describe_indexing():
 
         def check_tuple(key):
             nodes = diagraph[key]
-            assert nodes is not None and isinstance(nodes, tuple) and len(nodes) == 2
-            return set([n.__fn__ for n in nodes])
+            assert isinstance(nodes, tuple) and len(nodes) == 2
+            return set([n.fn for n in nodes])
 
         assert check_tuple(1) == {l1_l, l1_r}
         assert check_tuple(-2) == {l1_l, l1_r}
@@ -108,8 +104,8 @@ def describe_indexing():
 
         diagraph = Diagraph(l2)
 
-        assert diagraph[l1_l].__fn__ == l1_l
-        assert diagraph[l1_r].__fn__ == l1_r
+        assert diagraph[l1_l].fn == l1_l
+        assert diagraph[l1_r].fn == l1_r
 
     def test_a_complicated_tree():
         def l0():
@@ -151,13 +147,13 @@ def describe_indexing():
             node = diagraph[key]
             assert node is not None
             assert isinstance(node, DiagraphNode)
-            return node.__fn__
+            return node.fn
 
         def check_tuple(key):
             nodes = diagraph[key]
             assert nodes is not None
             assert isinstance(nodes, tuple)
-            return tuple([n.__fn__ for n in nodes])
+            return tuple([n.fn for n in nodes])
 
         for node in [l0, l1_l, l1_r, l2_l, l2_r, l3_l, l4]:
             assert check_node(node) == node
@@ -207,13 +203,13 @@ def describe_indexing():
             node = diagraph[key]
             assert node is not None
             assert isinstance(node, DiagraphNode)
-            return node.__fn__
+            return node.fn
 
         def check_tuple(key):
             nodes = diagraph[key]
             assert nodes is not None
             assert isinstance(nodes, tuple)
-            return tuple([n.__fn__ for n in nodes])
+            return tuple([n.fn for n in nodes])
 
         for node in [l0, l1_l, l1_r, l2_l, l3_l, l2_r]:
             assert check_node(node) == node
@@ -258,13 +254,13 @@ def describe_indexing():
             node = diagraph[key]
             assert node is not None
             assert isinstance(node, DiagraphNode)
-            return node.__fn__
+            return node.fn
 
         def check_tuple(key):
             nodes = diagraph[key]
             assert nodes is not None
             assert isinstance(nodes, tuple)
-            return tuple([n.__fn__ for n in nodes])
+            return tuple([n.fn for n in nodes])
 
         for node in [l0_l, l0_r, l1_l, l1_r, l2]:
             assert check_node(node) == node

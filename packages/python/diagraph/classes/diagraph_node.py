@@ -1,25 +1,49 @@
+from __future__ import annotations
 from typing import Any, Optional
 import tiktoken
 
 # To get the tokeniser corresponding to a specific model in the OpenAI API:
 from ..decorators import is_decorated
 from .types import Node
+from .graph import Graph
 import inspect
 
 
 class DiagraphNode:
-    __fn__: Node
-    depth: int
+    __graph__: Graph
+    __diagraph__: Any
+    __key__: Node
 
-    def __init__(self, node: Node, depth: int):
-        self.__fn__ = node
-        self.depth = depth
+    def __init__(self, graph: Graph, key: Node):
+        self.__graph__ = graph
+        self.__key__ = key
 
-    def __repr__(self):
-        return inspect.getsource(self.__fn__)
+    @property
+    def fn(self):
+        return self.__graph__[self.__key__]
+
+    @property
+    def ancestors(self):
+        return [
+            DiagraphNode(self.__graph__, node)
+            for node in self.__graph__.out_edges(self.__key__)
+        ]
+
+    # @property
+    # def depth(self):
+    #     pass
+    #     # return self.traversal.results.get(self.__fn__)
+
+    # @result.setter
+    # def result(self, value):
+    #     self.traversal.results[self.__fn__] = value
+
+    # def __repr__(self):
+    #     return self
+    #     # return inspect.getsource(self.fn)
 
     def _is_decorated_(self):
-        return is_decorated(self.__fn__)
+        return is_decorated(self.fn)
 
     # def __getattribute__(self, __name__: str) -> Any:
     #     if __name__ == "prompt":
@@ -37,26 +61,27 @@ class DiagraphNode:
         kwargs = {
             **kwargs,
         }
-        for i, item in enumerate(self.__fn__.__annotations__.items()):
+        for i, item in enumerate(self.fn.__annotations__.items()):
             key, _ = item
             if key != "return" and key not in kwargs:
                 if len(args) > 0 and args[i] is not None:
                     kwargs[key] = args[i]
                 else:
                     kwargs[key] = f"{{{key}}}"
-        return self.__fn__.__fn__(**kwargs)
+        return self.fn.__fn__(**kwargs)
 
     def tokens(self, *args, **kwargs):
         if self._is_decorated_() is False:
             raise Exception("This function has not been decorated with @prompt")
 
         enc = tiktoken.encoding_for_model("gpt-4")
-        for i, item in enumerate(self.__fn__.__annotations__.items()):
+
+        for i, item in enumerate(self.fn.__annotations__.items()):
             key, _ = item
             if key != "return" and key not in kwargs:
                 if len(args) > 0 and args[i] is not None:
                     kwargs[key] = args[i]
                 else:
                     kwargs[key] = f""
-        prompt = self.__fn__.__fn__(**kwargs)
+        prompt = self.fn.__fn__(**kwargs)
         return len(enc.encode(prompt))
