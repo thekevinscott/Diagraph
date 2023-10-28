@@ -24,10 +24,7 @@ jobs:
 
       - run: python -m pytest
         working-directory: ./packages/python
-
       - uses: pre-commit/action
-        with:
-          extra_args: --verbose
 
 permissions:
   contents: read
