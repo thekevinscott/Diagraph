@@ -22,9 +22,8 @@ jobs:
       - name: Publish
         uses: pypa/gh-action-pypi-publish@b7f401de30cb6434a1e19f805ff006643653240e
         with:
-          user: __token__
-          password: ${{ secrets.PYPI_API_TOKEN }}
-          packages-dir: ./packages/python
+          verbose: true
+          packages-dir: ./packages/python/build
 
 permissions:
   contents: read
