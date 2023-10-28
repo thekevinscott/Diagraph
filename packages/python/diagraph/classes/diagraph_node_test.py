@@ -1,4 +1,4 @@
-from ..decorators import prompt
+from ..decorators.prompt import prompt
 from .diagraph import Diagraph
 
 

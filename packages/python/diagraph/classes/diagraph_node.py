@@ -2,7 +2,7 @@ from __future__ import annotations
 import tiktoken
 
 # To get the tokeniser corresponding to a specific model in the OpenAI API:
-from ..decorators import is_decorated
+from ..decorators.is_decorated import is_decorated
 from .types import Node
 from .graph import Graph
 
