@@ -9,6 +9,9 @@ name: Lint
       - main
   workflow_dispatch:
 
+env:
+  FORCE_COLOR: "1"
+
 jobs:
   Lint:
     runs-on: ubuntu-latest

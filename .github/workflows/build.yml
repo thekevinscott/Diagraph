@@ -9,8 +9,11 @@ name: Lint
       - main
   workflow_dispatch:
 
+env:
+  FORCE_COLOR: "1"
+
 jobs:
-  Lint:
+  Build:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -31,4 +34,3 @@ jobs:
 
 permissions:
   contents: read
-
