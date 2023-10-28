@@ -2,7 +2,6 @@ from ..decorators.prompt import prompt
 from .diagraph import Diagraph
 from typing import Annotated
 import pytest
-from .diagraph import Diagraph
 from .diagraph_traversal import DiagraphTraversal, validate_node_ancestors
 from ..utils.depends import Depends
 
