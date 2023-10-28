@@ -1,6 +1,8 @@
 from __future__ import annotations
 
 # from .diagraph import Diagraph
+from ..utils.validate_node_ancestors import validate_node_ancestors
+from .results import DiagraphTraversalResults
 from ..utils.annotations import get_dependency, is_annotated
 from ..decorators.prompt import UserHandledException
 from typing import Callable, Optional, Any
@@ -11,32 +13,6 @@ from .types import Node, Result
 
 # from .diagraph import Diagraph
 from .graph import Graph
-
-
-def validate_node_ancestors(nodes: tuple[Node]):
-    for node in nodes:
-        for ancestor in node.ancestors:
-            if ancestor.result is None:
-                raise Exception(
-                    "An ancestor is missing a result, run the traversal first"
-                )
-
-
-class DiagraphTraversalResults:
-    __traversal__: DiagraphTraversal
-    __results__: dict[int, Any]
-
-    def __init__(self, traversal):
-        self.__traversal__ = traversal
-        self.__results__ = {}
-
-    def __getitem__(self, key: Node) -> Any:
-        int_rep = self.__traversal__.__graph__.get_key_for_node(key)
-        return self.__results__.get(int_rep)
-
-    def __setitem__(self, key: Node, val: Any) -> Any:
-        int_rep = self.__traversal__.__graph__.get_key_for_node(key)
-        self.__results__[int_rep] = val
 
 
 class DiagraphTraversal:
