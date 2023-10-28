@@ -5,9 +5,7 @@ from ..utils.build_graph import build_graph
 
 from .graph import Graph
 from .types import Node
-import networkx as nx
 
-from ..visualization import render_repr_html
 from .diagraph_traversal import DiagraphTraversal
 from .diagraph_node import DiagraphNode
 

@@ -1,5 +1,4 @@
 import functools
-from typing import Any
 from ..llm.openai_llm import OpenAI
 from .is_decorated import IS_DECORATED_KEY
 

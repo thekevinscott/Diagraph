@@ -11,8 +11,6 @@ from .types import Node, Result
 
 # from .diagraph import Diagraph
 from .graph import Graph
-import networkx as nx
-from ..visualization import render_repr_html
 
 
 def validate_node_ancestors(nodes: tuple[Node]):
@@ -53,7 +51,7 @@ class DiagraphTraversal:
     # def _repr_html_(self):
     #     return render_repr_html(self.diagraph.dg)
 
-    def __init__(self, diagraph: "Diagraph", log=None, error=None):
+    def __init__(self, diagraph: Any, log=None, error=None):
         self.__graph__ = diagraph.__graph__[:]
         self.terminal_nodes = diagraph.terminal_nodes
         self.results = DiagraphTraversalResults(self)

@@ -1,7 +1,7 @@
 from __future__ import annotations
-from typing import Any, Generic, TypeVar
+from typing import Generic, TypeVar
 import networkx as nx
-from ..utils.build_graph import build_depth_map, build_graph
+from ..utils.build_graph import build_depth_map
 
 T = TypeVar("T")
 

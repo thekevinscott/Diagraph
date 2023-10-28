@@ -1,8 +1,6 @@
 from typing import Annotated, Any, Callable
 from ..classes.types import Node
-import inspect
 
-from ..utils.depends import Depends
 
 
 def is_annotated(val: Any):

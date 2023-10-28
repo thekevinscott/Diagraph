@@ -1,20 +1,18 @@
-import inspect
 from typing import Annotated
 from .diagraph import Diagraph
 from .diagraph_node import DiagraphNode
 from ..utils.depends import Depends
-from ..decorators import prompt
 
 
 def describe_instantiation():
     def test_it_instantiates_empty_diagraph():
-        diagraph = Diagraph()
+        Diagraph()
 
     def test_it_instantiates_a_single_item_diagraph():
         def foo():
             return "foo"
 
-        diagraph = Diagraph(foo)
+        Diagraph(foo)
 
 
 def describe_nodes():
