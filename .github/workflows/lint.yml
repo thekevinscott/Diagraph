@@ -1,3 +1,4 @@
+name: Lint
 on: [pull_request]
 
 env:
@@ -5,7 +6,6 @@ env:
 
 jobs:
   Lint:
-    name: Lint
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
