@@ -7,7 +7,7 @@ from ..utils.annotations import get_dependency, is_annotated
 from ..decorators.prompt import UserHandledException
 from typing import Callable, Optional, Any
 
-from .diagraph_traversal_node import DiagraphTraversalNode
+from .diagraph_node import DiagraphNode
 
 from .types import Node, Result
 
@@ -16,6 +16,7 @@ from .graph import Graph
 
 
 class DiagraphTraversal:
+    diagraph: Any
     __graph__: Graph
     terminal_nodes: tuple[Node]
     output: Optional[Result | list[Result]]
@@ -28,6 +29,7 @@ class DiagraphTraversal:
     #     return render_repr_html(self.diagraph.dg)
 
     def __init__(self, diagraph: Any, log=None, error=None):
+        self.diagraph = diagraph
         self.__graph__ = diagraph.__graph__[:]
         self.terminal_nodes = diagraph.terminal_nodes
         self.results = DiagraphTraversalResults(self)
@@ -97,17 +99,15 @@ class DiagraphTraversal:
         setattr(fn, "__error__", self.error)
         return fn(*args, **kwargs)
 
-    def __getitem__(
-        self, key: Node | int
-    ) -> DiagraphTraversalNode | tuple[DiagraphTraversalNode]:
+    def __getitem__(self, key: Node | int) -> DiagraphNode | tuple[DiagraphNode]:
         # if isinstance(key, Node):
         #     key = self.__upd
         result = self.__graph__[key]
         if isinstance(result, list):
-            nodes = [DiagraphTraversalNode(self, node) for node in result]
+            nodes = [DiagraphNode(self.diagraph, node, self) for node in result]
             return tuple(nodes)
         elif isinstance(key, Node):
-            return DiagraphTraversalNode(self, key)
+            return DiagraphNode(self.diagraph, key, self)
         raise Exception(f"Unknown type: {type(key)}")
 
     def __setitem__(self, old_fn_def: Node, new_fn_def: Node):
