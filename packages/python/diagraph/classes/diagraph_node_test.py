@@ -1,5 +1,4 @@
-from ..decorators import prompt
-from .diagraph_node import DiagraphNode
+from ..decorators.prompt import prompt
 from .diagraph import Diagraph
 
 

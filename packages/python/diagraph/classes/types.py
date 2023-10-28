@@ -1,4 +1,4 @@
-from typing import Callable, Optional, Any
+from typing import Callable, Any
 
 Node = Callable
 

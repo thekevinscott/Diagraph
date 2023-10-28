@@ -1,12 +1,10 @@
 from __future__ import annotations
-from typing import Any, Optional
 import tiktoken
 
 # To get the tokeniser corresponding to a specific model in the OpenAI API:
-from ..decorators import is_decorated
+from ..decorators.is_decorated import is_decorated
 from .types import Node
 from .graph import Graph
-import inspect
 
 
 class DiagraphNode:
@@ -83,7 +81,7 @@ class DiagraphNode:
                 if len(args) > 0 and args[i] is not None:
                     kwargs[key] = args[i]
                 else:
-                    kwargs[key] = f""
+                    kwargs[key] = ""
         prompt = self.fn.__fn__(**kwargs)
         return len(enc.encode(prompt))
 

@@ -1,10 +1,9 @@
 import pytest
 from .graph import Graph
-import networkx as nx
 
 
 def test_it_builds_empty_graph():
-    graph = Graph({})
+    Graph({})
 
 
 def test_it_builds_connected_directed_graph():

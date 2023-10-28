@@ -4,7 +4,7 @@ from .llm import LLM
 
 
 def cast_to_input(prompt):
-    if type(prompt) == str:
+    if isinstance(prompt, str):
         return [{"role": "user", "content": prompt}]
     return prompt
 
@@ -18,7 +18,7 @@ class OpenAI(LLM):
     def __init__(self, **kwargs):
         self.kwargs = kwargs
 
-    def run(self, prompt, model=None, stream=None, **kwargs):
+    def run(self, prompt, log=None, model=None, stream=None, **kwargs):
         model = model if model else self.kwargs.get("model")
         if model is None:
             model = DEFAULT_MODEL
