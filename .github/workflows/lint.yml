@@ -4,29 +4,29 @@ name: Lint
   push:
     branches:
       - main
-      - dev
-      - deps
   pull_request:
     branches:
       - main
   workflow_dispatch:
 
 jobs:
-  lint:
+  Lint:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@8ade135a41bc03ea155e62e844d188df1ea18608
-      - uses: actions/setup-python@61a6322f88396a6271a6ee3565807d608ecaddd1
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python
         with:
           python-version: '3.11'
+
       - run: python -m pip install -U pip setuptools wheel
         working-directory: ./packages/python
 
-      - name: install dependencies
+      - name: Install dependencies
         working-directory: ./packages/python
         run: pip install -r requirements.txt
 
-      - uses: pre-commit/action@646c83fcd040023954eafda54b4db0192ce70507
+      - uses: pre-commit/action
         with:
           extra_args: --verbose
 
