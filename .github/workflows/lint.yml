@@ -7,21 +7,11 @@ jobs:
   Lint:
     name: Lint
     runs-on: ubuntu-latest
-    strategy:
-      fail-fast: false
-      matrix:
-        include:
-          # https://github.com/actions/python-versions/blob/main/versions-manifest.json
-          # - pyversion: "3.12"
-          - pyversion: "3.11"
-            enable_coverage: true
-          - pyversion: "3.10"
-            more_hypothesis_examples_if_cron: true
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v4
         with:
-          python-version: ${{ matrix.pyversion }}
+          python-version: 3.11
           cache: pip
           cache-dependency-path: ./packages/python/requirements.txt
 
