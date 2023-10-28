@@ -4,8 +4,6 @@ name: Lint
   push:
     branches:
       - main
-      - dev
-      - deps
   pull_request:
     branches:
       - main

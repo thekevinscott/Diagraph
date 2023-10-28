@@ -1,17 +1,13 @@
 name: Test
 
 "on":
-  workflow_dispatch:
-  schedule:
-    - cron: "15 16 * * *"
   push:
     branches:
       - main
-      - dev
-      - deps
   pull_request:
     branches:
       - main
+  workflow_dispatch:
 
 env:
   FORCE_COLOR: "1"
