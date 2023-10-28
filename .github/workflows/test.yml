@@ -17,7 +17,7 @@ env:
   FORCE_COLOR: "1"
 
 jobs:
-  test-all:
+  Test:
     name: ${{ matrix.pyversion }}
     runs-on: ubuntu-latest
     strategy:
