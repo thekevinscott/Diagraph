@@ -101,11 +101,9 @@ class Diagraph:
         try:
             while True:
                 layer = set()
-                results = []
                 for node in nodes:
                     if node not in ran:
                         ran.add(node)
-                        fn_key = node.key
                         node.result = self.__run_node__(node, *input_args, **kwargs)
                     if node.children:
                         for child in node.children:
