@@ -112,16 +112,17 @@ def describe_errors():
         with pytest.raises(Exception):
             assert Diagraph(bar).run().output == "fn"
 
-    # def test_it_halts_execution_on_error_and_does_not_raise_without_handler(mocker):
-    #     handle_errors = mocker.stub()
+    def test_it_halts_execution_on_error_and_does_not_raise_without_handler(mocker):
+        handle_errors = mocker.stub()
 
-    #     @prompt(llm=MockLLM(times=3))
-    #     def fn():
-    #         return "prompt"
+        @prompt(llm=MockLLM(times=3))
+        def fn():
+            return "prompt"
 
-    #     @prompt(llm=MockLLM(error=True))
-    #     def bar(fn: Annotated[str, Depends(fn)]):
-    #         return "bar"
+        @prompt(llm=MockLLM(error=True))
+        def bar(fn: Annotated[str, Depends(fn)]):
+            return "bar"
 
-    #     assert Diagraph(bar, error=handle_errors).run().output == "012"
-    #     assert handle_errors.call_count == 1
+        diagraph = Diagraph(bar, error=handle_errors).run()
+        assert diagraph.output == "012"
+        assert handle_errors.call_count == 1

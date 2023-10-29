@@ -104,30 +104,31 @@ class Diagraph:
                 for node in nodes:
                     if node not in ran:
                         ran.add(node)
-                        fn_key = node.key
-                        result = self.__run_node__(node, *input_args, **kwargs)
-                        self.results[fn_key] = result
+                        node.result = self.__run_node__(node, *input_args, **kwargs)
                     if node.children:
                         for child in node.children:
                             layer.add(child)
+                self.set_output([node.result for node in nodes])
 
                 if len(layer):
                     nodes = layer
                 else:
                     break
-            results = []
-            for node in self.terminal_nodes:
-                results.append(self.results[node.key])
 
-            if len(results) == 1:
-                self.output = results[0]
-            else:
-                self.output = results
+            self.set_output([node.result for node in self.terminal_nodes])
+
         except UserHandledException:
             print("user handled exception")
             pass
 
         return self
+
+    def set_output(self, results):
+        print("set output", results)
+        if len(results) == 1:
+            self.output = results[0]
+        else:
+            self.output = results
 
     def __run_node__(self, node: Fn, *input_args, **kwargs):
         args = []
