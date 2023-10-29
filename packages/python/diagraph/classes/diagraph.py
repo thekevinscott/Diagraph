@@ -26,7 +26,6 @@ class Diagraph:
     output: Optional[Result | list[Result]]
     results: HistoricalBidict[Key, Any]
     fns: HistoricalBidict[Key, Fn]
-    __updated_refs__: dict[Fn, Fn]
     graph_mapping: bidict[Fn, str]
 
     def __init__(
@@ -66,8 +65,6 @@ class Diagraph:
         ]
         self.log_handler = log
         self.error_handler = error
-        # self.results = DiagraphTraversalResults(self)
-        self.__updated_refs__ = {}
         self.output = None
 
     # def _repr_html_(self) -> str:
@@ -137,8 +134,6 @@ class Diagraph:
         args = []
         arg_index = 0
         fn = self.fns[node.key]
-        # fn = self.__updated_refs__.get(node.fn, node.fn)
-        # print("node", node, fn)
         for key, val in fn.__annotations__.items():
             if key != "return":
                 if is_annotated(val):
@@ -154,9 +149,11 @@ class Diagraph:
         setattr(fn, "__error__", self.error_handler)
         return fn(*args, **kwargs)
 
-    def __setitem__(self, old_fn_def: Fn, new_fn_def: Fn):
-        self.__graph__[old_fn_def] = new_fn_def
-        self.__update_ref__(old_fn_def, new_fn_def)
+    def __setitem__(self, node_key: Key, fn: Fn):
+        self.fns[node_key] = fn
 
-    def __update_ref__(self, old_fn_def: Fn, new_fn_def: Fn):
-        self.__updated_refs__[old_fn_def] = new_fn_def
+    # #     self.__graph__[old_fn_def] = new_fn_def
+    # #     self.__update_ref__(old_fn_def, new_fn_def)
+
+    # # def __update_ref__(self, old_fn_def: Fn, new_fn_def: Fn):
+    # #     self.__updated_refs__[old_fn_def] = new_fn_def
