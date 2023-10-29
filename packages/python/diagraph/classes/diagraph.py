@@ -1,12 +1,10 @@
 from __future__ import annotations
-from typing import Callable, Optional, overload
+from typing import Any, Callable, Optional, overload
 from bidict import bidict
 
 from ..utils.annotations import get_dependency, is_annotated
 
 from ..decorators.prompt import UserHandledException
-
-from .results import DiagraphTraversalResults
 
 from ..utils.validate_node_ancestors import validate_node_ancestors
 
@@ -23,10 +21,10 @@ from .historical_bidict import HistoricalBidict
 class Diagraph:
     __graph__: Graph
     terminal_nodes: tuple[Key]
-    log: Optional[Callable[[str, str, Key], None]]
-    error: Optional[Callable[[str, str, Key], None]]
+    log_handler: Optional[Callable[[str, str, Key], None]]
+    error_handler: Optional[Callable[[str, str, Key], None]]
     output: Optional[Result | list[Result]]
-    results: DiagraphTraversalResults
+    results: HistoricalBidict[Key, Any]
     fns: HistoricalBidict[Key, Fn]
     __updated_refs__: dict[Fn, Fn]
     graph_mapping: bidict[Fn, str]
@@ -59,15 +57,16 @@ class Diagraph:
         self.graph_mapping = bidict(graph_mapping)
         self.__graph__ = Graph(graph_def)
         self.fns = HistoricalBidict()
+        self.results = HistoricalBidict()
 
         for key in self.__graph__.get_nodes():
             self.fns[key] = self.graph_mapping.inverse[key]
         self.terminal_nodes = [
             DiagraphNode(self, get_fn_name(node)) for node in terminal_nodes
         ]
-        self.log = log
-        self.error = error
-        self.results = DiagraphTraversalResults(self)
+        self.log_handler = log
+        self.error_handler = error
+        # self.results = DiagraphTraversalResults(self)
         self.__updated_refs__ = {}
         self.output = None
 
@@ -117,15 +116,20 @@ class Diagraph:
                     nodes = layer
                 else:
                     break
+            results = []
+            for node in self.terminal_nodes:
+                # print("node", node)
+                # print("node key", node.key)
+                results.append(self.results[node.key])
+                # print("got result")
+
+            if len(results) == 1:
+                self.output = results[0]
+            else:
+                self.output = results
         except UserHandledException:
+            print("user handled exception")
             pass
-
-        results = [self.results[node.key] for node in self.terminal_nodes]
-
-        if len(results) == 1:
-            self.output = results[0]
-        else:
-            self.output = results
 
         return self
 
@@ -140,14 +144,14 @@ class Diagraph:
                 if is_annotated(val):
                     dep: Fn = get_dependency(val)
                     key_for_fn = self.fns.inverse(dep)
-                    args.append(self.__get_result__(key_for_fn))
+                    args.append(self.results[key_for_fn])
                 else:
                     if arg_index > len(input_args) - 1:
                         raise Exception(f'No argument provided for "{key}"')
                     args.append(input_args[arg_index])
                     arg_index += 1
-        setattr(fn, "__log__", self.log)
-        setattr(fn, "__error__", self.error)
+        setattr(fn, "__log__", self.log_handler)
+        setattr(fn, "__error__", self.error_handler)
         return fn(*args, **kwargs)
 
     def __setitem__(self, old_fn_def: Fn, new_fn_def: Fn):
@@ -156,7 +160,3 @@ class Diagraph:
 
     def __update_ref__(self, old_fn_def: Fn, new_fn_def: Fn):
         self.__updated_refs__[old_fn_def] = new_fn_def
-
-    def __get_result__(self, key: Key):
-        # key = self.__updated_refs__.get(key, key)
-        return self.results[key]
