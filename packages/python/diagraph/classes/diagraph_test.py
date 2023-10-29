@@ -727,11 +727,11 @@ def describe_replay():
         ):
             return f"{input}_{d1}-d2"
 
-        diagraph = Diagraph(d2, use_string_keys=True)
+        diagraph = Diagraph(d2)
 
-        diagraph["d1"].result = "newresult"
+        diagraph[d1].result = "newresult"
 
-        diagraph["d2"].run("bar")
+        diagraph[d2].run("bar")
         assert diagraph.output == "bar_newresult-d2"
 
     def test_it_modifies_result_and_can_replay_in_a_diamond():
@@ -758,11 +758,11 @@ def describe_replay():
                 ]
             )
 
-        diagraph = Diagraph(d2, use_string_keys=True).run("foo")
+        diagraph = Diagraph(d2).run("foo")
 
-        diagraph["d0"].result = "newresult"
+        diagraph[d0].result = "newresult"
 
-        diagraph["d1a"].run("bar")
+        diagraph[d1a].run("bar")
 
         assert diagraph.output == "*".join(
             [
@@ -773,80 +773,56 @@ def describe_replay():
             ]
         )
 
-    # def test_it_modifies_prompt_when_using_a_key_and_can_replay():
-    #     def d0(input: str):
-    #         return f"{input}_d0"
+    def test_it_modifies_prompt_and_can_replay():
+        def d0(input: str):
+            return f"{input}_d0"
 
-    #     def d1(input: str, d0: Annotated[str, Depends(d0)]):
-    #         return f"{input}_{d0}-d1"
+        def d1(input: str, d0: Annotated[str, Depends(d0)]):
+            return f"{input}_{d0}-d1"
 
-    #     def d2(
-    #         d1: Annotated[str, Depends(d1)],
-    #         input: str,
-    #     ):
-    #         return f"{d1}-d2_{input}"
+        def d2(
+            d1: Annotated[str, Depends(d1)],
+            input: str,
+        ):
+            return f"{d1}-d2_{input}"
 
-    #     diagraph = Diagraph(d2).run("foo")
+        diagraph = Diagraph(d2).run("foo")
 
-    #     def new_fn(input: str):
-    #         return f"newfn{input}"
+        def new_fn(input: str):
+            return f"newfn{input}"
 
-    #     diagraph["d0"] = new_fn
+        diagraph[d0] = new_fn
 
-    #     diagraph.run("bar")
-    #     assert diagraph.output == "bar_newfnbar-d1-d2_bar"
+        diagraph.run("bar")
+        assert diagraph.output == "bar_newfnbar-d1-d2_bar"
 
-    # def test_it_modifies_prompt_and_can_replay():
-    #     def d0(input: str):
-    #         return f"{input}_d0"
+    def test_it_modifies_prompt_and_can_replay_multiple_times():
+        def d0(input: str):
+            return f"{input}_d0"
 
-    #     def d1(input: str, d0: Annotated[str, Depends(d0)]):
-    #         return f"{input}_{d0}-d1"
+        def d1(input: str, d0: Annotated[str, Depends(d0)]):
+            return f"{input}_{d0}-d1"
 
-    #     def d2(
-    #         d1: Annotated[str, Depends(d1)],
-    #         input: str,
-    #     ):
-    #         return f"{d1}-d2_{input}"
+        def d2(
+            d1: Annotated[str, Depends(d1)],
+            input: str,
+        ):
+            return f"{d1}-d2_{input}"
 
-    #     traversal = Diagraph(d2).run("foo")
+        diagraph = Diagraph(d2).run("foo")
 
-    #     def new_fn(input: str):
-    #         return f"newfn{input}"
+        def new_fn(input: str):
+            return f"newfn{input}"
 
-    #     traversal[d0] = new_fn
+        diagraph[d0] = new_fn
 
-    #     traversal.run("bar")
-    #     assert traversal.output == "bar_newfnbar-d1-d2_bar"
+        diagraph.run("bar")
+        assert diagraph.output == "bar_newfnbar-d1-d2_bar"
 
-    # def test_it_modifies_prompt_and_can_replay_multiple_times():
-    #     def d0(input: str):
-    #         return f"{input}_d0"
+        def new_fn2(input: str):
+            return f"newfn2{input}"
 
-    #     def d1(input: str, d0: Annotated[str, Depends(d0)]):
-    #         return f"{input}_{d0}-d1"
+        # traversal[new_fn] = new_fn2
+        diagraph[d0] = new_fn2
 
-    #     def d2(
-    #         d1: Annotated[str, Depends(d1)],
-    #         input: str,
-    #     ):
-    #         return f"{d1}-d2_{input}"
-
-    #     traversal = Diagraph(d2).run("foo")
-
-    #     def new_fn(input: str):
-    #         return f"newfn{input}"
-
-    #     traversal[d0] = new_fn
-
-    #     traversal.run("bar")
-    #     assert traversal.output == "bar_newfnbar-d1-d2_bar"
-
-    #     def new_fn2(input: str):
-    #         return f"newfn2{input}"
-
-    #     # traversal[new_fn] = new_fn2
-    #     traversal[d0] = new_fn2
-
-    #     traversal.run("bar")
-    #     assert traversal.output == "bar_newfn2bar-d1-d2_bar"
+        assert diagraph.run("bar").output == "bar_newfn2bar-d1-d2_bar"
