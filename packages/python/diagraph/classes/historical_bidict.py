@@ -21,3 +21,6 @@ class HistoricalBidict(Generic[Key, Value]):
 
     def inverse(self, value: Value):
         return self.values_to_keys[value]
+
+    def historical(self, key: Key, index: int):
+        return self.keys[key][index]
