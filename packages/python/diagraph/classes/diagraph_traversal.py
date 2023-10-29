@@ -104,10 +104,10 @@ class DiagraphTraversal:
         #     key = self.__upd
         result = self.__graph__[key]
         if isinstance(result, list):
-            nodes = [DiagraphNode(self.diagraph, node, self) for node in result]
+            nodes = [DiagraphNode(self.diagraph, node) for node in result]
             return tuple(nodes)
         elif isinstance(key, Node):
-            return DiagraphNode(self.diagraph, key, self)
+            return DiagraphNode(self.diagraph, key)
         raise Exception(f"Unknown type: {type(key)}")
 
     def __setitem__(self, old_fn_def: Node, new_fn_def: Node):

@@ -10,13 +10,11 @@ from .graph import Graph
 
 class DiagraphNode:
     diagraph: Any
-    traversal: Any
     __graph__: Graph
     __key__: Node
 
-    def __init__(self, diagraph, key: Node, traversal: Optional[Any]):
+    def __init__(self, diagraph, key: Node):
         self.diagraph = diagraph
-        self.traversal = traversal
         self.__graph__ = diagraph.__graph__
         self.__key__ = key
 
@@ -27,14 +25,14 @@ class DiagraphNode:
     @property
     def ancestors(self):
         return [
-            DiagraphNode(self.diagraph, node, self.traversal)
+            DiagraphNode(self.diagraph, node)
             for node in self.__graph__.out_edges(self.__key__)
         ]
 
     @property
     def children(self):
         return [
-            DiagraphNode(self.diagraph, node, self.traversal)
+            DiagraphNode(self.diagraph, node)
             for node in self.__graph__.in_edges(self.__key__)
         ]
 
@@ -91,12 +89,12 @@ class DiagraphNode:
         return len(enc.encode(prompt))
 
     def run(self, *input_args):
-        self.traversal.__run_from__(self.fn, *input_args)
+        self.diagraph.__run_from__(self.fn, *input_args)
 
     @property
     def result(self):
-        return self.traversal.results[self.fn]
+        return self.diagraph.results[self.fn]
 
     @result.setter
     def result(self, value):
-        self.traversal.results[self.fn] = value
+        self.diagraph.results[self.fn] = value

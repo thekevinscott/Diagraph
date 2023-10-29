@@ -55,14 +55,15 @@ class Diagraph:
     def __getitem__(self, key: Node | int) -> DiagraphNode | tuple[DiagraphNode]:
         result = self.__graph__[key]
         if isinstance(result, list):
-            nodes = [DiagraphNode(self, node, None) for node in result]
+            nodes = [DiagraphNode(self, node) for node in result]
             return tuple(nodes)
         elif isinstance(key, Node):
-            return DiagraphNode(self, key, None)
+            print("key", key)
+            return DiagraphNode(self, key)
         raise Exception(f"Unknown type: {type(key)}")
 
-    # def run(self, *input_args, **kwargs):
-    #     return self.__run_from__(0, *input_args, **kwargs)
+    def run(self, *input_args, **kwargs):
+        return self.__run_from__(0, *input_args, **kwargs)
 
     def __run_from__(self, key: Node | int, *input_args, **kwargs):
         node = self[key]
@@ -102,7 +103,7 @@ class Diagraph:
         else:
             self.output = results
 
-        return self.output
+        return self
 
     def __run_node__(self, node: Node, *input_args, **kwargs):
         args = []

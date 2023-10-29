@@ -1,7 +1,6 @@
 from typing import Annotated
 import pytest
 from .diagraph import Diagraph
-from .diagraph_traversal import DiagraphTraversal
 from .diagraph_node import DiagraphNode
 from ..utils.depends import Depends
 
@@ -598,10 +597,9 @@ def describe_running_from_an_index():
             return f"{input}_{d1}-d2"
 
         diagraph = Diagraph(d2)
-        t = DiagraphTraversal(diagraph)
 
-        t[d0].run("foo")
-        assert t.output == "foo_foo_foo_d0-d1-d2"
+        diagraph[d0].run("foo")
+        assert diagraph.output == "foo_foo_foo_d0-d1-d2"
 
     def test_it_runs_from_the_second_function_if_results_are_present(mocker):
         def d0(input: str):
@@ -694,9 +692,9 @@ def describe_replay():
         ):
             return f"{d1a}_{d1b}-d2_{input}"
 
-        traversal = Diagraph(d2).run("foo")
+        diagraph = Diagraph(d2).run("foo")
 
-        assert traversal[d1a].result == "foo_foo_d0-d1a"
+        assert diagraph[d1a].result == "foo_foo_d0-d1a"
 
     def test_it_allows_execution_from_final_node_if_previous_result_is_explicitly_set():
         def d0(input: str):
@@ -710,12 +708,10 @@ def describe_replay():
 
         diagraph = Diagraph(d2)
 
-        traversal = DiagraphTraversal(diagraph)
+        diagraph[d1].result = "newresult"
 
-        traversal[d1].result = "newresult"
-
-        traversal[d2].run("bar")
-        assert traversal.output == "newresult-d2-bar"
+        diagraph[d2].run("bar")
+        assert diagraph.output == "newresult-d2-bar"
 
     def test_it_modifies_result():
         def d0(input: str):
@@ -732,12 +728,10 @@ def describe_replay():
 
         diagraph = Diagraph(d2)
 
-        traversal = DiagraphTraversal(diagraph)
+        diagraph[d1].result = "newresult"
 
-        traversal[d1].result = "newresult"
-
-        traversal[d2].run("bar")
-        assert traversal.output == "bar_newresult-d2"
+        diagraph[d2].run("bar")
+        assert diagraph.output == "bar_newresult-d2"
 
     def test_it_modifies_result_and_can_replay_in_a_diamond():
         def d0(input: str):
@@ -763,13 +757,13 @@ def describe_replay():
                 ]
             )
 
-        traversal = Diagraph(d2).run("foo")
+        diagraph = Diagraph(d2).run("foo")
 
-        traversal[d0].result = "newresult"
+        diagraph[d0].result = "newresult"
 
-        traversal[d1a].run("bar")
+        diagraph[d1a].run("bar")
 
-        assert traversal.output == "*".join(
+        assert diagraph.output == "*".join(
             [
                 "bar_newresult-d1a",
                 "foo_foo_d0-d1b",
