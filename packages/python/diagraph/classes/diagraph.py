@@ -1,5 +1,5 @@
 from __future__ import annotations
-from typing import Callable, Optional, overload
+from typing import Callable, Generic, Optional, TypeVar, overload
 from bidict import bidict
 
 from ..utils.annotations import get_dependency, is_annotated
@@ -17,6 +17,8 @@ from .types import Fn, Result
 
 from .diagraph_node import DiagraphNode
 
+from .historical_bidict import HistoricalBidict
+
 
 class Diagraph:
     __graph__: Graph
@@ -25,7 +27,7 @@ class Diagraph:
     error: Optional[Callable[[str, str, Key], None]]
     output: Optional[Result | list[Result]]
     results: DiagraphTraversalResults
-    fns: bidict[Key, Fn]
+    fns: HistoricalBidict[Key, Fn]
     __updated_refs__: dict[Fn, Fn]
     graph_mapping: bidict[Fn, str]
 
@@ -56,11 +58,10 @@ class Diagraph:
             graph_def[get_fn_name(item)] = new_val
         self.graph_mapping = bidict(graph_mapping)
         self.__graph__ = Graph(graph_def)
-        self.fns = {}
+        self.fns = HistoricalBidict()
 
         for key in self.__graph__.get_nodes():
             self.fns[key] = self.graph_mapping.inverse[key]
-        self.fns = bidict(self.fns)
         self.terminal_nodes = [
             DiagraphNode(self, get_fn_name(node)) for node in terminal_nodes
         ]
@@ -138,7 +139,7 @@ class Diagraph:
             if key != "return":
                 if is_annotated(val):
                     dep: Fn = get_dependency(val)
-                    key_for_fn = self.fns.inverse[dep]
+                    key_for_fn = self.fns.inverse(dep)
                     args.append(self.__get_result__(key_for_fn))
                 else:
                     if arg_index > len(input_args) - 1:
