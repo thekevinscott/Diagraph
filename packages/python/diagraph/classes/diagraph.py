@@ -83,7 +83,7 @@ class Diagraph:
     def __getitem__(self, key: Fn | int) -> DiagraphNode | tuple[DiagraphNode]:
         node_keys = self.__graph__[key]
         if isinstance(node_keys, list):
-            return DiagraphLayer(self, *node_keys)
+            return DiagraphLayer(self, key, *node_keys)
         elif isinstance(node_keys, Fn) or isinstance(node_keys, str):
             return DiagraphNode(self, node_keys)
         raise Exception(f"Unknown type: {type(node_keys)}")
@@ -124,7 +124,6 @@ class Diagraph:
         return self
 
     def set_output(self, results):
-        print("set output", results)
         if len(results) == 1:
             self.output = results[0]
         else:

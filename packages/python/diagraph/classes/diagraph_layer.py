@@ -7,10 +7,12 @@ from .graph import Key
 class DiagraphLayer:
     diagraph: Any
     nodes: list[DiagraphNode]
+    key: int
 
-    def __init__(self, diagraph: Any, *node_keys: Key):
+    def __init__(self, diagraph: Any, key: int, *node_keys: Key):
         self.diagraph = diagraph
         self.nodes = []
+        self.key = key
         for node in node_keys:
             self.nodes.append(DiagraphNode(self.diagraph, node))
 
@@ -40,3 +42,6 @@ class DiagraphLayer:
             if node.key == item:
                 return True
         return False
+
+    def run(self, *input_args, **kwargs):
+        self.diagraph.__run_from__(self.key, *input_args, **kwargs)

@@ -8,7 +8,7 @@ from .diagraph_layer import DiagraphLayer
 
 def describe_diagraph_layer():
     def test_it_instantiates():
-        DiagraphLayer(Diagraph())
+        DiagraphLayer(Diagraph(), 0)
 
     def test_it_iterates_through_nodes():
         def d0():
