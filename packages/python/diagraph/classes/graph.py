@@ -21,9 +21,6 @@ class Graph(Generic[Key]):
         )
 
         self.depth_map_by_depth = build_layer_map(self.__G__)
-        # print("self.depth_map_by_depth", self.depth_map_by_depth)
-        # self.depth_map_by_depth = build_depth_map(self.__G__)
-        # print("self.depth_map_by_depth", self.depth_map_by_depth)
 
         for int_representation in self.__G__.nodes():
             ref = self.__G__.nodes[int_representation]["ref"]
@@ -53,7 +50,6 @@ class Graph(Generic[Key]):
         if isinstance(key, int):
             if key < 0:
                 key = max(self.depth_map_by_depth.keys()) + 1 + key
-            print(self.depth_map_by_depth)
             nodes_at_depth = self.depth_map_by_depth[key]
             return [self.get_node_for_int_key(int_rep) for int_rep in nodes_at_depth]
 
@@ -61,8 +57,6 @@ class Graph(Generic[Key]):
         return self.get_node_for_int_key(int_rep)
 
     def __setitem__(self, old: Key, new: Key):
-        # print(self.__key_to_int__)
-        # print("old", old, "new", new)
         self.__key_to_int__[new] = self.__key_to_int__[old]
         del self.__key_to_int__[old]
         self.__G__.nodes[self.__key_to_int__[new]]["ref"] = new

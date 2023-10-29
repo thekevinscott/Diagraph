@@ -81,9 +81,7 @@ class Diagraph:
         ...
 
     def __getitem__(self, key: Fn | int) -> DiagraphNode | tuple[DiagraphNode]:
-        print("get", key)
         node_keys = self.__graph__[key]
-        print("node keys", node_keys)
         if isinstance(node_keys, list):
             return DiagraphLayer(self, *node_keys)
         elif isinstance(node_keys, Fn) or isinstance(node_keys, str):
@@ -119,10 +117,7 @@ class Diagraph:
                     break
             results = []
             for node in self.terminal_nodes:
-                # print("node", node)
-                # print("node key", node.key)
                 results.append(self.results[node.key])
-                # print("got result")
 
             if len(results) == 1:
                 self.output = results[0]
