@@ -1,5 +1,5 @@
 from typing import Callable, Any
 
-Node = Callable
+Fn = Callable
 
 Result = Any

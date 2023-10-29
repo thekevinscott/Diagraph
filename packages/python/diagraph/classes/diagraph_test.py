@@ -21,9 +21,9 @@ def describe_nodes():
         def foo():
             return "foo"
 
-        diagraph = Diagraph(foo)
+        diagraph = Diagraph(foo, use_string_keys=True)
 
-        node = diagraph[foo]
+        node = diagraph["foo"]
         assert isinstance(node, DiagraphNode)
         assert node.fn == foo
 
@@ -274,6 +274,7 @@ def describe_indexing():
 def describe_run():
     def test_it_can_run_a_single_fn(mocker):
         d0 = mocker.stub()
+        d0.__name__ = "d0"
 
         diagraph = Diagraph(d0)
 
@@ -726,11 +727,11 @@ def describe_replay():
         ):
             return f"{input}_{d1}-d2"
 
-        diagraph = Diagraph(d2)
+        diagraph = Diagraph(d2, use_string_keys=True)
 
-        diagraph[d1].result = "newresult"
+        diagraph["d1"].result = "newresult"
 
-        diagraph[d2].run("bar")
+        diagraph["d2"].run("bar")
         assert diagraph.output == "bar_newresult-d2"
 
     def test_it_modifies_result_and_can_replay_in_a_diamond():
@@ -757,11 +758,11 @@ def describe_replay():
                 ]
             )
 
-        diagraph = Diagraph(d2).run("foo")
+        diagraph = Diagraph(d2, use_string_keys=True).run("foo")
 
-        diagraph[d0].result = "newresult"
+        diagraph["d0"].result = "newresult"
 
-        diagraph[d1a].run("bar")
+        diagraph["d1a"].run("bar")
 
         assert diagraph.output == "*".join(
             [
@@ -790,7 +791,7 @@ def describe_replay():
     #     def new_fn(input: str):
     #         return f"newfn{input}"
 
-    #     diagraph[d0] = new_fn
+    #     diagraph["d0"] = new_fn
 
     #     diagraph.run("bar")
     #     assert diagraph.output == "bar_newfnbar-d1-d2_bar"

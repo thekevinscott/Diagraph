@@ -1,7 +1,7 @@
-from ..classes.types import Node
+from ..classes.diagraph_node import DiagraphNode
 
 
-def validate_node_ancestors(nodes: tuple[Node]):
+def validate_node_ancestors(nodes: tuple[DiagraphNode]):
     for node in nodes:
         for ancestor in node.ancestors:
             if ancestor.result is None:

@@ -1,6 +1,5 @@
 from typing import Annotated, Any, Callable
-from ..classes.types import Node
-
+from ..classes.types import Fn
 
 
 def is_annotated(val: Any):
@@ -15,5 +14,5 @@ def get_annotations(node: Callable):
             yield key, val
 
 
-def get_dependency(val: Annotated) -> Node:
+def get_dependency(val: Annotated) -> Fn:
     return val.__metadata__[0].dependency

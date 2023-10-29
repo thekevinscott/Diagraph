@@ -4,36 +4,35 @@ import tiktoken
 
 # To get the tokeniser corresponding to a specific model in the OpenAI API:
 from ..decorators.is_decorated import is_decorated
-from .types import Node
-from .graph import Graph
+from .graph import Graph, Key
 
 
 class DiagraphNode:
     diagraph: Any
     __graph__: Graph
-    __key__: Node
+    key: Key
 
-    def __init__(self, diagraph, key: Node):
+    def __init__(self, diagraph, key: Key):
         self.diagraph = diagraph
         self.__graph__ = diagraph.__graph__
-        self.__key__ = key
+        self.key = key
 
     @property
     def fn(self):
-        return self.__graph__[self.__key__]
+        return self.diagraph.fns[self.key]
 
     @property
     def ancestors(self):
         return [
             DiagraphNode(self.diagraph, node)
-            for node in self.__graph__.out_edges(self.__key__)
+            for node in self.__graph__.out_edges(self.key)
         ]
 
     @property
     def children(self):
         return [
             DiagraphNode(self.diagraph, node)
-            for node in self.__graph__.in_edges(self.__key__)
+            for node in self.__graph__.in_edges(self.key)
         ]
 
     # @result.setter
@@ -64,12 +63,12 @@ class DiagraphNode:
             **kwargs,
         }
         for i, item in enumerate(self.fn.__annotations__.items()):
-            key, _ = item
-            if key != "return" and key not in kwargs:
+            ann_key, _ = item
+            if ann_key != "return" and ann_key not in kwargs:
                 if len(args) > 0 and args[i] is not None:
-                    kwargs[key] = args[i]
+                    kwargs[ann_key] = args[i]
                 else:
-                    kwargs[key] = f"{{{key}}}"
+                    kwargs[ann_key] = f"{{{ann_key}}}"
         return self.fn.__fn__(**kwargs)
 
     def tokens(self, *args, **kwargs):
@@ -79,22 +78,22 @@ class DiagraphNode:
         enc = tiktoken.encoding_for_model("gpt-4")
 
         for i, item in enumerate(self.fn.__annotations__.items()):
-            key, _ = item
-            if key != "return" and key not in kwargs:
+            ann_key, _ = item
+            if ann_key != "return" and ann_key not in kwargs:
                 if len(args) > 0 and args[i] is not None:
-                    kwargs[key] = args[i]
+                    kwargs[ann_key] = args[i]
                 else:
-                    kwargs[key] = ""
+                    kwargs[ann_key] = ""
         prompt = self.fn.__fn__(**kwargs)
         return len(enc.encode(prompt))
 
     def run(self, *input_args):
-        self.diagraph.__run_from__(self.fn, *input_args)
+        self.diagraph.__run_from__(self.key, *input_args)
 
     @property
     def result(self):
-        return self.diagraph.results[self.fn]
+        return self.diagraph.results[self.key]
 
     @result.setter
     def result(self, value):
-        self.diagraph.results[self.fn] = value
+        self.diagraph.results[self.key] = value

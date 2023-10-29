@@ -11,8 +11,14 @@ def test_it_builds_connected_directed_graph():
 
     dump = graph.to_json()
     assert dump.get("links") == [
-        {"source": graph.get_key_for_node("a"), "target": graph.get_key_for_node("b")},
-        {"source": graph.get_key_for_node("b"), "target": graph.get_key_for_node("c")},
+        {
+            "source": graph.get_int_key_for_node("a"),
+            "target": graph.get_int_key_for_node("b"),
+        },
+        {
+            "source": graph.get_int_key_for_node("b"),
+            "target": graph.get_int_key_for_node("c"),
+        },
     ]
 
 
@@ -55,8 +61,14 @@ def test_it_can_update_nodes():
 
     dump = graph.to_json()
     assert dump.get("links") == [
-        {"source": graph.get_key_for_node("d"), "target": graph.get_key_for_node("b")},
-        {"source": graph.get_key_for_node("b"), "target": graph.get_key_for_node("c")},
+        {
+            "source": graph.get_int_key_for_node("d"),
+            "target": graph.get_int_key_for_node("b"),
+        },
+        {
+            "source": graph.get_int_key_for_node("b"),
+            "target": graph.get_int_key_for_node("c"),
+        },
     ]
 
 
@@ -88,16 +100,22 @@ def test_it_returns_a_copy_of_itself():
     graph_2["a"] = "e"
 
     assert graph.to_json().get("links") == [
-        {"source": graph.get_key_for_node("d"), "target": graph.get_key_for_node("b")},
-        {"source": graph.get_key_for_node("b"), "target": graph.get_key_for_node("c")},
+        {
+            "source": graph.get_int_key_for_node("d"),
+            "target": graph.get_int_key_for_node("b"),
+        },
+        {
+            "source": graph.get_int_key_for_node("b"),
+            "target": graph.get_int_key_for_node("c"),
+        },
     ]
     assert graph_2.to_json().get("links") == [
         {
-            "source": graph_2.get_key_for_node("e"),
-            "target": graph_2.get_key_for_node("b"),
+            "source": graph_2.get_int_key_for_node("e"),
+            "target": graph_2.get_int_key_for_node("b"),
         },
         {
-            "source": graph_2.get_key_for_node("b"),
-            "target": graph_2.get_key_for_node("c"),
+            "source": graph_2.get_int_key_for_node("b"),
+            "target": graph_2.get_int_key_for_node("c"),
         },
     ]
