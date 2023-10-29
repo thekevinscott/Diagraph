@@ -638,37 +638,22 @@ def describe_running_from_an_index():
         diagraph[d1a].run("bar")
         assert diagraph.output == "bar_foo_d0-d1a_foo_foo_d0-d1b-d2_bar"
 
-    # def test_it_runs_from_the_first_index_if_provided(mocker):
-    #     def d0(input: str):
-    #         return f"{input}_d0"
+    def test_it_runs_from_the_first_index_if_provided(mocker):
+        def d0(input: str):
+            return f"{input}_d0"
 
-    #     def d1(input: str, d0: Annotated[str, Depends(d0)]):
-    #         return f"{input}_{d0}-d1"
+        def d1(input: str, d0: Annotated[str, Depends(d0)]):
+            return f"{input}_{d0}-d1"
 
-    #     def d2(
-    #         d1: Annotated[str, Depends(d1)],
-    #         input: str,
-    #     ):
-    #         return f"{input}_{d1}-d2"
+        def d2(
+            d1: Annotated[str, Depends(d1)],
+            input: str,
+        ):
+            return f"{input}_{d1}-d2"
 
-    #     diagraph = Diagraph(d2)
-    #     diagraph[0].run("foo")
-    #     assert diagraph.output == "foo_foo_foo_d0-d1-d2"
-
-
-# def describe_slicing():
-#     def test_it_can_slice():
-#         def l0():
-#             return "foo"
-
-#         def l1(l0: Annotated[str, Depends(l0)]):
-#             return "bar"
-
-#         def l2(l1: Annotated[str, Depends(l1)]):
-#             return "baz"
-
-#         diagraph = Diagraph(l2)
-#         sliced_diagraph = diagraph[1:2]
+        diagraph = Diagraph(d2)
+        diagraph[0].run("foo")
+        assert diagraph.output == "foo_foo_foo_d0-d1-d2"
 
 
 def describe_replay():
@@ -821,3 +806,18 @@ def describe_replay():
         diagraph[d0] = new_fn2
 
         assert diagraph.run("bar").output == "bar_newfn2bar-d1-d2_bar"
+
+
+# def describe_slicing():
+#     def test_it_can_slice():
+#         def l0():
+#             return "foo"
+
+#         def l1(l0: Annotated[str, Depends(l0)]):
+#             return "bar"
+
+#         def l2(l1: Annotated[str, Depends(l1)]):
+#             return "baz"
+
+#         diagraph = Diagraph(l2)
+#         sliced_diagraph = diagraph[1:2]
