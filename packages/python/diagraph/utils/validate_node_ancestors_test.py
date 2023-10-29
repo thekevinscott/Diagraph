@@ -2,7 +2,7 @@ import pytest
 from typing import Annotated
 
 from .depends import Depends
-from ..classes.diagraph import Diagraph, DiagraphTraversal
+from ..classes.diagraph import Diagraph
 from .validate_node_ancestors import validate_node_ancestors
 
 
@@ -12,8 +12,7 @@ def describe_validate_node_ancestors():
             return "d0a"
 
         diagraph = Diagraph(d0a)
-        traversal = DiagraphTraversal(diagraph)
-        starting_nodes = tuple(traversal[0])
+        starting_nodes = tuple(diagraph[0])
         validate_node_ancestors(starting_nodes)
 
     def test_it_validates_a_single_empty_ancestor():
@@ -24,8 +23,7 @@ def describe_validate_node_ancestors():
             return "d1"
 
         diagraph = Diagraph(d1)
-        traversal = DiagraphTraversal(diagraph)
-        starting_nodes = (traversal[d1],)
+        starting_nodes = (diagraph[d1],)
         with pytest.raises(Exception):
             validate_node_ancestors(starting_nodes)
 
@@ -37,9 +35,8 @@ def describe_validate_node_ancestors():
             return "d1"
 
         diagraph = Diagraph(d1)
-        traversal = DiagraphTraversal(diagraph)
-        traversal[d0].result = "foo"
-        starting_nodes = (traversal[d1],)
+        diagraph[d0].result = "foo"
+        starting_nodes = (diagraph[d1],)
         validate_node_ancestors(starting_nodes)
 
     def test_it_validates_a_single_filled_ancestor_and_ignores_previous():
@@ -53,9 +50,8 @@ def describe_validate_node_ancestors():
             return "d2"
 
         diagraph = Diagraph(d2)
-        traversal = DiagraphTraversal(diagraph)
-        traversal[d1].result = "foo"
-        starting_nodes = (traversal[d2],)
+        diagraph[d1].result = "foo"
+        starting_nodes = (diagraph[d2],)
         validate_node_ancestors(starting_nodes)
 
     def test_it_validates_multiple_ancestors():
@@ -69,12 +65,11 @@ def describe_validate_node_ancestors():
             return "d2"
 
         diagraph = Diagraph(d2)
-        traversal = DiagraphTraversal(diagraph)
-        traversal[d1].result = "foo"
-        starting_nodes = (traversal[d2],)
+        diagraph[d1].result = "foo"
+        starting_nodes = (diagraph[d2],)
         with pytest.raises(Exception):
             validate_node_ancestors(starting_nodes)
-        traversal[d0].result = "foo"
+        diagraph[d0].result = "foo"
         validate_node_ancestors(starting_nodes)
 
     def test_it_validates_multiple_connected_ancestors():
@@ -88,10 +83,9 @@ def describe_validate_node_ancestors():
             return "d2"
 
         diagraph = Diagraph(d2)
-        traversal = DiagraphTraversal(diagraph)
-        traversal[d0].result = "foo"
-        starting_nodes = (traversal[d2],)
+        diagraph[d0].result = "foo"
+        starting_nodes = (diagraph[d2],)
         with pytest.raises(Exception):
             validate_node_ancestors(starting_nodes)
-        traversal[d1].result = "foo"
+        diagraph[d1].result = "foo"
         validate_node_ancestors(starting_nodes)

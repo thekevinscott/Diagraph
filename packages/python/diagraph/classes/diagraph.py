@@ -14,7 +14,6 @@ from ..utils.build_graph import build_graph
 from .graph import Graph
 from .types import Node
 
-from .diagraph_traversal import DiagraphTraversal
 from .diagraph_node import DiagraphNode
 
 
@@ -35,11 +34,6 @@ class Diagraph:
         self.results = DiagraphTraversalResults(self)
         self.__updated_refs__ = {}
         self.output = None
-
-    def run(self, *args, **kwargs) -> DiagraphTraversal:
-        traversal = DiagraphTraversal(self, log=self.log, error=self.error)
-        traversal.run(*args, **kwargs)
-        return traversal
 
     # def _repr_html_(self) -> str:
     #     return render_repr_html(self.dg)
