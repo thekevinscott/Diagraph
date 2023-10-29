@@ -25,13 +25,16 @@ class Graph(Generic[Key]):
             ref = self.__G__.nodes[int_representation]["ref"]
             self.__key_to_int__[ref] = int_representation
 
-    def get_key_for_node(self, node: Key) -> int:
-        return self.__key_to_int__[node]
+    def get_nodes(self):
+        return [self.__G__.nodes[int_rep]["ref"] for int_rep in self.__G__.nodes()]
 
-    def get_node_for_key(self, key: int):
+    def get_int_key_for_node(self, key: Key) -> int:
+        return self.__key_to_int__[key]
+
+    def get_node_for_int_key(self, key: int):
         return self.__G__.nodes[key]["ref"]
 
-    def __getitem__(self, key: Key):
+    def __getitem__(self, key: Key | int | slice):
         if isinstance(key, slice):
             if key.step is not None:
                 raise Exception("Slicing with a step is not supported")
@@ -47,10 +50,10 @@ class Graph(Generic[Key]):
             if key < 0:
                 key = max(self.depth_map_by_depth.keys()) + 1 + key
             nodes_at_depth = self.depth_map_by_depth[key]
-            return [self.get_node_for_key(int_rep) for int_rep in nodes_at_depth]
+            return [self.get_node_for_int_key(int_rep) for int_rep in nodes_at_depth]
 
         int_rep = self.__key_to_int__[key]
-        return self.get_node_for_key(int_rep)
+        return self.get_node_for_int_key(int_rep)
 
     def __setitem__(self, old: Key, new: Key):
         # print(self.__key_to_int__)
@@ -63,11 +66,11 @@ class Graph(Generic[Key]):
         return nx.node_link_data(self.__G__)
 
     def in_edges(self, key: Key):
-        key = self.get_key_for_node(key)
+        key = self.get_int_key_for_node(key)
         int_representations = [i for i, _ in list(self.__G__.in_edges(key))]
-        return [self.get_node_for_key(i) for i in int_representations]
+        return [self.get_node_for_int_key(i) for i in int_representations]
 
     def out_edges(self, key: Key):
-        key = self.get_key_for_node(key)
+        key = self.get_int_key_for_node(key)
         int_representations = [i for _, i in list(self.__G__.out_edges(key))]
-        return [self.get_node_for_key(i) for i in int_representations]
+        return [self.get_node_for_int_key(i) for i in int_representations]
