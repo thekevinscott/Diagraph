@@ -1,5 +1,4 @@
 from ..classes.diagraph_layer import DiagraphLayer
-from ..classes.diagraph_node import DiagraphNode
 
 
 def validate_node_ancestors(layer: DiagraphLayer):

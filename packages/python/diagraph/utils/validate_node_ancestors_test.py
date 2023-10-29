@@ -1,7 +1,6 @@
 import pytest
 from typing import Annotated
 
-from ..classes.diagraph_layer import DiagraphLayer
 
 from .depends import Depends
 from ..classes.diagraph import Diagraph

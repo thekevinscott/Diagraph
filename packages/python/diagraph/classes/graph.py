@@ -3,7 +3,6 @@ from typing import Generic, TypeVar
 import networkx as nx
 
 from ..utils.build_layer_map import build_layer_map
-from ..utils.build_graph import build_depth_map
 
 Key = TypeVar("Key")
 

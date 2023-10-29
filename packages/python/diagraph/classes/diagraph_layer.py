@@ -1,12 +1,14 @@
+from __future__ import annotations
+from typing import Any
 from .diagraph_node import DiagraphNode
 from .graph import Key
 
 
 class DiagraphLayer:
-    diagraph: "Diagraph"
+    diagraph: Any
     nodes: list[DiagraphNode]
 
-    def __init__(self, diagraph: "Diagraph", *node_keys: Key):
+    def __init__(self, diagraph: Any, *node_keys: Key):
         self.diagraph = diagraph
         self.nodes = []
         for node in node_keys:
@@ -19,13 +21,13 @@ class DiagraphLayer:
         if isinstance(key, slice):
             if key.step is not None:
                 raise Exception("Slicing with a step is not supported")
-            start, stop = key.start, key.stop
+            # start, stop = key.start, key.stop
             # if start is not None or stop is not None:
             raise Exception("Slicing not implemented yet")
         if isinstance(key, int):
             return self.nodes[key]
 
-        for node in nodes:
+        for node in self.nodes:
             if node.key == key:
                 return node
         raise Exception(f"No node for key {key}")
