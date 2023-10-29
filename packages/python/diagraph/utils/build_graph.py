@@ -1,4 +1,4 @@
-from typing import Any, TypeVar
+from typing import TypeVar
 
 from ..utils.annotations import get_annotations, get_dependency
 
