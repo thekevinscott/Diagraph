@@ -1,7 +1,7 @@
-from ..classes.types import Node
+from ..classes.types import Fn
 
 
-def validate_node_ancestors(nodes: tuple[Node]):
+def validate_node_ancestors(nodes: tuple[Fn]):
     for node in nodes:
         for ancestor in node.ancestors:
             if ancestor.result is None:

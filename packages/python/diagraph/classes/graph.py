@@ -3,24 +3,18 @@ from typing import Generic, TypeVar
 import networkx as nx
 from ..utils.build_graph import build_depth_map
 
-T = TypeVar("T")
+Key = TypeVar("Key")
 
 
-class Graph(Generic[T]):
+class Graph(Generic[Key]):
     __G__: nx.DiGraph
-    __key_to_int__: dict[T, int]
-    graph_def: dict[T, T]
-    depth_map_by_depth: dict[int, list[T]]
+    __key_to_int__: dict[Key, int]
+    graph_def: dict[Key, Key]
+    depth_map_by_depth: dict[int, list[Key]]
 
-    def __init__(self, graph_def: dict[T, T]):
+    def __init__(self, graph_def: dict[Key, Key]):
         self.graph_def = graph_def
         self.__key_to_int__ = {}
-        # for key, val in graph.items():
-        #     if isinstance(key, int):
-        #         raise Exception("Keys must not be integers")
-        #     for value in val:
-        #         if isinstance(value, int):
-        #             raise Exception("Values must not be integers")
         self.__G__ = nx.convert_node_labels_to_integers(
             nx.DiGraph(self.graph_def), label_attribute="ref"
         )
@@ -31,13 +25,13 @@ class Graph(Generic[T]):
             ref = self.__G__.nodes[int_representation]["ref"]
             self.__key_to_int__[ref] = int_representation
 
-    def get_key_for_node(self, node: T) -> int:
+    def get_key_for_node(self, node: Key) -> int:
         return self.__key_to_int__[node]
 
     def get_node_for_key(self, key: int):
         return self.__G__.nodes[key]["ref"]
 
-    def __getitem__(self, key: T):
+    def __getitem__(self, key: Key):
         if isinstance(key, slice):
             if key.step is not None:
                 raise Exception("Slicing with a step is not supported")
@@ -58,7 +52,7 @@ class Graph(Generic[T]):
         int_rep = self.__key_to_int__[key]
         return self.get_node_for_key(int_rep)
 
-    def __setitem__(self, old: T, new: T):
+    def __setitem__(self, old: Key, new: Key):
         # print(self.__key_to_int__)
         # print("old", old, "new", new)
         self.__key_to_int__[new] = self.__key_to_int__[old]
@@ -68,12 +62,12 @@ class Graph(Generic[T]):
     def to_json(self):
         return nx.node_link_data(self.__G__)
 
-    def in_edges(self, key: T):
+    def in_edges(self, key: Key):
         key = self.get_key_for_node(key)
         int_representations = [i for i, _ in list(self.__G__.in_edges(key))]
         return [self.get_node_for_key(i) for i in int_representations]
 
-    def out_edges(self, key: T):
+    def out_edges(self, key: Key):
         key = self.get_key_for_node(key)
         int_representations = [i for _, i in list(self.__G__.out_edges(key))]
         return [self.get_node_for_key(i) for i in int_representations]

@@ -11,22 +11,23 @@ from ..utils.validate_node_ancestors import validate_node_ancestors
 
 from ..utils.build_graph import build_graph
 
-from .graph import Graph
-from .types import Node, Result
+from .graph import Graph, Key
+from .types import Fn, Result
 
 from .diagraph_node import DiagraphNode
 
 
 class Diagraph:
     __graph__: Graph
-    terminal_nodes: tuple[Node]
-    log: Optional[Callable[[str, str, Node], None]]
-    error: Optional[Callable[[str, str, Node], None]]
+    terminal_nodes: tuple[Key]
+    log: Optional[Callable[[str, str, Key], None]]
+    error: Optional[Callable[[str, str, Key], None]]
     output: Optional[Result | list[Result]]
     results: DiagraphTraversalResults
-    __updated_refs__: dict[Node, Node]
+    fns: dict[Key, Fn]
+    __updated_refs__: dict[Fn, Fn]
 
-    def __init__(self, *terminal_nodes: Node, log=None, error=None) -> None:
+    def __init__(self, *terminal_nodes: Key, log=None, error=None) -> None:
         self.__graph__ = Graph(build_graph(*terminal_nodes))
         self.terminal_nodes = terminal_nodes
         self.log = log
@@ -43,15 +44,15 @@ class Diagraph:
         ...
 
     @overload
-    def __getitem__(self, key: Node) -> Optional[DiagraphNode]:
+    def __getitem__(self, key: Fn) -> Optional[DiagraphNode]:
         ...
 
-    def __getitem__(self, key: Node | int) -> DiagraphNode | tuple[DiagraphNode]:
+    def __getitem__(self, key: Fn | int) -> DiagraphNode | tuple[DiagraphNode]:
         result = self.__graph__[key]
         if isinstance(result, list):
             nodes = [DiagraphNode(self, node) for node in result]
             return tuple(nodes)
-        elif isinstance(key, Node):
+        elif isinstance(key, Fn):
             print("key", key)
             return DiagraphNode(self, key)
         raise Exception(f"Unknown type: {type(key)}")
@@ -59,7 +60,7 @@ class Diagraph:
     def run(self, *input_args, **kwargs):
         return self.__run_from__(0, *input_args, **kwargs)
 
-    def __run_from__(self, key: Node | int, *input_args, **kwargs):
+    def __run_from__(self, key: Fn | int, *input_args, **kwargs):
         node = self[key]
         if not isinstance(node, tuple):
             node = (node,)
@@ -99,7 +100,7 @@ class Diagraph:
 
         return self
 
-    def __run_node__(self, node: Node, *input_args, **kwargs):
+    def __run_node__(self, node: Fn, *input_args, **kwargs):
         args = []
         arg_index = 0
         fn = self.__updated_refs__.get(node.fn, node.fn)
@@ -117,13 +118,13 @@ class Diagraph:
         setattr(fn, "__error__", self.error)
         return fn(*args, **kwargs)
 
-    def __setitem__(self, old_fn_def: Node, new_fn_def: Node):
+    def __setitem__(self, old_fn_def: Fn, new_fn_def: Fn):
         self.__graph__[old_fn_def] = new_fn_def
         self.__update_ref__(old_fn_def, new_fn_def)
 
-    def __update_ref__(self, old_fn_def: Node, new_fn_def: Node):
+    def __update_ref__(self, old_fn_def: Fn, new_fn_def: Fn):
         self.__updated_refs__[old_fn_def] = new_fn_def
 
-    def __get_result__(self, key: Node):
+    def __get_result__(self, key: Fn):
         key = self.__updated_refs__.get(key, key)
         return self.results[key]

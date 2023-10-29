@@ -790,7 +790,7 @@ def describe_replay():
     #     def new_fn(input: str):
     #         return f"newfn{input}"
 
-    #     diagraph[d0] = new_fn
+    #     diagraph["d0"] = new_fn
 
     #     diagraph.run("bar")
     #     assert diagraph.output == "bar_newfnbar-d1-d2_bar"

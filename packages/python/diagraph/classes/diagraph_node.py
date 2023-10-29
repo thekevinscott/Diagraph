@@ -4,16 +4,16 @@ import tiktoken
 
 # To get the tokeniser corresponding to a specific model in the OpenAI API:
 from ..decorators.is_decorated import is_decorated
-from .types import Node
+from .types import Fn
 from .graph import Graph
 
 
 class DiagraphNode:
     diagraph: Any
     __graph__: Graph
-    __key__: Node
+    __key__: Fn
 
-    def __init__(self, diagraph, key: Node):
+    def __init__(self, diagraph, key: Fn):
         self.diagraph = diagraph
         self.__graph__ = diagraph.__graph__
         self.__key__ = key
