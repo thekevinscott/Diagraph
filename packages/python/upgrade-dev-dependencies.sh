@@ -32,7 +32,7 @@ main() {
   local -r dev_py="python3.11"  # Main version used for development
   # local -r pip_compile="pip-compile --generate-hashes --reuse-hashes --upgrade --allow-unsafe"
   local -r pip_compile="pip-compile --upgrade --allow-unsafe"
-  for py in python3.11 python3.10; do
+  for py in python3.12 python3.11 python3.10; do
     local manage_deps_env=".venv/deps/$py"
     [ -e "$manage_deps_env" ] || $py -m venv "$manage_deps_env"
     "$manage_deps_env/bin/pip" install --upgrade pip
