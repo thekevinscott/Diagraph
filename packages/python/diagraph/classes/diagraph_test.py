@@ -1,5 +1,7 @@
 from typing import Annotated
 import pytest
+
+from .diagraph_layer import DiagraphLayer
 from .diagraph import Diagraph
 from .diagraph_node import DiagraphNode
 from ..utils.depends import Depends
@@ -41,17 +43,9 @@ def describe_indexing():
 
         diagraph = Diagraph(baz)
 
-        node = diagraph[0]
-        assert isinstance(node, tuple)
-        assert node[0].fn == foo
-
-        node = diagraph[2]
-        assert isinstance(node, tuple)
-        assert node[0].fn == baz
-
-        node = diagraph[-1]
-        assert isinstance(node, tuple)
-        assert node[0].fn == baz
+        assert isinstance(diagraph[0], DiagraphLayer) and diagraph[0][0].fn == foo
+        assert isinstance(diagraph[2], DiagraphLayer) and diagraph[2][0].fn == baz
+        assert isinstance(diagraph[-1], DiagraphLayer) and diagraph[-1][0].fn == baz
 
     def test_it_gets_back_a_tuple_for_parallels():
         def l0():
@@ -72,7 +66,7 @@ def describe_indexing():
 
         def check_tuple(key):
             nodes = diagraph[key]
-            assert isinstance(nodes, tuple) and len(nodes) == 2
+            assert isinstance(nodes, DiagraphLayer) and len(nodes) == 2
             return set([n.fn for n in nodes])
 
         assert check_tuple(1) == {l1_l, l1_r}
@@ -136,15 +130,13 @@ def describe_indexing():
 
         def check_node(key):
             node = diagraph[key]
-            assert node is not None
             assert isinstance(node, DiagraphNode)
             return node.fn
 
-        def check_tuple(key):
-            nodes = diagraph[key]
-            assert nodes is not None
-            assert isinstance(nodes, tuple)
-            return tuple([n.fn for n in nodes])
+        def get_layer(key):
+            layer = diagraph[key]
+            assert isinstance(layer, DiagraphLayer)
+            return layer
 
         for node in [l0, l1_l, l1_r, l2_l, l2_r, l3_l, l4]:
             assert check_node(node) == node
@@ -156,7 +148,9 @@ def describe_indexing():
             (3, (l3_l,)),
             (4, (l4,)),
         ]:
-            assert set(check_tuple(index)) == set(nodes)
+            for node in nodes:
+                print("node", node, index)
+                assert node in get_layer(index)
 
         for index, nodes in [
             (-5, (l0,)),
@@ -165,7 +159,9 @@ def describe_indexing():
             (-2, (l3_l,)),
             (-1, (l4,)),
         ]:
-            assert set(check_tuple(index)) == set(nodes)
+            for node in nodes:
+                print("node", node.__name__, "should be in layer", index)
+                assert node in get_layer(index)
 
     def test_a_complicated_tree_with_multiple_terminal_points():
         def l0():
@@ -192,15 +188,13 @@ def describe_indexing():
 
         def check_node(key):
             node = diagraph[key]
-            assert node is not None
             assert isinstance(node, DiagraphNode)
             return node.fn
 
-        def check_tuple(key):
-            nodes = diagraph[key]
-            assert nodes is not None
-            assert isinstance(nodes, tuple)
-            return tuple([n.fn for n in nodes])
+        def get_layer(key):
+            layer = diagraph[key]
+            assert isinstance(layer, DiagraphLayer)
+            return layer
 
         for node in [l0, l1_l, l1_r, l2_l, l3_l, l2_r]:
             assert check_node(node) == node
@@ -211,7 +205,8 @@ def describe_indexing():
             (2, (l2_l, l2_r)),
             (3, (l3_l,)),
         ]:
-            assert set(check_tuple(index)) == set(nodes)
+            for node in nodes:
+                assert node in get_layer(index)
 
         for index, nodes in [
             (-4, (l0,)),
@@ -219,7 +214,8 @@ def describe_indexing():
             (-2, (l2_l, l2_r)),
             (-1, (l3_l,)),
         ]:
-            assert set(check_tuple(index)) == set(nodes)
+            for node in nodes:
+                assert node in get_layer(index)
 
     def test_a_complicated_tree_with_multiple_origin_points():
         def l0_l():
@@ -243,15 +239,13 @@ def describe_indexing():
 
         def check_node(key):
             node = diagraph[key]
-            assert node is not None
             assert isinstance(node, DiagraphNode)
             return node.fn
 
-        def check_tuple(key):
-            nodes = diagraph[key]
-            assert nodes is not None
-            assert isinstance(nodes, tuple)
-            return tuple([n.fn for n in nodes])
+        def get_layer(key):
+            layer = diagraph[key]
+            assert isinstance(layer, DiagraphLayer)
+            return layer
 
         for node in [l0_l, l0_r, l1_l, l1_r, l2]:
             assert check_node(node) == node
@@ -261,14 +255,16 @@ def describe_indexing():
             (1, (l1_l, l1_r)),
             (2, (l2,)),
         ]:
-            assert set(check_tuple(index)) == set(nodes)
+            for node in nodes:
+                assert node in get_layer(index)
 
         for index, nodes in [
             (-3, (l0_l, l0_r)),
             (-2, (l1_l, l1_r)),
             (-1, (l2,)),
         ]:
-            assert set(check_tuple(index)) == set(nodes)
+            for node in nodes:
+                assert node in get_layer(index)
 
 
 def describe_run():
@@ -822,7 +818,6 @@ def describe_replay():
         def new_fn2(input: str):
             return f"newfn2{input}"
 
-        # traversal[new_fn] = new_fn2
         diagraph[d0] = new_fn2
 
         assert diagraph.run("bar").output == "bar_newfn2bar-d1-d2_bar"

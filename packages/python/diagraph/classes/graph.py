@@ -1,7 +1,8 @@
 from __future__ import annotations
 from typing import Generic, TypeVar
 import networkx as nx
-from ..utils.build_graph import build_depth_map
+
+from ..utils.build_layer_map import build_layer_map
 
 Key = TypeVar("Key")
 
@@ -19,7 +20,10 @@ class Graph(Generic[Key]):
             nx.DiGraph(self.graph_def), label_attribute="ref"
         )
 
-        self.depth_map_by_depth = build_depth_map(self.__G__)
+        self.depth_map_by_depth = build_layer_map(self.__G__)
+        # print("self.depth_map_by_depth", self.depth_map_by_depth)
+        # self.depth_map_by_depth = build_depth_map(self.__G__)
+        # print("self.depth_map_by_depth", self.depth_map_by_depth)
 
         for int_representation in self.__G__.nodes():
             ref = self.__G__.nodes[int_representation]["ref"]
@@ -49,6 +53,7 @@ class Graph(Generic[Key]):
         if isinstance(key, int):
             if key < 0:
                 key = max(self.depth_map_by_depth.keys()) + 1 + key
+            print(self.depth_map_by_depth)
             nodes_at_depth = self.depth_map_by_depth[key]
             return [self.get_node_for_int_key(int_rep) for int_rep in nodes_at_depth]
 

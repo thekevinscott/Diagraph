@@ -39,8 +39,10 @@ class DiagraphNode:
     # def result(self, value):
     #     self.traversal.results[self.__fn__] = value
 
-    # def __repr__(self):
-    #     return self
+    def __repr__(self):
+        # print("repr for diagraph nod")
+        return str(self.key)
+
     #     # return inspect.getsource(self.fn)
 
     def _is_decorated_(self):
