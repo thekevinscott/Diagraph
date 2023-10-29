@@ -1,10 +1,9 @@
-from typing import Any
+from typing import TypeVar
 
 from ..utils.annotations import get_annotations, get_dependency
 
 
-T = Any
-# T = TypeVar("T")
+T = TypeVar("T")
 
 
 def build_graph(*_nodes: T):

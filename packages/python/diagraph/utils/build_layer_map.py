@@ -1,8 +1,8 @@
-from typing import Any
+from typing import TypeVar
 import networkx as nx
 
 
-T = Any
+T = TypeVar("T")
 
 
 def build_layer_map(dg: nx.DiGraph):
