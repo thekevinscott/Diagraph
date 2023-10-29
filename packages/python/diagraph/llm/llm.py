@@ -1,5 +1,8 @@
+from typing import Any
+
+
 class LLM:
-    kwargs = {}
+    kwargs: dict[str, Any]
 
     def run(self):
         pass
