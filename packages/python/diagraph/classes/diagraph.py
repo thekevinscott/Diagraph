@@ -1,5 +1,5 @@
 from __future__ import annotations
-from typing import Callable, Generic, Optional, TypeVar, overload
+from typing import Callable, Optional, overload
 from bidict import bidict
 
 from ..utils.annotations import get_dependency, is_annotated
