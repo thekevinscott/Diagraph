@@ -2,6 +2,8 @@ from __future__ import annotations
 from typing import Any, Callable, Optional, overload
 from bidict import bidict
 
+from .diagraph_layer import DiagraphLayer
+
 from ..utils.annotations import get_dependency, is_annotated
 
 from ..decorators.prompt import UserHandledException
@@ -26,7 +28,6 @@ class Diagraph:
     output: Optional[Result | list[Result]]
     results: HistoricalBidict[Key, Any]
     fns: HistoricalBidict[Key, Fn]
-    __updated_refs__: dict[Fn, Fn]
     graph_mapping: bidict[Fn, str]
 
     def __init__(
@@ -66,8 +67,6 @@ class Diagraph:
         ]
         self.log_handler = log
         self.error_handler = error
-        # self.results = DiagraphTraversalResults(self)
-        self.__updated_refs__ = {}
         self.output = None
 
     # def _repr_html_(self) -> str:
@@ -82,9 +81,11 @@ class Diagraph:
         ...
 
     def __getitem__(self, key: Fn | int) -> DiagraphNode | tuple[DiagraphNode]:
+        print("get", key)
         node_keys = self.__graph__[key]
+        print("node keys", node_keys)
         if isinstance(node_keys, list):
-            return tuple([DiagraphNode(self, node) for node in node_keys])
+            return DiagraphLayer(self, *node_keys)
         elif isinstance(node_keys, Fn) or isinstance(node_keys, str):
             return DiagraphNode(self, node_keys)
         raise Exception(f"Unknown type: {type(node_keys)}")
@@ -94,7 +95,7 @@ class Diagraph:
 
     def __run_from__(self, node_key: Fn | int, *input_args, **kwargs):
         nodes = self[node_key]  # nodes is a diagraph node
-        if not isinstance(nodes, tuple):
+        if not isinstance(nodes, DiagraphLayer):
             nodes = (nodes,)
         validate_node_ancestors(nodes)
 
@@ -137,8 +138,6 @@ class Diagraph:
         args = []
         arg_index = 0
         fn = self.fns[node.key]
-        # fn = self.__updated_refs__.get(node.fn, node.fn)
-        # print("node", node, fn)
         for key, val in fn.__annotations__.items():
             if key != "return":
                 if is_annotated(val):
@@ -154,9 +153,11 @@ class Diagraph:
         setattr(fn, "__error__", self.error_handler)
         return fn(*args, **kwargs)
 
-    def __setitem__(self, old_fn_def: Fn, new_fn_def: Fn):
-        self.__graph__[old_fn_def] = new_fn_def
-        self.__update_ref__(old_fn_def, new_fn_def)
+    def __setitem__(self, node_key: Key, fn: Fn):
+        self.fns[node_key] = fn
 
-    def __update_ref__(self, old_fn_def: Fn, new_fn_def: Fn):
-        self.__updated_refs__[old_fn_def] = new_fn_def
+    # #     self.__graph__[old_fn_def] = new_fn_def
+    # #     self.__update_ref__(old_fn_def, new_fn_def)
+
+    # # def __update_ref__(self, old_fn_def: Fn, new_fn_def: Fn):
+    # #     self.__updated_refs__[old_fn_def] = new_fn_def
