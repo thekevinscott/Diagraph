@@ -772,6 +772,29 @@ def describe_replay():
             ]
         )
 
+    # def test_it_modifies_prompt_when_using_a_key_and_can_replay():
+    #     def d0(input: str):
+    #         return f"{input}_d0"
+
+    #     def d1(input: str, d0: Annotated[str, Depends(d0)]):
+    #         return f"{input}_{d0}-d1"
+
+    #     def d2(
+    #         d1: Annotated[str, Depends(d1)],
+    #         input: str,
+    #     ):
+    #         return f"{d1}-d2_{input}"
+
+    #     diagraph = Diagraph(d2).run("foo")
+
+    #     def new_fn(input: str):
+    #         return f"newfn{input}"
+
+    #     diagraph[d0] = new_fn
+
+    #     diagraph.run("bar")
+    #     assert diagraph.output == "bar_newfnbar-d1-d2_bar"
+
     # def test_it_modifies_prompt_and_can_replay():
     #     def d0(input: str):
     #         return f"{input}_d0"

@@ -1,8 +1,5 @@
 from ..decorators.prompt import prompt
 from .diagraph import Diagraph
-from typing import Annotated
-import pytest
-from ..utils.depends import Depends
 
 
 def describe_prompt():

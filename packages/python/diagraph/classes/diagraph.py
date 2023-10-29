@@ -12,7 +12,7 @@ from ..utils.validate_node_ancestors import validate_node_ancestors
 from ..utils.build_graph import build_graph
 
 from .graph import Graph
-from .types import Node
+from .types import Node, Result
 
 from .diagraph_node import DiagraphNode
 
