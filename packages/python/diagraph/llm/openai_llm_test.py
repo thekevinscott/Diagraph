@@ -1,6 +1,4 @@
 import pytest
-import json
-from unittest import mock
 from unittest.mock import patch
 from .openai_llm import DEFAULT_MODEL, OpenAI, cast_to_input
 
