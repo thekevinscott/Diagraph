@@ -12,6 +12,7 @@ class Graph(Generic[Key]):
     __key_to_int__: dict[Key, int]
     graph_def: dict[Key, Key]
     depth_map_by_depth: dict[int, list[Key]]
+    depth_map_by_key: dict[Key, int]
 
     def __init__(self, graph_def: dict[Key, Key]):
         self.graph_def = graph_def
@@ -20,7 +21,7 @@ class Graph(Generic[Key]):
             nx.DiGraph(self.graph_def), label_attribute="ref"
         )
 
-        self.depth_map_by_depth = build_layer_map(self.__G__)
+        self.depth_map_by_depth, self.depth_map_by_key = build_layer_map(self.__G__)
 
         for int_representation in self.__G__.nodes():
             ref = self.__G__.nodes[int_representation]["ref"]

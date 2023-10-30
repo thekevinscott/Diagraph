@@ -97,21 +97,29 @@ class Diagraph:
             nodes = (nodes,)
         validate_node_ancestors(nodes)
 
+        depth = node_key if isinstance(node_key, int) else nodes[0].depth
+
         ran = set()
         try:
             while True:
-                layer = set()
+                layer = []
+                # for node in self[depth]:
                 for node in nodes:
                     if node not in ran:
                         ran.add(node)
-                        node.result = self.__run_node__(node, *input_args, **kwargs)
+                        result = self.__run_node__(node, *input_args, **kwargs)
+                        print("set result for", node)
+                        node.result = result
                     if node.children:
                         for child in node.children:
-                            layer.add(child)
+                            if child not in layer:
+                                layer.append(child)
                 self.set_output([node.result for node in nodes])
 
                 if len(layer):
-                    nodes = layer
+                    depth += 1
+                    nodes = self[depth]
+                    # nodes = layer
                 else:
                     break
 
@@ -137,6 +145,7 @@ class Diagraph:
                 if is_annotated(val):
                     dep: Fn = get_dependency(val)
                     key_for_fn = self.fns.inverse(dep)
+                    print("get result for", key_for_fn, "because of node", node)
                     args.append(self.results[key_for_fn])
                 else:
                     if arg_index > len(input_args) - 1:

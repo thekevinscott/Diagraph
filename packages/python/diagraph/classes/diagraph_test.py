@@ -652,12 +652,18 @@ def describe_running_from_an_index():
             d1b: Annotated[str, Depends(d1b)],
             input: str,
         ):
-            return f"{d1a}_{d1b}-d2_{input}"
+            return f"{d1a}*{d1b}*d2_{input}"
 
         diagraph = Diagraph(d2).run("foo")
 
         diagraph[d1a].run("bar")
-        assert diagraph.output == "bar_foo_d0-d1a_foo_foo_d0-d1b-d2_bar"
+        assert diagraph.output == "*".join(
+            [
+                "bar_foo_d0-d1a",
+                "foo_foo_d0-d1b",
+                "d2_bar",
+            ]
+        )
 
     def test_it_runs_from_the_first_index_if_provided(mocker):
         def d0(input: str):

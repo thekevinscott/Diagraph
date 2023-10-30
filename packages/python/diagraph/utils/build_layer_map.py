@@ -25,4 +25,4 @@ def build_layer_map(dg: nx.DiGraph):
     return {
         depth: list(depth_map_by_depth[depth].keys())
         for depth in depth_map_by_depth.keys()
-    }
+    }, depth_map_by_key
