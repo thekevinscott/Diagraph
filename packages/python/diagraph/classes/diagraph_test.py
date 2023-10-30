@@ -5,6 +5,7 @@ from .diagraph_layer import DiagraphLayer
 from .diagraph import Diagraph
 from .diagraph_node import DiagraphNode
 from ..utils.depends import Depends
+from ..decorators.prompt import prompt
 
 
 def describe_instantiation():
@@ -149,7 +150,6 @@ def describe_indexing():
             (4, (l4,)),
         ]:
             for node in nodes:
-                print("node", node, index)
                 assert node in get_layer(index)
 
         for index, nodes in [
@@ -160,7 +160,6 @@ def describe_indexing():
             (-1, (l4,)),
         ]:
             for node in nodes:
-                print("node", node.__name__, "should be in layer", index)
                 assert node in get_layer(index)
 
     def test_a_complicated_tree_with_multiple_terminal_points():
@@ -564,6 +563,28 @@ def describe_inputs():
             == "foo_foo_foo_d0-d1a_bar-foo_foo_d0-d1b-d2_bar"
         )
 
+    def test_it_does_a_real_world_example(mocker):
+        class MockLLM:
+            def run(self, string, log, stream=None, **kwargs):
+                return string
+
+        @prompt(llm=MockLLM())
+        def tell_me_a_joke():
+            return "joke"
+
+        @prompt(llm=MockLLM())
+        def explanation(joke: Annotated[str, Depends(tell_me_a_joke)]) -> str:
+            return f"{joke} explain"
+
+        @prompt(llm=MockLLM())
+        def improvement(
+            joke: Annotated[str, Depends(tell_me_a_joke)],
+            explanation: Annotated[str, Depends(explanation)],
+        ) -> str:
+            return f"{joke} {explanation} improve"
+
+        assert Diagraph(improvement).run().output == "joke joke explain improve"
+
 
 def describe_running_from_an_index():
     def test_it_throws_if_running_from_an_index_not_yet_run(mocker):
@@ -631,12 +652,18 @@ def describe_running_from_an_index():
             d1b: Annotated[str, Depends(d1b)],
             input: str,
         ):
-            return f"{d1a}_{d1b}-d2_{input}"
+            return f"{d1a}*{d1b}*d2_{input}"
 
         diagraph = Diagraph(d2).run("foo")
 
         diagraph[d1a].run("bar")
-        assert diagraph.output == "bar_foo_d0-d1a_foo_foo_d0-d1b-d2_bar"
+        assert diagraph.output == "*".join(
+            [
+                "bar_foo_d0-d1a",
+                "foo_foo_d0-d1b",
+                "d2_bar",
+            ]
+        )
 
     def test_it_runs_from_the_first_index_if_provided(mocker):
         def d0(input: str):

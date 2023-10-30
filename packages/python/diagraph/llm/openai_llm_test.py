@@ -40,7 +40,6 @@ def describe_openai_llm():
     def test_it_runs():
         def handle_log(event, data):
             pass
-            # print(event, data)
 
         with patch("openai.ChatCompletion.create") as create:
             create.return_value = mock_openai_return_value()
@@ -49,7 +48,6 @@ def describe_openai_llm():
     def test_it_passes_kwargs_and_parses_string_by_default():
         def handle_log(event, data):
             pass
-            # print(event, data)
 
         with patch("openai.ChatCompletion.create") as create:
             create.return_value = mock_openai_return_value()
@@ -64,7 +62,6 @@ def describe_openai_llm():
     def test_it_accepts_alternate_models():
         def handle_log(event, data):
             pass
-            # print(event, data)
 
         with patch("openai.ChatCompletion.create") as create:
             create.return_value = mock_openai_return_value()

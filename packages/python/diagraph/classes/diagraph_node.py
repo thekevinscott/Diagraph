@@ -35,6 +35,14 @@ class DiagraphNode:
             for node in self.__graph__.in_edges(self.key)
         ]
 
+    @property
+    def depth(self):
+        int_key = self.diagraph.__graph__.get_int_key_for_node(self.key)
+        print(self.diagraph.__graph__.depth_map_by_key)
+        # if self.key not in self.diagraph.__graph__.depth_map_by_key:
+        #     raise Exception(f"Key {self.key} not in depth map")
+        return self.diagraph.__graph__.depth_map_by_key[int_key]
+
     # @result.setter
     # def result(self, value):
     #     self.traversal.results[self.__fn__] = value
