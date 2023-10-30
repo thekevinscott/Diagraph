@@ -3,7 +3,7 @@ from typing import Any
 import tiktoken
 
 # To get the tokeniser corresponding to a specific model in the OpenAI API:
-from ..decorators.is_decorated import IS_DECORATED_KEY, is_decorated
+from ..decorators.is_decorated import is_decorated
 from .graph import Graph, Key
 
 

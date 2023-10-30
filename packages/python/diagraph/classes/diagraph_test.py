@@ -1,5 +1,5 @@
 from typing import Annotated
-from unittest.mock import patch, Mock
+from unittest.mock import patch
 import pytest
 from ..llm.openai_llm import OpenAI
 
@@ -575,7 +575,7 @@ def describe_inputs():
                 OpenAI,
                 "run",
                 fake_run,
-            ) as mocked_function_to_patch:
+            ):
 
                 @prompt
                 def tell_me_a_joke():
