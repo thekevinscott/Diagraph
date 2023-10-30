@@ -118,7 +118,6 @@ class Diagraph:
             self.set_output([node.result for node in self.terminal_nodes])
 
         except UserHandledException:
-            print("user handled exception")
             pass
 
         return self
