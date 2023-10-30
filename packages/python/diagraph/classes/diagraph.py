@@ -108,7 +108,6 @@ class Diagraph:
                     if node not in ran:
                         ran.add(node)
                         result = self.__run_node__(node, *input_args, **kwargs)
-                        print("set result for", node)
                         node.result = result
                     if node.children:
                         for child in node.children:
@@ -145,7 +144,6 @@ class Diagraph:
                 if is_annotated(val):
                     dep: Fn = get_dependency(val)
                     key_for_fn = self.fns.inverse(dep)
-                    print("get result for", key_for_fn, "because of node", node)
                     args.append(self.results[key_for_fn])
                 else:
                     if arg_index > len(input_args) - 1:

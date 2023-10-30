@@ -566,7 +566,7 @@ def describe_inputs():
     def test_it_does_a_real_world_example(mocker):
         class MockLLM:
             def run(self, string, log, stream=None, **kwargs):
-                return string
+                return string + "_"
 
         @prompt(llm=MockLLM())
         def tell_me_a_joke():
@@ -583,7 +583,14 @@ def describe_inputs():
         ) -> str:
             return f"{joke} {explanation} improve"
 
-        assert Diagraph(improvement).run().output == "joke joke explain improve"
+        diagraph = Diagraph(improvement).run()
+        assert diagraph.output == "joke_ joke_ explain_ improve_"
+        assert diagraph[0].result == "joke"
+        assert diagraph[1].result == "joke _ explain"
+        assert diagraph[2].result == diagraph.output
+        assert diagraph[0].prompt() == "joke"
+        assert diagraph[1].prompt() == "{{joke}} explain"
+        assert diagraph[2].prompt() == "{{joke}} {{explanation}} improve"
 
 
 def describe_running_from_an_index():
