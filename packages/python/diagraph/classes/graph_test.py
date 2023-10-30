@@ -96,7 +96,6 @@ def test_it_returns_a_copy_of_itself():
     graph_2 = graph[:]
 
     graph["a"] = "d"
-    print(graph_2)
     graph_2["a"] = "e"
 
     assert graph.to_json().get("links") == [

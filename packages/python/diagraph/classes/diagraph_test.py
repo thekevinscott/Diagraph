@@ -1,5 +1,8 @@
 from typing import Annotated
+from unittest.mock import patch
 import pytest
+from ..llm.openai_llm import OpenAI
+
 
 from .diagraph_layer import DiagraphLayer
 from .diagraph import Diagraph
@@ -563,27 +566,107 @@ def describe_inputs():
             == "foo_foo_foo_d0-d1a_bar-foo_foo_d0-d1b-d2_bar"
         )
 
-    def test_it_does_a_real_world_example(mocker):
-        class MockLLM:
-            def run(self, string, log, stream=None, **kwargs):
-                return string
+    def describe_real_world_example():
+        def test_it_does_a_real_world_example_with_non_prompt_fn():
+            def fake_run(self, string, stream=None, **kwargs):
+                return string + "_"
 
-        @prompt(llm=MockLLM())
-        def tell_me_a_joke():
-            return "joke"
+            with patch.object(
+                OpenAI,
+                "run",
+                fake_run,
+            ):
 
-        @prompt(llm=MockLLM())
-        def explanation(joke: Annotated[str, Depends(tell_me_a_joke)]) -> str:
-            return f"{joke} explain"
+                @prompt
+                def tell_me_a_joke():
+                    return "joke"
 
-        @prompt(llm=MockLLM())
-        def improvement(
-            joke: Annotated[str, Depends(tell_me_a_joke)],
-            explanation: Annotated[str, Depends(explanation)],
-        ) -> str:
-            return f"{joke} {explanation} improve"
+                @prompt
+                def explanation(joke: Annotated[str, Depends(tell_me_a_joke)]) -> str:
+                    return f"{joke} explain"
 
-        assert Diagraph(improvement).run().output == "joke joke explain improve"
+                @prompt
+                def improvement(
+                    joke: Annotated[str, Depends(tell_me_a_joke)],
+                    explanation: Annotated[str, Depends(explanation)],
+                ) -> str:
+                    return f"{joke} {explanation} improve"
+
+                diagraph = Diagraph(improvement).run()
+                assert diagraph.output == "joke_ joke_ explain_ improve_"
+                assert diagraph[tell_me_a_joke].result == "joke_"
+                assert diagraph[explanation].result == "joke_ explain_"
+                assert diagraph[improvement].result == diagraph.output
+                assert diagraph[0].result == "joke_"
+                assert diagraph[1].result == "joke_ explain_"
+                assert diagraph[2].result == diagraph.output
+                assert diagraph[-3].result == "joke_"
+                assert diagraph[-2].result == "joke_ explain_"
+                assert diagraph[-1].result == diagraph.output
+                assert diagraph[tell_me_a_joke].prompt() == "joke"
+                assert diagraph[explanation].prompt() == "{joke} explain"
+                assert diagraph[improvement].prompt() == "{joke} {explanation} improve"
+                assert diagraph[0].prompt() == "joke"
+                assert diagraph[1].prompt() == "{joke} explain"
+                assert diagraph[2].prompt() == "{joke} {explanation} improve"
+                assert diagraph[-3].prompt() == "joke"
+                assert diagraph[-2].prompt() == "{joke} explain"
+                assert diagraph[-1].prompt() == "{joke} {explanation} improve"
+
+                assert diagraph[explanation].prompt("foo") == "foo explain"
+                assert diagraph[improvement].prompt("foo", "bar") == "foo bar improve"
+                assert diagraph[1].prompt("foo") == "foo explain"
+                assert diagraph[2].prompt("foo", "bar") == "foo bar improve"
+                assert diagraph[-2].prompt("foo") == "foo explain"
+                assert diagraph[-1].prompt("foo", "bar") == "foo bar improve"
+
+        def test_it_does_a_real_world_example_with_prompt_fn(mocker):
+            class MockLLM:
+                def run(self, string, log, stream=None, **kwargs):
+                    return string + "_"
+
+            @prompt(llm=MockLLM())
+            def tell_me_a_joke():
+                return "joke"
+
+            @prompt(llm=MockLLM())
+            def explanation(joke: Annotated[str, Depends(tell_me_a_joke)]) -> str:
+                return f"{joke} explain"
+
+            @prompt(llm=MockLLM())
+            def improvement(
+                joke: Annotated[str, Depends(tell_me_a_joke)],
+                explanation: Annotated[str, Depends(explanation)],
+            ) -> str:
+                return f"{joke} {explanation} improve"
+
+            diagraph = Diagraph(improvement).run()
+            assert diagraph.output == "joke_ joke_ explain_ improve_"
+            assert diagraph[tell_me_a_joke].result == "joke_"
+            assert diagraph[explanation].result == "joke_ explain_"
+            assert diagraph[improvement].result == diagraph.output
+            assert diagraph[0].result == "joke_"
+            assert diagraph[1].result == "joke_ explain_"
+            assert diagraph[2].result == diagraph.output
+            assert diagraph[-3].result == "joke_"
+            assert diagraph[-2].result == "joke_ explain_"
+            assert diagraph[-1].result == diagraph.output
+            assert diagraph[tell_me_a_joke].prompt() == "joke"
+            assert diagraph[explanation].prompt() == "{joke} explain"
+            assert diagraph[improvement].prompt() == "{joke} {explanation} improve"
+            assert diagraph[0].prompt() == "joke"
+            assert diagraph[1].prompt() == "{joke} explain"
+            assert diagraph[2].prompt() == "{joke} {explanation} improve"
+            assert diagraph[-3].prompt() == "joke"
+            assert diagraph[-2].prompt() == "{joke} explain"
+            assert diagraph[-1].prompt() == "{joke} {explanation} improve"
+
+            assert diagraph[explanation].prompt("foo") == "foo explain"
+            assert diagraph[improvement].prompt("foo", "bar") == "foo bar improve"
+            assert diagraph[1].prompt("foo") == "foo explain"
+            assert diagraph[2].prompt("foo", "bar") == "foo bar improve"
+            assert diagraph[-2].prompt("foo") == "foo explain"
+            assert diagraph[-1].prompt("foo", "bar") == "foo bar improve"
 
 
 def describe_running_from_an_index():

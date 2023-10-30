@@ -12,6 +12,8 @@ def prompt(_func=None, *, log=None, llm=None, error=None, return_type=None):
         llm = OpenAI()
 
     def decorator(func):
+        # print(func)
+
         @functools.wraps(func)
         def wrapper_fn(*args, **kwargs):
             diagraph_log = getattr(wrapper_fn, "__log__", None)
@@ -37,12 +39,12 @@ def prompt(_func=None, *, log=None, llm=None, error=None, return_type=None):
                 else:
                     raise e
 
+        setattr(wrapper_fn, IS_DECORATED_KEY, True)
+        setattr(wrapper_fn, "__fn__", func)
         return wrapper_fn
 
     if _func is None:
         # Being called with arguments
-        setattr(decorator, IS_DECORATED_KEY, True)
-        setattr(decorator, "__fn__", _func)
         return decorator
     else:
         setattr(_func, IS_DECORATED_KEY, True)

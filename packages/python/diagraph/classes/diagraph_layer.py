@@ -6,15 +6,16 @@ from .graph import Key
 
 class DiagraphLayer:
     diagraph: Any
-    nodes: list[DiagraphNode]
+    nodes: tuple[DiagraphNode]
     key: int
 
     def __init__(self, diagraph: Any, key: int, *node_keys: Key):
         self.diagraph = diagraph
-        self.nodes = []
         self.key = key
+        nodes = []
         for node in node_keys:
-            self.nodes.append(DiagraphNode(self.diagraph, node))
+            nodes.append(DiagraphNode(self.diagraph, node))
+        self.nodes = tuple(nodes)
 
     def __iter__(self):
         return iter(self.nodes)
@@ -45,3 +46,37 @@ class DiagraphLayer:
 
     def run(self, *input_args, **kwargs):
         self.diagraph.__run_from__(self.key, *input_args, **kwargs)
+
+    @property
+    def result(self):
+        results = []
+        for node in self.nodes:
+            results.append(self.diagraph.results[node.key])
+        if len(results) == 1:
+            return results[0]
+        return tuple(results)
+
+    def prompt(self, *args, **kwargs):
+        prompts = []
+        for node in self.nodes:
+            prompts.append(node.prompt(*args, **kwargs))
+        if len(prompts) == 1:
+            return prompts[0]
+        return tuple(prompts)
+
+    @result.setter
+    def result(self, values):
+        if isinstance(values, str):
+            if len(self.nodes) != 1:
+                raise Exception(
+                    f"You provided a string as a value but the layer has {len(self.nodes)} nodes. Setting a string value is only supported for a single node. Instead, provide a tuple of values matching of length {len(self.nodes)}"
+                )
+            self.diagraph.results[self.nodes[0].key] = values
+        else:
+            if len(self.nodes) != len(values):
+                raise Exception(
+                    f"Number of results ({len(values)}) does not match number of nodes ({len(self.nodes)})"
+                )
+
+            for node, value in zip(self.nodes, values):
+                self.diagraph.results[node.key] = value

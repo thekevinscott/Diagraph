@@ -1,4 +1,5 @@
 from __future__ import annotations
+from datetime import datetime
 from typing import Any, Callable, Optional, overload
 from bidict import bidict
 
@@ -13,7 +14,7 @@ from ..utils.validate_node_ancestors import validate_node_ancestors
 from ..utils.build_graph import build_graph
 
 from .graph import Graph, Key
-from .types import Fn, Result
+from .types import Fn
 
 from .diagraph_node import DiagraphNode
 
@@ -22,12 +23,13 @@ from .historical_bidict import HistoricalBidict
 
 class Diagraph:
     __graph__: Graph
-    terminal_nodes: tuple[Key]
+    terminal_nodes: tuple[DiagraphNode]
     log_handler: Optional[Callable[[str, str, Key], None]]
     error_handler: Optional[Callable[[str, str, Key], None]]
-    output: Optional[Result | list[Result]]
+    # output: Optional[Result | list[Result]]
     results: HistoricalBidict[Key, Any]
     fns: HistoricalBidict[Key, Fn]
+    runs: list[Any]
     graph_mapping: bidict[Fn, str]
 
     def __init__(
@@ -59,6 +61,7 @@ class Diagraph:
         self.__graph__ = Graph(graph_def)
         self.fns = HistoricalBidict()
         self.results = HistoricalBidict()
+        self.runs = []
 
         for key in self.__graph__.get_nodes():
             self.fns[key] = self.graph_mapping.inverse[key]
@@ -67,7 +70,7 @@ class Diagraph:
         ]
         self.log_handler = log
         self.error_handler = error
-        self.output = None
+        # self.output = None
 
     # def _repr_html_(self) -> str:
     #     return render_repr_html(self.dg)
@@ -92,12 +95,25 @@ class Diagraph:
         return self.__run_from__(0, *input_args, **kwargs)
 
     def __run_from__(self, node_key: Fn | int, *input_args, **kwargs):
+        run = {
+            "start": datetime.now(),
+            "node_key": node_key,
+            "input": input_args,
+            "kwargs": kwargs,
+            "nodes": {},
+        }
+        self.runs.append(run)
         nodes = self[node_key]  # nodes is a diagraph node
         if not isinstance(nodes, DiagraphLayer):
             nodes = (nodes,)
+        run["starting_nodes"] = nodes
+        run["dirty"] = True
         validate_node_ancestors(nodes)
+        run["dirty"] = False
 
         depth = node_key if isinstance(node_key, int) else nodes[0].depth
+        run["starting_depth"] = depth
+        run["active_depth"] = depth
 
         ran = set()
         try:
@@ -106,15 +122,29 @@ class Diagraph:
                 # for node in self[depth]:
                 for node in nodes:
                     if node not in ran:
+                        run["nodes"][node.key] = {
+                            "depth": depth,
+                            "executed": None,
+                        }
                         ran.add(node)
                         result = self.__run_node__(node, *input_args, **kwargs)
-                        print("set result for", node)
+                        run["nodes"][node.key] = {
+                            "executed": datetime.now(),
+                            ## TODO: This should reference the result object directly
+                            "result": result,
+                            "depth": depth,
+                        }
                         node.result = result
                     if node.children:
                         for child in node.children:
                             if child not in layer:
+                                run["nodes"][child.key] = {
+                                    "executed": None,
+                                    "depth": depth,
+                                }
                                 layer.append(child)
-                self.set_output([node.result for node in nodes])
+                # self.set_output([node.result for node in nodes])
+                run["active_depth"] = depth
 
                 if len(layer):
                     depth += 1
@@ -123,18 +153,46 @@ class Diagraph:
                 else:
                     break
 
-            self.set_output([node.result for node in self.terminal_nodes])
+            run["complete"] = True
+            # self.set_output([node.result for node in self.terminal_nodes])
 
         except UserHandledException:
             pass
 
         return self
 
-    def set_output(self, results):
-        if len(results) == 1:
-            self.output = results[0]
+    # def set_output(self, results):
+    #     if len(results) == 1:
+    #         self.output = results[0]
+    #     else:
+    #         self.output = tuple(results)
+
+    @property
+    def output(self):
+        results = []
+        latest_run = self.runs[-1]
+        if latest_run is None:
+            raise Exception("Diagraph has not been run yet")
+        if latest_run.get("complete"):
+            # print("complete")
+            # print(self.terminal_nodes)
+            results = [node.result for node in self.terminal_nodes]
         else:
-            self.output = results
+            latest_depth = latest_run.get("active_depth")
+            # print(latest_depth)
+            for node_key, node_run_value in latest_run.get("nodes").items():
+                # print("node", node_key, node_run_value)
+                if node_run_value.get("depth") == latest_depth:
+                    if node_run_value.get("executed") is None:
+                        results.append(None)
+                    else:
+                        node = self[node_key]
+                        # print("node", node)
+                        results.append(node.result)
+
+        if len(results) == 1:
+            return results[0]
+        return tuple(results)
 
     def __run_node__(self, node: Fn, *input_args, **kwargs):
         args = []
@@ -145,7 +203,6 @@ class Diagraph:
                 if is_annotated(val):
                     dep: Fn = get_dependency(val)
                     key_for_fn = self.fns.inverse(dep)
-                    print("get result for", key_for_fn, "because of node", node)
                     args.append(self.results[key_for_fn])
                 else:
                     if arg_index > len(input_args) - 1:
@@ -158,9 +215,3 @@ class Diagraph:
 
     def __setitem__(self, node_key: Key, fn: Fn):
         self.fns[node_key] = fn
-
-    # #     self.__graph__[old_fn_def] = new_fn_def
-    # #     self.__update_ref__(old_fn_def, new_fn_def)
-
-    # # def __update_ref__(self, old_fn_def: Fn, new_fn_def: Fn):
-    # #     self.__updated_refs__[old_fn_def] = new_fn_def

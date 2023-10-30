@@ -38,7 +38,6 @@ class DiagraphNode:
     @property
     def depth(self):
         int_key = self.diagraph.__graph__.get_int_key_for_node(self.key)
-        print(self.diagraph.__graph__.depth_map_by_key)
         # if self.key not in self.diagraph.__graph__.depth_map_by_key:
         #     raise Exception(f"Key {self.key} not in depth map")
         return self.diagraph.__graph__.depth_map_by_key[int_key]
@@ -53,7 +52,10 @@ class DiagraphNode:
 
     #     # return inspect.getsource(self.fn)
 
-    def _is_decorated_(self):
+    @property
+    def __is_decorated__(self):
+        # print(self.fn, IS_DECORATED_KEY)
+        # print(getattr(self.fn, IS_DECORATED_KEY, False))
         return is_decorated(self.fn)
 
     # def __getattribute__(self, __name__: str) -> Any:
@@ -66,7 +68,7 @@ class DiagraphNode:
     #         return "foo"
 
     def prompt(self, *args, **kwargs):
-        if self._is_decorated_() is False:
+        if self.__is_decorated__ is False:
             raise Exception("This function has not been decorated with @prompt")
 
         kwargs = {
@@ -82,7 +84,7 @@ class DiagraphNode:
         return self.fn.__fn__(**kwargs)
 
     def tokens(self, *args, **kwargs):
-        if self._is_decorated_() is False:
+        if self.__is_decorated__ is False:
             raise Exception("This function has not been decorated with @prompt")
 
         enc = tiktoken.encoding_for_model("gpt-4")
