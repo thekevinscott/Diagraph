@@ -93,10 +93,9 @@ def describe_diagraph_layer():
         diagraph = Diagraph(d1, d2).run()
         assert diagraph.output == ("d0 d1", "d0 d2")
         diagraph[0].result = "foo"
-        diagraph.run()
+        diagraph[1].run()
         assert diagraph.output == ("foo d1", "foo d2")
         diagraph[1].result = ("bar", "baz")
         assert diagraph[0].result == "foo"
         assert diagraph[1].result == ("bar", "baz")
-        diagraph.run()
         assert diagraph.output == ("bar", "baz")

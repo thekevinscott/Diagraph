@@ -56,6 +56,14 @@ class DiagraphLayer:
             return results[0]
         return tuple(results)
 
+    def prompt(self, *args, **kwargs):
+        prompts = []
+        for node in self.nodes:
+            prompts.append(node.prompt(*args, **kwargs))
+        if len(prompts) == 1:
+            return prompts[0]
+        return tuple(prompts)
+
     @result.setter
     def result(self, values):
         if isinstance(values, str):

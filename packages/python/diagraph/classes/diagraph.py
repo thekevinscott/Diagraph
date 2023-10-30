@@ -23,10 +23,10 @@ from .historical_bidict import HistoricalBidict
 
 class Diagraph:
     __graph__: Graph
-    terminal_nodes: tuple[Key]
+    terminal_nodes: tuple[DiagraphNode]
     log_handler: Optional[Callable[[str, str, Key], None]]
     error_handler: Optional[Callable[[str, str, Key], None]]
-    output: Optional[Result | list[Result]]
+    # output: Optional[Result | list[Result]]
     results: HistoricalBidict[Key, Any]
     fns: HistoricalBidict[Key, Fn]
     runs: list[Any]
@@ -70,7 +70,7 @@ class Diagraph:
         ]
         self.log_handler = log
         self.error_handler = error
-        self.output = None
+        # self.output = None
 
     # def _repr_html_(self) -> str:
     #     return render_repr_html(self.dg)
@@ -118,7 +118,6 @@ class Diagraph:
         ran = set()
         try:
             while True:
-                run["active_depth"] = depth
                 layer = []
                 # for node in self[depth]:
                 for node in nodes:
@@ -139,12 +138,13 @@ class Diagraph:
                     if node.children:
                         for child in node.children:
                             if child not in layer:
-                                run["nodes"][node.key] = {
+                                run["nodes"][child.key] = {
                                     "executed": None,
                                     "depth": depth,
                                 }
                                 layer.append(child)
-                self.set_output([node.result for node in nodes])
+                # self.set_output([node.result for node in nodes])
+                run["active_depth"] = depth
 
                 if len(layer):
                     depth += 1
@@ -153,27 +153,46 @@ class Diagraph:
                 else:
                     break
 
-            self.set_output([node.result for node in self.terminal_nodes])
+            run["complete"] = True
+            # self.set_output([node.result for node in self.terminal_nodes])
 
         except UserHandledException:
             pass
 
         return self
 
-    def set_output(self, results):
-        if len(results) == 1:
-            self.output = results[0]
-        else:
-            self.output = tuple(results)
-
-    # @property
-    # def output(self):
-    #     results = []
-    #     for node in self.nodes:
-    #         results.append(self.diagraph.results[node.key])
+    # def set_output(self, results):
     #     if len(results) == 1:
-    #         return results[0]
-    #     return tuple(results)
+    #         self.output = results[0]
+    #     else:
+    #         self.output = tuple(results)
+
+    @property
+    def output(self):
+        results = []
+        latest_run = self.runs[-1]
+        if latest_run is None:
+            raise Exception("Diagraph has not been run yet")
+        if latest_run.get("complete"):
+            # print("complete")
+            # print(self.terminal_nodes)
+            results = [node.result for node in self.terminal_nodes]
+        else:
+            latest_depth = latest_run.get("active_depth")
+            # print(latest_depth)
+            for node_key, node_run_value in latest_run.get("nodes").items():
+                # print("node", node_key, node_run_value)
+                if node_run_value.get("depth") == latest_depth:
+                    if node_run_value.get("executed") is None:
+                        results.append(None)
+                    else:
+                        node = self[node_key]
+                        # print("node", node)
+                        results.append(node.result)
+
+        if len(results) == 1:
+            return results[0]
+        return tuple(results)
 
     def __run_node__(self, node: Fn, *input_args, **kwargs):
         args = []
@@ -196,9 +215,3 @@ class Diagraph:
 
     def __setitem__(self, node_key: Key, fn: Fn):
         self.fns[node_key] = fn
-
-    # #     self.__graph__[old_fn_def] = new_fn_def
-    # #     self.__update_ref__(old_fn_def, new_fn_def)
-
-    # # def __update_ref__(self, old_fn_def: Fn, new_fn_def: Fn):
-    # #     self.__updated_refs__[old_fn_def] = new_fn_def

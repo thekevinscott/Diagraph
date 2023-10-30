@@ -3,7 +3,7 @@ from typing import Any
 import tiktoken
 
 # To get the tokeniser corresponding to a specific model in the OpenAI API:
-from ..decorators.is_decorated import is_decorated
+from ..decorators.is_decorated import IS_DECORATED_KEY, is_decorated
 from .graph import Graph, Key
 
 
@@ -52,7 +52,10 @@ class DiagraphNode:
 
     #     # return inspect.getsource(self.fn)
 
-    def _is_decorated_(self):
+    @property
+    def __is_decorated__(self):
+        # print(self.fn, IS_DECORATED_KEY)
+        # print(getattr(self.fn, IS_DECORATED_KEY, False))
         return is_decorated(self.fn)
 
     # def __getattribute__(self, __name__: str) -> Any:
@@ -65,7 +68,7 @@ class DiagraphNode:
     #         return "foo"
 
     def prompt(self, *args, **kwargs):
-        if self._is_decorated_() is False:
+        if self.__is_decorated__ is False:
             raise Exception("This function has not been decorated with @prompt")
 
         kwargs = {
@@ -81,7 +84,7 @@ class DiagraphNode:
         return self.fn.__fn__(**kwargs)
 
     def tokens(self, *args, **kwargs):
-        if self._is_decorated_() is False:
+        if self.__is_decorated__ is False:
             raise Exception("This function has not been decorated with @prompt")
 
         enc = tiktoken.encoding_for_model("gpt-4")
