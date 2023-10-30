@@ -1,5 +1,4 @@
 from typing import Annotated
-from unittest.mock import patch
 import pytest
 
 from .diagraph_layer import DiagraphLayer
