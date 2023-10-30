@@ -65,3 +65,38 @@ def describe_diagraph_layer():
         assert d0 not in layer
         assert d1 in layer
         assert d2 in layer
+
+    def test_it_can_return_results():
+        def d0():
+            return "d0"
+
+        def d1(d0: Annotated[str, Depends(d0)]):
+            return "d1"
+
+        def d2(d0: Annotated[str, Depends(d0)]):
+            return "d2"
+
+        diagraph = Diagraph(d1, d2).run()
+        assert diagraph[0].result == "d0"
+        assert diagraph[1].result == ("d1", "d2")
+
+    def test_it_can_set_results():
+        def d0():
+            return "d0"
+
+        def d1(d0: Annotated[str, Depends(d0)]):
+            return f"{d0} d1"
+
+        def d2(d0: Annotated[str, Depends(d0)]):
+            return f"{d0} d2"
+
+        diagraph = Diagraph(d1, d2).run()
+        assert diagraph.output == ("d0 d1", "d0 d2")
+        diagraph[0].result = "foo"
+        diagraph.run()
+        assert diagraph.output == ("foo d1", "foo d2")
+        diagraph[1].result = ("bar", "baz")
+        assert diagraph[0].result == "foo"
+        assert diagraph[1].result == ("bar", "baz")
+        diagraph.run()
+        assert diagraph.output == ("bar", "baz")

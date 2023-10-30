@@ -1,4 +1,5 @@
 from __future__ import annotations
+from datetime import datetime
 from typing import Any, Callable, Optional, overload
 from bidict import bidict
 
@@ -28,6 +29,7 @@ class Diagraph:
     output: Optional[Result | list[Result]]
     results: HistoricalBidict[Key, Any]
     fns: HistoricalBidict[Key, Fn]
+    runs: list[Any]
     graph_mapping: bidict[Fn, str]
 
     def __init__(
@@ -59,6 +61,7 @@ class Diagraph:
         self.__graph__ = Graph(graph_def)
         self.fns = HistoricalBidict()
         self.results = HistoricalBidict()
+        self.runs = []
 
         for key in self.__graph__.get_nodes():
             self.fns[key] = self.graph_mapping.inverse[key]
@@ -92,26 +95,54 @@ class Diagraph:
         return self.__run_from__(0, *input_args, **kwargs)
 
     def __run_from__(self, node_key: Fn | int, *input_args, **kwargs):
+        run = {
+            "start": datetime.now(),
+            "node_key": node_key,
+            "input": input_args,
+            "kwargs": kwargs,
+            "nodes": {},
+        }
+        self.runs.append(run)
         nodes = self[node_key]  # nodes is a diagraph node
         if not isinstance(nodes, DiagraphLayer):
             nodes = (nodes,)
+        run["starting_nodes"] = nodes
+        run["dirty"] = True
         validate_node_ancestors(nodes)
+        run["dirty"] = False
 
         depth = node_key if isinstance(node_key, int) else nodes[0].depth
+        run["starting_depth"] = depth
+        run["active_depth"] = depth
 
         ran = set()
         try:
             while True:
+                run["active_depth"] = depth
                 layer = []
                 # for node in self[depth]:
                 for node in nodes:
                     if node not in ran:
+                        run["nodes"][node.key] = {
+                            "depth": depth,
+                            "executed": None,
+                        }
                         ran.add(node)
                         result = self.__run_node__(node, *input_args, **kwargs)
+                        run["nodes"][node.key] = {
+                            "executed": datetime.now(),
+                            ## TODO: This should reference the result object directly
+                            "result": result,
+                            "depth": depth,
+                        }
                         node.result = result
                     if node.children:
                         for child in node.children:
                             if child not in layer:
+                                run["nodes"][node.key] = {
+                                    "executed": None,
+                                    "depth": depth,
+                                }
                                 layer.append(child)
                 self.set_output([node.result for node in nodes])
 
@@ -133,7 +164,16 @@ class Diagraph:
         if len(results) == 1:
             self.output = results[0]
         else:
-            self.output = results
+            self.output = tuple(results)
+
+    # @property
+    # def output(self):
+    #     results = []
+    #     for node in self.nodes:
+    #         results.append(self.diagraph.results[node.key])
+    #     if len(results) == 1:
+    #         return results[0]
+    #     return tuple(results)
 
     def __run_node__(self, node: Fn, *input_args, **kwargs):
         args = []
