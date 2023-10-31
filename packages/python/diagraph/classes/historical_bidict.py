@@ -27,7 +27,7 @@ class HistoricalBidict(Generic[Key, Value]):
     def __getitem__(self, key: Key):
         try:
             return self.keys[key][-1]
-        except:
+        except Exception:
             raise Exception(
                 f"Could not find key {key} in self keys {json.dumps(self.keys)}"
             )
