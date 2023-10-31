@@ -14,7 +14,7 @@ from ..utils.validate_node_ancestors import validate_node_ancestors
 from ..utils.build_graph import build_graph
 
 from .graph import Graph, Key
-from .types import Fn, Result
+from .types import Fn
 
 from .diagraph_node import DiagraphNode
 
