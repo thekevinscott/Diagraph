@@ -1,4 +1,5 @@
 from __future__ import annotations
+import inspect
 from datetime import datetime
 from typing import Any, Callable, Optional, overload
 from bidict import bidict
@@ -185,17 +186,24 @@ class Diagraph:
         args = []
         arg_index = 0
         fn = self.fns[node.key]
-        for key, val in fn.__annotations__.items():
-            if key != "return":
-                if is_annotated(val):
-                    dep: Fn = get_dependency(val)
-                    key_for_fn = self.fns.inverse(dep)
-                    args.append(self.results[key_for_fn])
-                else:
-                    if arg_index > len(input_args) - 1:
-                        raise Exception(f'No argument provided for "{key}"')
-                    args.append(input_args[arg_index])
-                    arg_index += 1
+        # print("input args", input_args)
+        # If a user has explicitly specified a dependency via an annotation, we hydrate
+        # it below.
+        # If an argument is _not_ specified as a dependency, pull off the next input arg
+        # in order
+        for parameter in inspect.signature(fn).parameters.values():
+            if is_annotated(parameter.annotation):
+                dep: Fn = get_dependency(parameter.annotation)
+                key_for_fn = self.fns.inverse(dep)
+                args.append(self.results[key_for_fn])
+            else:
+                if arg_index > len(input_args) - 1:
+                    raise Exception(
+                        f'No argument provided for "{parameter.name}" in function {fn.__name__}'
+                    )
+                args.append(input_args[arg_index])
+                arg_index += 1
+
         setattr(fn, "__log__", self.log_handler)
         setattr(fn, "__error__", self.error_handler)
         return fn(*args, **kwargs)

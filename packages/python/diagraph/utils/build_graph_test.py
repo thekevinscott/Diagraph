@@ -15,7 +15,10 @@ def test_returns_a_single_node_graph_and_ignores_return_key():
 
 
 def test_works_with_a_stub(mocker):
-    stub = mocker.stub()
+    mock_instance = mocker.Mock()
+
+    def stub():
+        return mock_instance()
 
     assert build_graph(stub) == {stub: set()}
 
