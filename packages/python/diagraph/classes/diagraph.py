@@ -3,6 +3,7 @@ import inspect
 from datetime import datetime
 from typing import Any, Callable, Optional, overload
 from bidict import bidict
+from ..decorators.is_decorated import is_decorated
 
 from .diagraph_layer import DiagraphLayer
 
@@ -28,6 +29,7 @@ class Diagraph:
     log_handler: Optional[Callable[[str, str, Key], None]]
     error_handler: Optional[Callable[[str, str, Key], None]]
     results: HistoricalBidict[Key, Any]
+    prompts: HistoricalBidict[Key, str]
     fns: HistoricalBidict[Key, Fn]
     runs: list[Any]
     graph_mapping: bidict[Fn, str]
@@ -61,6 +63,7 @@ class Diagraph:
         self.__graph__ = Graph(graph_def)
         self.fns = HistoricalBidict()
         self.results = HistoricalBidict()
+        self.prompts = HistoricalBidict()
         self.runs = []
 
         for key in self.__graph__.get_nodes():
@@ -126,7 +129,13 @@ class Diagraph:
                             "executed": None,
                         }
                         ran.add(node)
-                        result = self.__run_node__(node, *input_args, **kwargs)
+                        if is_decorated(node.fn):
+                            generated_prompt, result = self.__run_node__(
+                                node, *input_args, **kwargs
+                            )
+                            node.prompt = generated_prompt
+                        else:
+                            result = self.__run_node__(node, *input_args, **kwargs)
                         run["nodes"][node.key] = {
                             "executed": datetime.now(),
                             ## TODO: This should reference the result object directly
@@ -197,6 +206,7 @@ class Diagraph:
                 key_for_fn = self.fns.inverse(dep)
                 args.append(self.results[key_for_fn])
             else:
+                print(arg_index, input_args)
                 if arg_index > len(input_args) - 1:
                     raise Exception(
                         f'No argument provided for "{parameter.name}" in function {fn.__name__}'

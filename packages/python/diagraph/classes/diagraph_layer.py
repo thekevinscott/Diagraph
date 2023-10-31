@@ -18,7 +18,6 @@ class DiagraphLayer:
         self.nodes = tuple(nodes)
 
     def __iter__(self):
-        print("iter!", self.nodes)
         return iter(self.nodes)
 
     def __str__(self):
@@ -60,13 +59,23 @@ class DiagraphLayer:
             return results[0]
         return tuple(results)
 
-    def prompt(self, *args, **kwargs):
+    @property
+    def prompt(self):
         prompts = []
         for node in self.nodes:
-            prompts.append(node.prompt(*args, **kwargs))
+            prompts.append(node.prompt)
         if len(prompts) == 1:
             return prompts[0]
         return tuple(prompts)
+
+    @property
+    def tokens(self):
+        tokens = []
+        for node in self.nodes:
+            tokens.append(node.tokens)
+        if len(tokens) == 1:
+            return tokens[0]
+        return tuple(tokens)
 
     @result.setter
     def result(self, values):
