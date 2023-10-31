@@ -26,9 +26,10 @@ def prompt(_func=None, *, log=None, llm=None, error=None, return_type=None):
                     diagraph_log(event, chunk, wrapper_fn)
 
             generated_prompt = func(*args, **kwargs)
+            yield generated_prompt
 
             try:
-                return generated_prompt, llm.run(generated_prompt, log=_log)
+                yield llm.run(generated_prompt, log=_log)
             except Exception as e:
                 # TODO: Should both error functions be called? Or should one supersede the other?
                 if error:
