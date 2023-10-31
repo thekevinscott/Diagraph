@@ -110,7 +110,7 @@ def describe_errors():
             return "bar"
 
         with pytest.raises(Exception):
-            assert Diagraph(bar).run().output == "fn"
+            assert Diagraph(bar).run().result == "fn"
 
     def test_it_halts_execution_on_error_and_does_not_raise_without_handler(mocker):
         handle_errors = mocker.stub()
@@ -124,5 +124,5 @@ def describe_errors():
             return "bar"
 
         diagraph = Diagraph(bar, error=handle_errors).run()
-        assert diagraph.output == "012"
+        assert diagraph.result == "012"
         assert handle_errors.call_count == 1

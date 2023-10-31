@@ -26,7 +26,6 @@ class Diagraph:
     terminal_nodes: tuple[DiagraphNode]
     log_handler: Optional[Callable[[str, str, Key], None]]
     error_handler: Optional[Callable[[str, str, Key], None]]
-    # output: Optional[Result | list[Result]]
     results: HistoricalBidict[Key, Any]
     fns: HistoricalBidict[Key, Fn]
     runs: list[Any]
@@ -70,7 +69,6 @@ class Diagraph:
         ]
         self.log_handler = log
         self.error_handler = error
-        # self.output = None
 
     # def _repr_html_(self) -> str:
     #     return render_repr_html(self.dg)
@@ -143,7 +141,6 @@ class Diagraph:
                                     "depth": depth,
                                 }
                                 layer.append(child)
-                # self.set_output([node.result for node in nodes])
                 run["active_depth"] = depth
 
                 if len(layer):
@@ -154,21 +151,14 @@ class Diagraph:
                     break
 
             run["complete"] = True
-            # self.set_output([node.result for node in self.terminal_nodes])
 
         except UserHandledException:
             pass
 
         return self
 
-    # def set_output(self, results):
-    #     if len(results) == 1:
-    #         self.output = results[0]
-    #     else:
-    #         self.output = tuple(results)
-
     @property
-    def output(self):
+    def result(self):
         results = []
         latest_run = self.runs[-1]
         if latest_run is None:
@@ -185,7 +175,6 @@ class Diagraph:
                         results.append(None)
                     else:
                         node = self[node_key]
-                        # print("node", node)
                         results.append(node.result)
 
         if len(results) == 1:
