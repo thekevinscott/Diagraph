@@ -130,10 +130,13 @@ class Diagraph:
                         }
                         ran.add(node)
                         if is_decorated(node.fn):
-                            generated_prompt, result = self.__run_node__(
-                                node, *input_args, **kwargs
-                            )
-                            node.prompt = generated_prompt
+                            encountered_prompt = False
+                            for r in self.__run_node__(node, *input_args, **kwargs):
+                                if encountered_prompt is False:
+                                    encountered_prompt = True
+                                    node.prompt = r
+                                else:
+                                    result = r
                         else:
                             result = self.__run_node__(node, *input_args, **kwargs)
                         run["nodes"][node.key] = {
