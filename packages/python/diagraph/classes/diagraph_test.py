@@ -423,7 +423,7 @@ def describe_run():
         d1_mock.assert_called_with(d0_mock.return_value)
         d2_mock.assert_called_with(d1_mock.return_value)
 
-    def test_it_calls_functions_in_order(mocker):
+    def test_it_calls_functions_in_order():
         def l0():
             return "foo"
 
@@ -435,7 +435,7 @@ def describe_run():
 
         assert Diagraph(l2).run().result == "foobarbaz"
 
-    def test_it_can_get_results_for_non_prompt_functions(mocker):
+    def test_it_can_get_results_for_non_prompt_functions():
         def l0():
             return "foo"
 
@@ -453,7 +453,7 @@ def describe_run():
 
 
 def describe_inputs():
-    def test_it_calls_functions_in_a_diamond(mocker):
+    def test_it_calls_functions_in_a_diamond():
         def l0():
             return "l0"
 
@@ -470,7 +470,7 @@ def describe_inputs():
 
         assert Diagraph(l2).run().result == "l0l1_ll0l1_rl2"
 
-    def test_it_calls_functions_in_a_wider_diamond(mocker):
+    def test_it_calls_functions_in_a_wider_diamond():
         def l0():
             return "l0"
 
@@ -492,7 +492,7 @@ def describe_inputs():
 
         assert Diagraph(l2).run().result == "l0l1_ll0l1_cl0l1_rl2"
 
-    def test_it_calls_functions_with_multiple_results(mocker):
+    def test_it_calls_functions_with_multiple_results():
         def l0():
             return "l0"
 
@@ -513,7 +513,7 @@ def describe_inputs():
         assert result[0] == "l0l1_ll2_l"
         assert result[1] == "l0l1_rl2_r"
 
-    def test_it_calls_functions_with_multiple_inputs(mocker):
+    def test_it_calls_functions_with_multiple_inputs():
         def d0a():
             return "d0a"
 
@@ -531,7 +531,7 @@ def describe_inputs():
 
         assert Diagraph(d2).run().result == "d0ad1ad0bd1bd2"
 
-    def test_it_calls_functions_with_multiple_inputs_and_results(mocker):
+    def test_it_calls_functions_with_multiple_inputs_and_results():
         def d0a():
             return "d0a"
 
@@ -558,7 +558,7 @@ def describe_inputs():
         assert result[0] == "d0a-d1a-d0b-d1b-d2-d3a"
         assert result[1] == "d0a-d1a-d0b-d1b-d2-d3b"
 
-    def test_it_passes_input(mocker):
+    def test_it_passes_input():
         def d0(input: str):
             return f"{input}_d0"
 
@@ -573,7 +573,7 @@ def describe_inputs():
 
         assert Diagraph(d2).run("foo").result == "foo_d0-d1a-foo_d0-d1b-d2"
 
-    def test_it_passes_input_to_each_fn(mocker):
+    def test_it_passes_input_to_each_fn():
         def d0(input: str):
             return f"{input}_d0"
 
@@ -592,7 +592,7 @@ def describe_inputs():
 
         assert Diagraph(d2).run("foo").result == "foo_foo_foo_d0-d1a-foo_foo_d0-d1b-d2"
 
-    def test_it_passes_input_at_end_of_args(mocker):
+    def test_it_passes_input_at_end_of_args():
         def d0(input: str):
             return f"{input}_d0"
 
@@ -614,7 +614,7 @@ def describe_inputs():
 
         assert Diagraph(d2).run("foo").result == "foo_foo_foo_d0-d1a-foo_foo_d0-d1b-d2"
 
-    def test_it_passes_input_mixed_all_over_the_args(mocker):
+    def test_it_passes_input_mixed_all_over_the_args():
         def d0(input: str):
             return f"{input}_d0"
 
@@ -636,7 +636,7 @@ def describe_inputs():
 
         assert Diagraph(d2).run("foo").result == "foo_foo_foo_d0-d1a-foo_foo_d0-d1b-d2"
 
-    def test_it_ignores_excess_args(mocker):
+    def test_it_ignores_excess_args():
         def d0(input: str):
             return f"{input}_d0"
 
@@ -661,7 +661,7 @@ def describe_inputs():
             == "foo_foo_foo_d0-d1a-foo_foo_d0-d1b-d2"
         )
 
-    def test_it_passes_multiple_inputs(mocker):
+    def test_it_passes_multiple_inputs():
         def d0(input_1: str):
             return f"{input_1}_d0"
 
@@ -687,7 +687,7 @@ def describe_inputs():
             == "foo_foo_foo_d0-d1a_bar-foo_foo_d0-d1b-d2_bar"
         )
 
-    def test_it_passes_untyped_inputs(mocker):
+    def test_it_passes_untyped_inputs():
         def d0(input1, input2: str, input3):
             return f"d0:{input1}+{input2}+{input3}"
 
@@ -710,7 +710,7 @@ def describe_inputs():
             == f"d2:foo+d1a:foo+1+{d0_result}+d1b:foo+1+{d0_result}"
         )
 
-    def test_it_passes_mixed_type_inputs(mocker):
+    def test_it_passes_mixed_type_inputs():
         def join_list(input: list[int]):
             return "|".join([str(i) for i in input])
 
@@ -744,8 +744,59 @@ def describe_inputs():
             == f"d2:foo+{d1a_result}+{d1b_result}"
         )
 
+    def test_it_passes_star_args():
+        def d0(*args):
+            args = "|".join(args)
+            return f"d0:{args}"
+
+        assert Diagraph(d0).run("foo", "bar", "baz").result == "d0:foo|bar|baz"
+
+        def d1(*args, foo: str):
+            args = "|".join(args)
+            return f"d1:{args}"
+
+        with pytest.raises(Exception):
+            Diagraph(d1).run("foo", "bar", "baz")
+
+        def d2(foo, *args):
+            args = "|".join(args)
+            return f"d2:{foo}|{args}"
+
+        assert Diagraph(d2).run("foo", "bar", "baz").result == "d2:foo|bar|baz"
+
+        def d3(foo, bar, *args):
+            return f"d3:{foo}|{args[0]}"
+
+        assert Diagraph(d3).run("foo", "bar", "baz").result == "d3:foo|baz"
+
+    def test_it_passes_starstar_kwargs():
+        def d0(**kwargs):
+            args = "|".join(kwargs.values())
+            return f"d0:{args}"
+
+        assert (
+            Diagraph(d0).run(foo="foo", bar="bar", baz="baz").result == "d0:foo|bar|baz"
+        )
+
     def describe_real_world_example():
-        def test_it_does_a_real_world_example_with_non_prompt_fn():
+        def test_it_raises_if_returning_non_from_a_prompt():
+            def fake_run(self, string, stream=None, **kwargs):
+                return string + "_"
+
+            with patch.object(
+                OpenAI,
+                "run",
+                fake_run,
+            ):
+
+                @prompt
+                def fn():
+                    return None
+
+                with pytest.raises(Exception):
+                    Diagraph(fn).run()
+
+        def test_it_does_a_real_world_example_with_prompt_fn():
             def fake_run(self, string, stream=None, **kwargs):
                 return string + "_"
 

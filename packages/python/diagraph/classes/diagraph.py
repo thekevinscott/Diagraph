@@ -134,6 +134,10 @@ class Diagraph:
                             for r in self.__run_node__(node, *input_args, **kwargs):
                                 if encountered_prompt is False:
                                     encountered_prompt = True
+                                    if r is None:
+                                        raise Exception(
+                                            f"Prompt returned from function {node.fn.__name__} is None. This is an error, you must return a valid response for the LLM."
+                                        )
                                     node.prompt = r
                                 else:
                                     result = r
@@ -203,19 +207,33 @@ class Diagraph:
         # it below.
         # If an argument is _not_ specified as a dependency, pull off the next input arg
         # in order
+        encountered_star = False
         for parameter in inspect.signature(fn).parameters.values():
+            # print(parameter)
             if is_annotated(parameter.annotation):
                 dep: Fn = get_dependency(parameter.annotation)
                 key_for_fn = self.fns.inverse(dep)
                 args.append(self.results[key_for_fn])
-            else:
+            elif not str(parameter).startswith("*"):
+                if encountered_star:
+                    raise Exception(
+                        "Found arguments defined after * args. Ensure *args and **kwargs come at the end of the function parameter definitions."
+                    )
+                # else:
                 # print(arg_index, input_args)
                 if arg_index > len(input_args) - 1:
                     raise Exception(
-                        f'No argument provided for "{parameter.name}" in function {fn.__name__}'
+                        f'No argument provided for "{parameter.name}" in function {fn.__name__}. This indicates you forgot to call ".run()" with sufficient arguments.'
                     )
                 args.append(input_args[arg_index])
                 arg_index += 1
+            else:
+                encountered_star = True
+
+                # print(arg_index, len(input_args))
+                if arg_index < len(input_args):
+                    for arg in input_args[arg_index:]:
+                        args.append(arg)
 
         setattr(fn, "__log__", self.log_handler)
         setattr(fn, "__error__", self.error_handler)
