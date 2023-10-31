@@ -12,6 +12,7 @@ dependencies = [
   "llm",
   "networkx",
   "tiktoken",
+  "bidict",
 ]
 description = "DAGs for LLM interactions"
 classifiers = [

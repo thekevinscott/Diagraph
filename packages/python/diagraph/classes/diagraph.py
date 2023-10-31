@@ -174,8 +174,6 @@ class Diagraph:
         if latest_run is None:
             raise Exception("Diagraph has not been run yet")
         if latest_run.get("complete"):
-            # print("complete")
-            # print(self.terminal_nodes)
             results = [node.result for node in self.terminal_nodes]
         else:
             latest_depth = latest_run.get("active_depth")
