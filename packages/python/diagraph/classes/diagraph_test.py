@@ -271,52 +271,69 @@ def describe_indexing():
 
 def describe_run():
     def test_it_can_run_a_single_fn(mocker):
-        d0 = mocker.stub()
-        d0.__name__ = "d0"
+        mock_instance = mocker.Mock()
+
+        def d0():
+            return mock_instance()
 
         diagraph = Diagraph(d0)
 
-        assert d0.call_count == 0
+        assert mock_instance.call_count == 0
         diagraph.run()
-        assert d0.call_count == 1
+        assert mock_instance.call_count == 1
 
     def test_it_can_run_a_single_dependency(mocker):
-        l0 = mocker.stub()
-        l0.return_value = "l0"
-        l1 = mocker.stub()
-        l1.return_value = "l1"
-        l1.__annotations__ = {"l0": Annotated[str, Depends(l0)]}
+        d0_mock = mocker.Mock()
+        d0_mock.return_value = "d0"
 
-        diagraph = Diagraph(l1)
+        def d0():
+            return d0_mock()
 
-        assert l0.call_count == 0
-        assert l1.call_count == 0
+        d1_mock = mocker.Mock()
+        d1_mock.return_value = "d1"
+
+        def d1(d0: Annotated[str, Depends(d0)]):
+            return d1_mock(d0)
+
+        diagraph = Diagraph(d1)
+
+        assert d0_mock.call_count == 0
+        assert d1_mock.call_count == 0
         diagraph.run()
-        assert l0.call_count == 1
-        assert l1.call_count == 1
-        l1.assert_called_with(l0.return_value)
+        assert d0_mock.call_count == 1
+        assert d1_mock.call_count == 1
+        d1_mock.assert_called_with(d0_mock.return_value)
 
     def test_it_can_run_two_dependencies(mocker):
-        l0 = mocker.stub()
-        l0.return_value = "l0"
-        l1 = mocker.stub()
-        l1.return_value = "l1"
-        l2 = mocker.stub()
-        l2.return_value = "l2"
-        l1.__annotations__ = {"l0": Annotated[str, Depends(l0)]}
-        l2.__annotations__ = {"l1": Annotated[str, Depends(l1)]}
+        d0_mock = mocker.Mock()
+        d0_mock.return_value = "d0"
 
-        diagraph = Diagraph(l2)
+        def d0():
+            return d0_mock()
 
-        assert l0.call_count == 0
-        assert l1.call_count == 0
-        assert l2.call_count == 0
+        d1_mock = mocker.Mock()
+        d1_mock.return_value = "d1"
+
+        def d1(d0: Annotated[str, Depends(d0)]):
+            return d1_mock(d0)
+
+        d2_mock = mocker.Mock()
+        d2_mock.return_value = "d2"
+
+        def d2(d1: Annotated[str, Depends(d1)]):
+            return d2_mock(d1)
+
+        diagraph = Diagraph(d2)
+
+        assert d0_mock.call_count == 0
+        assert d1_mock.call_count == 0
+        assert d2_mock.call_count == 0
         diagraph.run()
-        assert l0.call_count == 1
-        assert l1.call_count == 1
-        assert l2.call_count == 1
-        l1.assert_called_with(l0.return_value)
-        l2.assert_called_with(l1.return_value)
+        assert d0_mock.call_count == 1
+        assert d1_mock.call_count == 1
+        assert d2_mock.call_count == 1
+        d1_mock.assert_called_with(d0_mock.return_value)
+        d2_mock.assert_called_with(d1_mock.return_value)
 
     def test_it_calls_functions_in_order(mocker):
         def l0():
@@ -564,6 +581,63 @@ def describe_inputs():
         assert (
             Diagraph(d2).run("foo", "bar").result
             == "foo_foo_foo_d0-d1a_bar-foo_foo_d0-d1b-d2_bar"
+        )
+
+    def test_it_passes_untyped_inputs(mocker):
+        def d0(input1, input2: str, input3):
+            return f"d0:{input1}+{input2}+{input3}"
+
+        def d1a(input1, d0: Annotated[str, Depends(d0)], input2):
+            return f"d1a:{input1}+{input2}+{d0}"
+
+        def d1b(input1, d0: Annotated[str, Depends(d0)], input2, input3):
+            return f"d1b:{input1}+{input2}+{d0}"
+
+        def d2(
+            d1a: Annotated[str, Depends(d1a)],
+            input1,
+            d1b: Annotated[str, Depends(d1b)],
+        ):
+            return f"d2:{input1}+{d1a}+{d1b}"
+
+        d0_result = "d0:foo+1+1.5"
+        assert (
+            Diagraph(d2).run("foo", 1, 1.5).result
+            == f"d2:foo+d1a:foo+1+{d0_result}+d1b:foo+1+{d0_result}"
+        )
+
+    def test_it_passes_mixed_type_inputs(mocker):
+        def join_list(input: list[int]):
+            return "|".join([str(i) for i in input])
+
+        def join_tuple(input: tuple):
+            return ",".join(input)
+
+        def d0(input1: str, input2: list[int], input3: tuple[str]):
+            return f"d0:{input1}+{join_list(input2)}+{join_tuple(input3)}"
+
+        def d1a(input1, d0: Annotated[str, Depends(d0)], input2):
+            return f"d1a:{input1}+{join_list(input2)}+{d0}"
+
+        def d1b(input1, d0: Annotated[str, Depends(d0)], _input2, input3):
+            return f"d1b:{input1}+{join_tuple(input3)}+{d0}"
+
+        def d2(
+            d1a: Annotated[str, Depends(d1a)],
+            input1,
+            d1b: Annotated[str, Depends(d1b)],
+        ):
+            return f"d2:{input1}+{d1a}+{d1b}"
+
+        arg2 = [1, 2, 3]
+        arg3 = ("a", "b")
+
+        d0_result = f"d0:foo+{join_list(arg2)}+{join_tuple(arg3)}"
+        d1a_result = f"d1a:foo+{join_list(arg2)}+{d0_result}"
+        d1b_result = f"d1b:foo+{join_tuple(arg3)}+{d0_result}"
+        assert (
+            Diagraph(d2).run("foo", arg2, arg3).result
+            == f"d2:foo+{d1a_result}+{d1b_result}"
         )
 
     def describe_real_world_example():
