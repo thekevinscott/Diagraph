@@ -1,4 +1,3 @@
-import inspect
 from typing import Annotated, Any, Callable
 from ..classes.types import Fn
 
@@ -10,7 +9,6 @@ def is_annotated(val: Any):
 def get_annotations(node: Callable):
     # inspect.get_annotations() does not work with MagicMock (mocker.stub())
     # for key, val in inspect.get_annotations(node).items():
-    print(inspect.get_annotations(node))
     for key, val in node.__annotations__.items():
         if key != "return" and is_annotated(val):
             yield key, val

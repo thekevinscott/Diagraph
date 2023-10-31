@@ -18,7 +18,11 @@ class DiagraphLayer:
         self.nodes = tuple(nodes)
 
     def __iter__(self):
+        print("iter!", self.nodes)
         return iter(self.nodes)
+
+    def __str__(self):
+        return f"DiagraphLayer({[str(n) for n in self.nodes]})"
 
     def __getitem__(self, key: Key | int | slice):
         if isinstance(key, slice):

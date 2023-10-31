@@ -130,20 +130,18 @@ def describe_indexing():
 
         diagraph = Diagraph(l4)
 
-        # assert diagraph.dg.nodes()
-
-        def check_node(key):
+        def check_node(diagraph, key):
             node = diagraph[key]
             assert isinstance(node, DiagraphNode)
             return node.fn
 
-        def get_layer(key):
+        def get_layer(diagraph, key):
             layer = diagraph[key]
             assert isinstance(layer, DiagraphLayer)
             return layer
 
         for node in [l0, l1_l, l1_r, l2_l, l2_r, l3_l, l4]:
-            assert check_node(node) == node
+            assert check_node(diagraph, node) == node
 
         for index, nodes in [
             (0, (l0,)),
@@ -151,11 +149,6 @@ def describe_indexing():
             (2, (l2_l, l2_r)),
             (3, (l3_l,)),
             (4, (l4,)),
-        ]:
-            for node in nodes:
-                assert node in get_layer(index)
-
-        for index, nodes in [
             (-5, (l0,)),
             (-4, (l1_l, l1_r)),
             (-3, (l2_l, l2_r)),
@@ -163,7 +156,7 @@ def describe_indexing():
             (-1, (l4,)),
         ]:
             for node in nodes:
-                assert node in get_layer(index)
+                assert node in get_layer(diagraph, index)
 
     def test_a_complicated_tree_with_multiple_terminal_points():
         def l0():
@@ -188,36 +181,31 @@ def describe_indexing():
 
         diagraph = Diagraph(l3_l, l2_r)
 
-        def check_node(key):
+        def check_node(diagraph, key):
             node = diagraph[key]
             assert isinstance(node, DiagraphNode)
             return node.fn
 
-        def get_layer(key):
+        def get_layer(diagraph, key):
             layer = diagraph[key]
             assert isinstance(layer, DiagraphLayer)
             return layer
 
         for node in [l0, l1_l, l1_r, l2_l, l3_l, l2_r]:
-            assert check_node(node) == node
+            assert check_node(diagraph, node) == node
 
         for index, nodes in [
             (0, (l0,)),
             (1, (l1_l, l1_r)),
             (2, (l2_l, l2_r)),
             (3, (l3_l,)),
-        ]:
-            for node in nodes:
-                assert node in get_layer(index)
-
-        for index, nodes in [
             (-4, (l0,)),
             (-3, (l1_l, l1_r)),
             (-2, (l2_l, l2_r)),
             (-1, (l3_l,)),
         ]:
             for node in nodes:
-                assert node in get_layer(index)
+                assert node in get_layer(diagraph, index)
 
     def test_a_complicated_tree_with_multiple_origin_points():
         def l0_l():
@@ -239,18 +227,18 @@ def describe_indexing():
 
         diagraph = Diagraph(l2)
 
-        def check_node(key):
+        def check_node(diagraph, key):
             node = diagraph[key]
             assert isinstance(node, DiagraphNode)
             return node.fn
 
-        def get_layer(key):
+        def get_layer(diagraph, key):
             layer = diagraph[key]
             assert isinstance(layer, DiagraphLayer)
             return layer
 
         for node in [l0_l, l0_r, l1_l, l1_r, l2]:
-            assert check_node(node) == node
+            assert check_node(diagraph, node) == node
 
         for index, nodes in [
             (0, (l0_l, l0_r)),
@@ -258,7 +246,7 @@ def describe_indexing():
             (2, (l2,)),
         ]:
             for node in nodes:
-                assert node in get_layer(index)
+                assert node in get_layer(diagraph, index)
 
         for index, nodes in [
             (-3, (l0_l, l0_r)),
@@ -266,7 +254,107 @@ def describe_indexing():
             (-1, (l2,)),
         ]:
             for node in nodes:
-                assert node in get_layer(index)
+                assert node in get_layer(diagraph, index)
+
+    def test_it_can_index_into_a_triangle():
+        def d0():
+            pass
+
+        def d1a(d0: Annotated[str, Depends(d0)]):
+            pass
+
+        def d1b(d0: Annotated[str, Depends(d0)]):
+            pass
+
+        diagraph = Diagraph(d1a, d1b)
+
+        def check_node(diagraph, key):
+            node = diagraph[key]
+            assert isinstance(node, DiagraphNode)
+            return node.fn
+
+        def get_layer(diagraph, key):
+            layer = diagraph[key]
+            assert isinstance(layer, DiagraphLayer)
+            return layer
+
+        for node in [d0, d1a, d1b]:
+            assert check_node(diagraph, node) == node
+
+        for index, nodes in [
+            (
+                0,
+                (d0,),
+            ),
+            (
+                1,
+                (
+                    d1a,
+                    d1b,
+                ),
+            ),
+            (
+                -2,
+                (d0,),
+            ),
+            (
+                -1,
+                (
+                    d1a,
+                    d1b,
+                ),
+            ),
+        ]:
+            layer = get_layer(diagraph, index)
+            for node in nodes:
+                assert node in layer
+
+    def test_it_can_index_into_a_reverse_triangle():
+        def d0a():
+            pass
+
+        def d0b():
+            pass
+
+        def d1(d0a: Annotated[str, Depends(d0a)], db0: Annotated[str, Depends(d0b)]):
+            pass
+
+        diagraph = Diagraph(d1)
+
+        def check_node(diagraph, key):
+            node = diagraph[key]
+            assert isinstance(node, DiagraphNode)
+            return node.fn
+
+        def get_layer(diagraph, key):
+            layer = diagraph[key]
+            assert isinstance(layer, DiagraphLayer)
+            return layer
+
+        for node in [d0a, d0b, d1]:
+            assert check_node(diagraph, node) == node
+
+        for index, nodes in [
+            (
+                0,
+                (
+                    d0a,
+                    d0b,
+                ),
+            ),
+            (1, (d1,)),
+            (
+                -2,
+                (
+                    d0a,
+                    d0b,
+                ),
+            ),
+            (-1, (d1,)),
+        ]:
+            layer = get_layer(diagraph, index)
+            for node in nodes:
+                assert node in layer
 
 
 def describe_run():
