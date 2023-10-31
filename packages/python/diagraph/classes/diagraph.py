@@ -209,7 +209,7 @@ class Diagraph:
                 key_for_fn = self.fns.inverse(dep)
                 args.append(self.results[key_for_fn])
             else:
-                print(arg_index, input_args)
+                # print(arg_index, input_args)
                 if arg_index > len(input_args) - 1:
                     raise Exception(
                         f'No argument provided for "{parameter.name}" in function {fn.__name__}'
