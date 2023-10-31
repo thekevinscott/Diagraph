@@ -765,70 +765,15 @@ def describe_inputs():
                 assert diagraph[-3].result == "joke_"
                 assert diagraph[-2].result == "joke_ explain_"
                 assert diagraph[-1].result == diagraph.result
-                assert diagraph[tell_me_a_joke].prompt() == "joke"
-                assert diagraph[explanation].prompt() == "{joke} explain"
-                assert diagraph[improvement].prompt() == "{joke} {explanation} improve"
-                assert diagraph[0].prompt() == "joke"
-                assert diagraph[1].prompt() == "{joke} explain"
-                assert diagraph[2].prompt() == "{joke} {explanation} improve"
-                assert diagraph[-3].prompt() == "joke"
-                assert diagraph[-2].prompt() == "{joke} explain"
-                assert diagraph[-1].prompt() == "{joke} {explanation} improve"
-
-                assert diagraph[explanation].prompt("foo") == "foo explain"
-                assert diagraph[improvement].prompt("foo", "bar") == "foo bar improve"
-                assert diagraph[1].prompt("foo") == "foo explain"
-                assert diagraph[2].prompt("foo", "bar") == "foo bar improve"
-                assert diagraph[-2].prompt("foo") == "foo explain"
-                assert diagraph[-1].prompt("foo", "bar") == "foo bar improve"
-
-        def test_it_does_a_real_world_example_with_prompt_fn(mocker):
-            class MockLLM:
-                def run(self, string, log, stream=None, **kwargs):
-                    return string + "_"
-
-            @prompt(llm=MockLLM())
-            def tell_me_a_joke():
-                return "joke"
-
-            @prompt(llm=MockLLM())
-            def explanation(joke: Annotated[str, Depends(tell_me_a_joke)]) -> str:
-                return f"{joke} explain"
-
-            @prompt(llm=MockLLM())
-            def improvement(
-                joke: Annotated[str, Depends(tell_me_a_joke)],
-                explanation: Annotated[str, Depends(explanation)],
-            ) -> str:
-                return f"{joke} {explanation} improve"
-
-            diagraph = Diagraph(improvement).run()
-            assert diagraph.result == "joke_ joke_ explain_ improve_"
-            assert diagraph[tell_me_a_joke].result == "joke_"
-            assert diagraph[explanation].result == "joke_ explain_"
-            assert diagraph[improvement].result == diagraph.result
-            assert diagraph[0].result == "joke_"
-            assert diagraph[1].result == "joke_ explain_"
-            assert diagraph[2].result == diagraph.result
-            assert diagraph[-3].result == "joke_"
-            assert diagraph[-2].result == "joke_ explain_"
-            assert diagraph[-1].result == diagraph.result
-            assert diagraph[tell_me_a_joke].prompt() == "joke"
-            assert diagraph[explanation].prompt() == "{joke} explain"
-            assert diagraph[improvement].prompt() == "{joke} {explanation} improve"
-            assert diagraph[0].prompt() == "joke"
-            assert diagraph[1].prompt() == "{joke} explain"
-            assert diagraph[2].prompt() == "{joke} {explanation} improve"
-            assert diagraph[-3].prompt() == "joke"
-            assert diagraph[-2].prompt() == "{joke} explain"
-            assert diagraph[-1].prompt() == "{joke} {explanation} improve"
-
-            assert diagraph[explanation].prompt("foo") == "foo explain"
-            assert diagraph[improvement].prompt("foo", "bar") == "foo bar improve"
-            assert diagraph[1].prompt("foo") == "foo explain"
-            assert diagraph[2].prompt("foo", "bar") == "foo bar improve"
-            assert diagraph[-2].prompt("foo") == "foo explain"
-            assert diagraph[-1].prompt("foo", "bar") == "foo bar improve"
+                assert diagraph[tell_me_a_joke].prompt == "joke"
+                assert diagraph[explanation].prompt == "joke_ explain"
+                assert diagraph[improvement].prompt == "joke_ joke_ explain_ improve"
+                assert diagraph[0].prompt == "joke"
+                assert diagraph[1].prompt == "joke_ explain"
+                assert diagraph[2].prompt == "joke_ joke_ explain_ improve"
+                assert diagraph[-3].prompt == "joke"
+                assert diagraph[-2].prompt == "joke_ explain"
+                assert diagraph[-1].prompt == "joke_ joke_ explain_ improve"
 
 
 def describe_running_from_an_index():
@@ -1093,3 +1038,147 @@ def describe_replay():
 
 #         diagraph = Diagraph(l2)
 #         sliced_diagraph = diagraph[1:2]
+
+
+def describe_prompt():
+    def test_it_calls_a_prompt():
+        def fake_run(self, string, stream=None, **kwargs):
+            return string + "_"
+
+        with patch.object(
+            OpenAI,
+            "run",
+            fake_run,
+        ):
+
+            @prompt
+            def d0(input: str) -> str:
+                return input
+
+            input = "foo"
+            diagraph = Diagraph(d0).run(input)
+            assert diagraph[d0].prompt == f"{input}"
+            assert diagraph[d0].result == f"{input}_"
+
+    def test_it_calls_a_prompt_on_layer():
+        def fake_run(self, string, stream=None, **kwargs):
+            return string + "_"
+
+        with patch.object(
+            OpenAI,
+            "run",
+            fake_run,
+        ):
+
+            @prompt
+            def d0(input: str) -> str:
+                return input
+
+            @prompt
+            def d1a(d0: Annotated[str, Depends(d0)]) -> str:
+                return f"d1a:{d0}"
+
+            @prompt
+            def d1b(d0: Annotated[str, Depends(d0)]) -> str:
+                return f"d1b:{d0}"
+
+            input = "foo"
+            diagraph = Diagraph(d1a, d1b).run(input)
+            assert diagraph[0].prompt == f"{input}"
+            assert diagraph[0].result == f"{input}_"
+            assert diagraph[1].prompt == (f"d1a:{input}_", f"d1b:{input}_")
+            assert diagraph[1].result == (f"d1a:{input}__", f"d1b:{input}__")
+
+    def test_it_calls_a_prompt_on_single_layer():
+        def fake_run(self, string, stream=None, **kwargs):
+            return string + "_"
+
+        with patch.object(
+            OpenAI,
+            "run",
+            fake_run,
+        ):
+
+            @prompt
+            def d0a(input: str) -> str:
+                return input
+
+            @prompt
+            def d0b(input: str) -> str:
+                return input
+
+            input = "foo"
+            diagraph = Diagraph(d0a, d0b).run(input)
+            assert diagraph[0].prompt == (f"{input}", f"{input}")
+            assert diagraph[0].result == (f"{input}_", f"{input}_")
+
+
+def describe_tokens():
+    def test_it_calls_tokens():
+        def fake_run(self, string, stream=None, **kwargs):
+            return string + "_"
+
+        with patch.object(
+            OpenAI,
+            "run",
+            fake_run,
+        ):
+
+            @prompt
+            def d0(input: str) -> str:
+                return input
+
+            input = "foo bar"
+            diagraph = Diagraph(d0).run(input)
+            assert diagraph[d0].tokens == 2
+
+
+def test_it_calls_tokens_on_layer():
+    def fake_run(self, string, stream=None, **kwargs):
+        return string + "_"
+
+    with patch.object(
+        OpenAI,
+        "run",
+        fake_run,
+    ):
+
+        @prompt
+        def d0(input: str) -> str:
+            return input
+
+        @prompt
+        def d1a(d0: Annotated[str, Depends(d0)]) -> str:
+            return f"d1a {d0}"
+
+        @prompt
+        def d1b(d0: Annotated[str, Depends(d0)]) -> str:
+            return f"d1b {d0}"
+
+        input = "foo bar"
+        diagraph = Diagraph(d1a, d1b).run(input)
+        assert diagraph[0].tokens == 2
+        assert diagraph[1].tokens == (6, 6)
+
+
+def test_it_calls_tokens_on_single_layer():
+    def fake_run(self, string, stream=None, **kwargs):
+        return string + "_"
+
+    with patch.object(
+        OpenAI,
+        "run",
+        fake_run,
+    ):
+
+        @prompt
+        def d0a(input: str) -> str:
+            return input
+
+        @prompt
+        def d0b(input: str) -> str:
+            return input
+
+        input = "foo bar"
+        diagraph = Diagraph(d0a, d0b).run(input)
+        assert diagraph[0].tokens == (2, 2)
