@@ -328,7 +328,7 @@ def describe_run():
         def l2(l1: Annotated[str, Depends(l1)]):
             return f"{l1}baz"
 
-        assert Diagraph(l2).run().output == "foobarbaz"
+        assert Diagraph(l2).run().result == "foobarbaz"
 
 
 def describe_inputs():
@@ -347,7 +347,7 @@ def describe_inputs():
         ):
             return f"{l1_l}{l1_r}l2"
 
-        assert Diagraph(l2).run().output == "l0l1_ll0l1_rl2"
+        assert Diagraph(l2).run().result == "l0l1_ll0l1_rl2"
 
     def test_it_calls_functions_in_a_wider_diamond(mocker):
         def l0():
@@ -369,9 +369,9 @@ def describe_inputs():
         ):
             return f"{l1_l}{l1_c}{l1_r}l2"
 
-        assert Diagraph(l2).run().output == "l0l1_ll0l1_cl0l1_rl2"
+        assert Diagraph(l2).run().result == "l0l1_ll0l1_cl0l1_rl2"
 
-    def test_it_calls_functions_with_multiple_outputs(mocker):
+    def test_it_calls_functions_with_multiple_results(mocker):
         def l0():
             return "l0"
 
@@ -387,10 +387,10 @@ def describe_inputs():
         def l2_r(l1_r: Annotated[str, Depends(l1_r)]):
             return f"{l1_r}l2_r"
 
-        output = Diagraph(l2_l, l2_r).run().output
-        assert output is not None
-        assert output[0] == "l0l1_ll2_l"
-        assert output[1] == "l0l1_rl2_r"
+        result = Diagraph(l2_l, l2_r).run().result
+        assert result is not None
+        assert result[0] == "l0l1_ll2_l"
+        assert result[1] == "l0l1_rl2_r"
 
     def test_it_calls_functions_with_multiple_inputs(mocker):
         def d0a():
@@ -408,9 +408,9 @@ def describe_inputs():
         def d2(a: Annotated[str, Depends(d1a)], b: Annotated[str, Depends(d1b)]):
             return f"{a}{b}d2"
 
-        assert Diagraph(d2).run().output == "d0ad1ad0bd1bd2"
+        assert Diagraph(d2).run().result == "d0ad1ad0bd1bd2"
 
-    def test_it_calls_functions_with_multiple_inputs_and_outputs(mocker):
+    def test_it_calls_functions_with_multiple_inputs_and_results(mocker):
         def d0a():
             return "d0a"
 
@@ -432,10 +432,10 @@ def describe_inputs():
         def d3b(a: Annotated[str, Depends(d2)]):
             return f"{a}-d3b"
 
-        output = Diagraph(d3a, d3b).run().output
-        assert output is not None
-        assert output[0] == "d0a-d1a-d0b-d1b-d2-d3a"
-        assert output[1] == "d0a-d1a-d0b-d1b-d2-d3b"
+        result = Diagraph(d3a, d3b).run().result
+        assert result is not None
+        assert result[0] == "d0a-d1a-d0b-d1b-d2-d3a"
+        assert result[1] == "d0a-d1a-d0b-d1b-d2-d3b"
 
     def test_it_passes_input(mocker):
         def d0(input: str):
@@ -450,7 +450,7 @@ def describe_inputs():
         def d2(i1: Annotated[str, Depends(d1a)], i2: Annotated[str, Depends(d1b)]):
             return f"{i1}-{i2}-d2"
 
-        assert Diagraph(d2).run("foo").output == "foo_d0-d1a-foo_d0-d1b-d2"
+        assert Diagraph(d2).run("foo").result == "foo_d0-d1a-foo_d0-d1b-d2"
 
     def test_it_passes_input_to_each_fn(mocker):
         def d0(input: str):
@@ -469,7 +469,7 @@ def describe_inputs():
         ):
             return f"{input}_{i1}-{i2}-d2"
 
-        assert Diagraph(d2).run("foo").output == "foo_foo_foo_d0-d1a-foo_foo_d0-d1b-d2"
+        assert Diagraph(d2).run("foo").result == "foo_foo_foo_d0-d1a-foo_foo_d0-d1b-d2"
 
     def test_it_passes_input_at_end_of_args(mocker):
         def d0(input: str):
@@ -491,7 +491,7 @@ def describe_inputs():
         ):
             return f"{input}_{i1}-{i2}-d2"
 
-        assert Diagraph(d2).run("foo").output == "foo_foo_foo_d0-d1a-foo_foo_d0-d1b-d2"
+        assert Diagraph(d2).run("foo").result == "foo_foo_foo_d0-d1a-foo_foo_d0-d1b-d2"
 
     def test_it_passes_input_mixed_all_over_the_args(mocker):
         def d0(input: str):
@@ -513,7 +513,7 @@ def describe_inputs():
         ):
             return f"{input}_{i1}-{i2}-d2"
 
-        assert Diagraph(d2).run("foo").output == "foo_foo_foo_d0-d1a-foo_foo_d0-d1b-d2"
+        assert Diagraph(d2).run("foo").result == "foo_foo_foo_d0-d1a-foo_foo_d0-d1b-d2"
 
     def test_it_ignores_excess_args(mocker):
         def d0(input: str):
@@ -536,7 +536,7 @@ def describe_inputs():
             return f"{input}_{i1}-{i2}-d2"
 
         assert (
-            Diagraph(d2).run("foo", "bar", "baz").output
+            Diagraph(d2).run("foo", "bar", "baz").result
             == "foo_foo_foo_d0-d1a-foo_foo_d0-d1b-d2"
         )
 
@@ -562,7 +562,7 @@ def describe_inputs():
             return f"{input_1}_{i1}-{i2}-d2_{input_2}"
 
         assert (
-            Diagraph(d2).run("foo", "bar").output
+            Diagraph(d2).run("foo", "bar").result
             == "foo_foo_foo_d0-d1a_bar-foo_foo_d0-d1b-d2_bar"
         )
 
@@ -593,16 +593,16 @@ def describe_inputs():
                     return f"{joke} {explanation} improve"
 
                 diagraph = Diagraph(improvement).run()
-                assert diagraph.output == "joke_ joke_ explain_ improve_"
+                assert diagraph.result == "joke_ joke_ explain_ improve_"
                 assert diagraph[tell_me_a_joke].result == "joke_"
                 assert diagraph[explanation].result == "joke_ explain_"
-                assert diagraph[improvement].result == diagraph.output
+                assert diagraph[improvement].result == diagraph.result
                 assert diagraph[0].result == "joke_"
                 assert diagraph[1].result == "joke_ explain_"
-                assert diagraph[2].result == diagraph.output
+                assert diagraph[2].result == diagraph.result
                 assert diagraph[-3].result == "joke_"
                 assert diagraph[-2].result == "joke_ explain_"
-                assert diagraph[-1].result == diagraph.output
+                assert diagraph[-1].result == diagraph.result
                 assert diagraph[tell_me_a_joke].prompt() == "joke"
                 assert diagraph[explanation].prompt() == "{joke} explain"
                 assert diagraph[improvement].prompt() == "{joke} {explanation} improve"
@@ -641,16 +641,16 @@ def describe_inputs():
                 return f"{joke} {explanation} improve"
 
             diagraph = Diagraph(improvement).run()
-            assert diagraph.output == "joke_ joke_ explain_ improve_"
+            assert diagraph.result == "joke_ joke_ explain_ improve_"
             assert diagraph[tell_me_a_joke].result == "joke_"
             assert diagraph[explanation].result == "joke_ explain_"
-            assert diagraph[improvement].result == diagraph.output
+            assert diagraph[improvement].result == diagraph.result
             assert diagraph[0].result == "joke_"
             assert diagraph[1].result == "joke_ explain_"
-            assert diagraph[2].result == diagraph.output
+            assert diagraph[2].result == diagraph.result
             assert diagraph[-3].result == "joke_"
             assert diagraph[-2].result == "joke_ explain_"
-            assert diagraph[-1].result == diagraph.output
+            assert diagraph[-1].result == diagraph.result
             assert diagraph[tell_me_a_joke].prompt() == "joke"
             assert diagraph[explanation].prompt() == "{joke} explain"
             assert diagraph[improvement].prompt() == "{joke} {explanation} improve"
@@ -700,7 +700,7 @@ def describe_running_from_an_index():
         diagraph = Diagraph(d2)
 
         diagraph[d0].run("foo")
-        assert diagraph.output == "foo_foo_foo_d0-d1-d2"
+        assert diagraph.result == "foo_foo_foo_d0-d1-d2"
 
     def test_it_runs_from_the_second_function_if_results_are_present(mocker):
         def d0(input: str):
@@ -718,7 +718,7 @@ def describe_running_from_an_index():
         diagraph = Diagraph(d2).run("foo")
 
         diagraph[d1].run("bar")
-        assert diagraph.output == "bar_bar_foo_d0-d1-d2"
+        assert diagraph.result == "bar_bar_foo_d0-d1-d2"
 
     def test_it_runs_from_the_left_of_a_diamond(mocker):
         def d0(input: str):
@@ -740,7 +740,7 @@ def describe_running_from_an_index():
         diagraph = Diagraph(d2).run("foo")
 
         diagraph[d1a].run("bar")
-        assert diagraph.output == "*".join(
+        assert diagraph.result == "*".join(
             [
                 "bar_foo_d0-d1a",
                 "foo_foo_d0-d1b",
@@ -763,7 +763,7 @@ def describe_running_from_an_index():
 
         diagraph = Diagraph(d2)
         diagraph[0].run("foo")
-        assert diagraph.output == "foo_foo_foo_d0-d1-d2"
+        assert diagraph.result == "foo_foo_foo_d0-d1-d2"
 
 
 def describe_replay():
@@ -803,7 +803,7 @@ def describe_replay():
         diagraph[d1].result = "newresult"
 
         diagraph[d2].run("bar")
-        assert diagraph.output == "newresult-d2-bar"
+        assert diagraph.result == "newresult-d2-bar"
 
     def test_it_modifies_result():
         def d0(input: str):
@@ -823,7 +823,7 @@ def describe_replay():
         diagraph[d1].result = "newresult"
 
         diagraph[d2].run("bar")
-        assert diagraph.output == "bar_newresult-d2"
+        assert diagraph.result == "bar_newresult-d2"
 
     def test_it_modifies_result_and_can_replay_in_a_diamond():
         def d0(input: str):
@@ -855,7 +855,7 @@ def describe_replay():
 
         diagraph[d1a].run("bar")
 
-        assert diagraph.output == "*".join(
+        assert diagraph.result == "*".join(
             [
                 "bar_newresult-d1a",
                 "foo_foo_d0-d1b",
@@ -885,7 +885,7 @@ def describe_replay():
         diagraph[d0] = new_fn
 
         diagraph.run("bar")
-        assert diagraph.output == "bar_newfnbar-d1-d2_bar"
+        assert diagraph.result == "bar_newfnbar-d1-d2_bar"
 
     def test_it_modifies_prompt_and_can_replay_multiple_times():
         def d0(input: str):
@@ -908,14 +908,14 @@ def describe_replay():
         diagraph[d0] = new_fn
 
         diagraph.run("bar")
-        assert diagraph.output == "bar_newfnbar-d1-d2_bar"
+        assert diagraph.result == "bar_newfnbar-d1-d2_bar"
 
         def new_fn2(input: str):
             return f"newfn2{input}"
 
         diagraph[d0] = new_fn2
 
-        assert diagraph.run("bar").output == "bar_newfn2bar-d1-d2_bar"
+        assert diagraph.run("bar").result == "bar_newfn2bar-d1-d2_bar"
 
 
 # def describe_slicing():
