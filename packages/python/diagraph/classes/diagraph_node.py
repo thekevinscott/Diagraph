@@ -1,10 +1,14 @@
 from __future__ import annotations
-from typing import Any
+from typing import Any, Callable
 import tiktoken
 
 # To get the tokeniser corresponding to a specific model in the OpenAI API:
 from ..decorators.is_decorated import is_decorated
 from .graph import Graph, Key
+
+
+def is_function(key: Key):
+    return isinstance(key, Callable)
 
 
 class DiagraphNode:
@@ -16,6 +20,11 @@ class DiagraphNode:
         self.diagraph = diagraph
         self.__graph__ = diagraph.__graph__
         self.key = key
+
+    def __str__(self):
+        if is_function(self.key):
+            return self.key.__name__
+        return self.key
 
     @property
     def fn(self):
