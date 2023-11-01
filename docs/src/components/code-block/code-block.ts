@@ -5,94 +5,19 @@ import { property, state } from 'lit/decorators.js';
 import { classMap } from 'lit/directives/class-map.js';
 import { Ref, createRef, ref } from 'lit/directives/ref.js';
 import { CodeEditor } from '../code-editor/code-editor';
-import type { loadPyodide as _loadPyodide } from 'pyodide';
+import styles from '!!raw-loader!./code-block.css';
+import { parseStyles } from '../parse-styles';
+import { CodeLogs, LogMessage } from './code-logs/code-logs';
+import { styleMap } from 'lit/directives/style-map.js';
 
-// const loadPyodideModule = (version: string) => import(`https://cdn.jsdelivr.net/npm/pyodide@${version}/+esm`);
-// const getPyodide = async (version: string) => (await loadPyodideModule(version));
-// const loadPyodide = async (version: string) => (await getPyodide(version)).loadPyodide({
-//   indexURL: `https://cdn.jsdelivr.net/npm/pyodide@${version}/`,
-// });
-
-declare global {
-  interface Window { loadPyodide: typeof _loadPyodide; }
-}
+// declare global {
+//   interface Window { loadPyodide: typeof _loadPyodide; }
+// }
 
 export class CodeBlock extends LitElement {
-  // Define scoped styles right with your component, in plain CSS
-  static styles = css`
-    :host {
-      border: 2px solid rgba(0,0,0,0.2);
-      border-radius: 8px;
-      overflow: hidden;
-      width: 100%;
-      max-height: 400px;
-      display: flex;
-      min-height: 40px;
-      flex-direction: column;
-      font-family: system-ui, -apple-system, "Segoe UI", Roboto, Ubuntu, Cantarell, "Noto Sans", sans-serif, "system-ui", "Segoe UI", Helvetica, Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol"
-    }
-
-    #top {
-      display: flex;
-      flex-direction: row;
-      flex: 1;
-      border-bottom: 2px solid rgba(0,0,0,0.1);
-
-      &.dark {
-
-        & code-output {
-          background: rgba(255,255,255,0.05);
-        }
-
-        & button {
-          border: 2px solid rgba(255,255,255,0.1);
-          background: #333;
-        }
-      }
-
-      & code-output {
-        background: rgba(0,0,0,0.05);
-        padding: 3px 10px;
-        font-family: Roboto, monospace;
-        font-size: 12px;
-        box-shadow: inset 0 0 6px rgba(0,0,0,0.1);
-      }
-
-      & #editor {
-        position: relative;
-        flex: 1;
-        height: 250px;
-
-        & button {
-          position: absolute;
-          bottom: 0;
-          right: 0;
-          border: none;
-          padding: 10px;
-          font-size: 16px;
-          // text-transform: uppercase;
-          border: 2px solid rgba(0,0,0,0.1);
-          border-bottom: none;
-          background: #CCC;
-          cursor: pointer;
-        }
-
-        & code-editor {
-        }
-      }
-    }
-
-    #visualization {
-      flex: 1;
-      background: white;
-      padding: 10px;
-
-      &.dark {
-        background: var(--ifm-background-surface-color);
-        color: white;
-      }
-    }
-  `;
+  static styles = [
+    parseStyles(styles),
+  ];
 
   @property()
   accessor code: string = '';
@@ -100,12 +25,60 @@ export class CodeBlock extends LitElement {
   @property()
   accessor colorMode: 'dark' | 'light' = 'light';
 
-  // @state()
-  // accessor output: string = '';
+  @state()
+  accessor output: string = '';
+
+  @state()
+  accessor logs: LogMessage[] = [];
+
+  @state()
+  accessor running = false;
+
+  @state()
+  accessor ready = false;
+
+  @state()
+  accessor error: string | undefined;
 
   codeEditor: Ref<CodeEditor> = createRef();
+  codeLogs: Ref<CodeLogs> = createRef();
 
-  pyodide = window.loadPyodide();
+  worker: SharedWorker;
+
+  accessor id: string | undefined;
+
+  constructor() {
+    super();
+    this.worker = new SharedWorker(new URL('./runner.js', import.meta.url));
+    this.worker.port.postMessage({ event: 'initialize' });
+    this.worker.port.onmessage = this.handleMessage;
+  }
+
+  handleMessage = (e) => {
+    // handleMessage = ({ data: { event, message, id } }) => {
+    // console.log(e)
+    const { data: { event, message, id } } = e;
+    if (event === 'ready') {
+      this.ready = true;
+    }
+    if (id === this.id) {
+      // console.log('event', event);
+      if (event === 'output') {
+        this.output = message;
+        this.running = false;
+      }
+      if (['stdout', 'stderr'].includes(event)) {
+        this.logs.push({ message, timestamp: new Date(), kind: event });
+        this.requestUpdate();
+        this.codeLogs.value.requestUpdate();
+      }
+      if (event === 'error') {
+        this.error = message;
+        // console.log('this', this.error);
+        this.running = false;
+      }
+    }
+  };
 
   keydown(e: KeyboardEvent) {
 
@@ -116,25 +89,63 @@ export class CodeBlock extends LitElement {
   }
 
   async run() {
-    const code = this.codeEditor!.value.value;
-    const pyodide = await this.pyodide;
-    // await pyodide.loadPackage('micropip');
-    // this.output = await pyodide.runPythonAsync(code);
+    if (this.running === false) {
+      this.running = true;
+      this.logs = [];
+      this.output = '';
+      const code = this.codeEditor!.value.value;
+      this.id = `${Math.random()}`;
+      this.worker.port.postMessage({
+        event: 'run',
+        code,
+        id: this.id,
+      });
+    }
   };
 
   // Render the UI as a function of component state
   render() {
-    const { code, colorMode } = this;
-    const theme = colorMode === 'dark' ? 'vs-dark' : 'vs-light';
+    const { code, colorMode, ready, running, logs, error, output } = this;
+
+    const dark = colorMode === 'dark';
+    const theme = dark ? 'vs-dark' : 'vs-light';
+    const height = getHeight(code);
+    // console.log('logs', logs);
     return html`
-      <div id="top" class=${classMap({ dark: colorMode === 'dark' })}>
+      <div id="top" class=${classMap({ dark })} style=${styleMap({ minHeight: height, maxHeight: height })}>
         <div id="editor">
+          <div id="actions">
+            <sl-icon-button name="arrow-clockwise" label="Reload Code Snippet"></sl-icon-button>
+          </div>
           <code-editor ${ref(this.codeEditor)} @keydown=${this.keydown} code=${code} theme=${theme}></code-editor>
-          <button @click=${this.run}>Run (shift + enter)</button>
+          <sl-button 
+            ?disabled=${!ready || running} 
+            title="Run (shift + enter)" 
+            @click=${this.run}>
+            ${getButtonMessage(ready, running)}
+          </sl-button>
         </div>
-        <code-output>output!</code-output>
+        <code-logs ?dark=${dark} ${ref(this.codeLogs)} .logs=${logs}></code-logs>
       </div>
-      <div id="visualization" class=${classMap({ dark: colorMode === 'dark' })}>Visualization</div>
+      <code-output ?dark=${dark} .error=${error} .output=${output} ?running=${running}></code-output>
     `;
   }
+}
+
+const getButtonMessage = (ready: boolean, running: boolean) => {
+  if (!ready) {
+    return 'Starting...';
+  }
+  if (running) {
+    return 'Running...';
+  }
+  return 'Run ⇧+⏎';
+};
+
+const LINE_HEIGHT = 18;
+
+const getHeight = (code: string) => {
+  const lines = Math.min(Math.max(code.split('\n').length, 6), 40);
+  const height = lines * LINE_HEIGHT;
+  return `${height}px`;
 }

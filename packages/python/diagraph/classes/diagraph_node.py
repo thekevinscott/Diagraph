@@ -1,6 +1,7 @@
 from __future__ import annotations
 from typing import Any, Callable
-import tiktoken
+
+# import tiktoken
 
 # To get the tokeniser corresponding to a specific model in the OpenAI API:
 from ..decorators.is_decorated import is_decorated
@@ -96,8 +97,8 @@ class DiagraphNode:
     def tokens(self):
         if self.__is_decorated__ is False:
             raise Exception("This function has not been decorated with @prompt")
+        raise Exception("Temporarily off")
+        # enc = tiktoken.encoding_for_model("gpt-4")
 
-        enc = tiktoken.encoding_for_model("gpt-4")
-
-        prompt = self.prompt
-        return len(enc.encode(prompt))
+        # prompt = self.prompt
+        # return len(enc.encode(prompt))

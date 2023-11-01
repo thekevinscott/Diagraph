@@ -8,9 +8,19 @@ const config: Config = {
   // favicon: 'img/favicon.ico',
 
   // themes: ['@docusaurus/theme-live-codeblock'],
+  webpack: {
+    jsLoader: (isServer) => ({
+      loader: require.resolve('esbuild-loader'),
+      options: {
+        loader: 'tsx',
+        format: isServer ? 'cjs' : undefined,
+        target: isServer ? 'node12' : 'es2017',
+      },
+    }),
+  },
 
   scripts: [
-    'https://cdn.jsdelivr.net/pyodide/v0.24.1/full/pyodide.js',
+    // 'https://cdn.jsdelivr.net/pyodide/v0.24.1/full/pyodide.js',
 
   ],
 
@@ -20,6 +30,7 @@ const config: Config = {
   // Set the /<baseUrl>/ pathname under which your site is served
   // For GitHub pages deployment, it is often '/<projectName>/'
   baseUrl: '/',
+  staticDirectories: ['static'],
 
   organizationName: 'thekevinscott',
   projectName: 'Diagraph',

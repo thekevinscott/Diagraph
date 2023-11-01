@@ -44,12 +44,12 @@ const DEFAULT_EDITOR_OPTIONS: monaco.editor.IEditorConstructionOptions = {
   lineNumbers: "on",
   roundedSelection: false,
   scrollBeyondLastLine: false,
-  ariaLabel: "online code editor",
+  ariaLabel: "code editor",
   readOnly: false,
   // theme: "hc-black",
   // language: "javascript",
   //Resizes Based on Screen & Container Size.
-  automaticLayout: true
+  // automaticLayout: true
 };
 
 export class CodeEditor extends LitElement {
@@ -115,7 +115,8 @@ export class CodeEditor extends LitElement {
 
   render() {
     return html`
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/monaco-editor@0.44.0/min/vs/editor/editor.main.min.css">
-    <main ${ref(this.containerRef)} />`;
+      <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/monaco-editor@0.44.0/min/vs/editor/editor.main.min.css">
+      <main ${ref(this.containerRef)} />
+    `;
   }
 }

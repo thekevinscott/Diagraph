@@ -1,0 +1,54 @@
+:host {
+  border: 2px solid rgba(0,0,0,0.2);
+  border-radius: 8px;
+  overflow: hidden;
+  width: 100%;
+  display: flex;
+  min-height: 40px;
+  flex-direction: column;
+  font-family: system-ui, -apple-system, "Segoe UI", Roboto, Ubuntu, Cantarell, "Noto Sans", sans-serif, "system-ui", "Segoe UI", Helvetica, Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol";
+  margin-bottom: 20px;
+}
+
+#top {
+  display: flex;
+  flex-direction: row;
+  flex: 1;
+  align-items: stretch;
+  overflow: hidden;
+
+  & #editor {
+    position: relative;
+    flex: 1;
+
+    & sl-button {
+      --sl-input-border-radius-medium: 8px 0 0 0;
+      --sl-input-border-width: 2px;
+
+      position: absolute;
+      z-index: 1;
+      bottom: -2px;
+      right: -2px;
+      /* border: none; */
+      /* padding: 8px;
+      font-size: 16px; */
+      width: 120px;
+      /* border: 2px solid rgba(0,0,0,0.1);
+      border-bottom: none; */
+      /* background: #CCC; */
+      /* cursor: pointer; */
+    }
+  }
+}
+
+#actions {
+  position: absolute;
+  right: 13px;
+  z-index: 1;
+}
+
+code-logs {
+  min-width: 200px;
+  max-height: 100%;
+  overflow-y: scroll;
+}

@@ -1,9 +1,8 @@
 import React, { isValidElement } from 'react';
 import useIsBrowser from '@docusaurus/useIsBrowser';
-import '../../components/code-block/register';
-import '../../components/code-editor/register';
 import BrowserOnly from '@docusaurus/BrowserOnly';
 import { useColorMode } from '@docusaurus/theme-common';
+import '../../components'
 // import ElementContent from '@theme/CodeBlock/Content/Element';
 // import StringContent from '@theme/CodeBlock/Content/String';
 /**

@@ -1,5 +1,6 @@
 from typing import Any, Callable
-import openai
+
+# import openai
 from .llm import LLM
 
 
@@ -31,18 +32,19 @@ class OpenAI(LLM):
             "model": model,
         }
         started = False
-        for resp in openai.ChatCompletion.create(
-            messages=messages, stream=True, **kwargs
-        ):
-            if started is False:
-                log("start", None)
-                started = True
-            choices = resp.get("choices")
-            choice = choices[0]
-            delta = choice.get("delta")
-            content = delta.get("content")
-            if content:
-                response += content
-                log("data", content)
-        log("end", None)
-        return response
+        raise Exception("temporarily no")
+        # for resp in openai.ChatCompletion.create(
+        #     messages=messages, stream=True, **kwargs
+        # ):
+        #     if started is False:
+        #         log("start", None)
+        #         started = True
+        #     choices = resp.get("choices")
+        #     choice = choices[0]
+        #     delta = choice.get("delta")
+        #     content = delta.get("content")
+        #     if content:
+        #         response += content
+        #         log("data", content)
+        # log("end", None)
+        # return response
