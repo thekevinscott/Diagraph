@@ -13,7 +13,7 @@ name: Release to Test PyPI
       # IMPORTANT: Run the following to clean up after:
       #     git tag -d 0.21.3.rc1
       #     git push origin :0.21.3.rc1
-      - "[0-9]+.[0-9]+.[0-9]+.rc[0-9]+"
+      - "^[0-9]+.[0-9]+.[0-9]+.rc[0-9]+$"
 
 jobs:
   main:
