@@ -33,6 +33,25 @@ def test_returns_a_linear_graph():
     assert build_graph(bar) == {foo: set(), bar: {foo}}
 
 
+def test_returns_a_linear_graph_with_default_syntax():
+    def foo():
+        return "foo"
+
+    def bar(foo_arg: str = Depends(foo)) -> str:
+        return f"bar: {foo_arg}"
+
+    assert build_graph(bar) == {foo: set(), bar: {foo}}
+
+def test_returns_a_linear_graph_with_default_syntax_and_ignores_default_non_depends():
+    def foo():
+        return "foo"
+
+    def bar(foo_arg: str = Depends(foo), bar_arg: str = 'bar') -> str:
+        return f"bar: {foo_arg}: {bar_arg}"
+
+    assert build_graph(bar) == {foo: set(), bar: {foo}}
+
+
 def test_returns_a_multistep_linear_graph():
     def foo():
         return "foo"

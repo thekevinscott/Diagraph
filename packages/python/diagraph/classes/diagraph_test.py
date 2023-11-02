@@ -392,6 +392,28 @@ def describe_run():
         assert d1_mock.call_count == 1
         d1_mock.assert_called_with(d0_mock.return_value)
 
+    def test_it_can_run_a_single_dependency_with_default_syntax(mocker):
+        d0_mock = mocker.Mock()
+        d0_mock.return_value = "d0"
+
+        def d0():
+            return d0_mock()
+
+        d1_mock = mocker.Mock()
+        d1_mock.return_value = "d1"
+
+        def d1(d0: str = Depends(d0)):
+            return d1_mock(d0)
+
+        diagraph = Diagraph(d1)
+
+        assert d0_mock.call_count == 0
+        assert d1_mock.call_count == 0
+        diagraph.run()
+        assert d0_mock.call_count == 1
+        assert d1_mock.call_count == 1
+        d1_mock.assert_called_with(d0_mock.return_value)
+
     def test_it_can_run_two_dependencies(mocker):
         d0_mock = mocker.Mock()
         d0_mock.return_value = "d0"

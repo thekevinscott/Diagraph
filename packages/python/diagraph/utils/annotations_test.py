@@ -2,7 +2,7 @@ from typing import Annotated
 
 from .depends import Depends
 
-from .annotations import get_annotations, get_dependency, is_annotated
+from .annotations import get_dependencies, get_dependency, is_annotated
 
 
 def describe_is_annotated():
@@ -13,14 +13,24 @@ def describe_is_annotated():
         assert is_annotated("hi") is False
 
 
-def describe_get_annotations():
-    def test_it_gets_annotations():
-        def fn(a: Annotated[int, "a"], b: Annotated[str, "b"]):
+def describe_get_dependencies():
+    def test_it_gets_dependencies():
+        def fn(a: Annotated[int, Depends(1)], b: Annotated[str, Depends("b")]):
             return a
 
-        assert list(get_annotations(fn)) == [
-            ("a", Annotated[int, "a"]),
-            ("b", Annotated[str, "b"]),
+        dependencies = [d.dependency for d in list(get_dependencies(fn))]
+        assert dependencies== [
+                1,'b',
+        ]
+
+
+    def test_it_gets_dependencies_with_default_syntax():
+        def fn(a: int = Depends(1), b: str = Depends("b")):
+            return a
+
+        dependencies = [d.dependency for d in list(get_dependencies(fn))]
+        assert dependencies== [
+                1,'b',
         ]
 
 

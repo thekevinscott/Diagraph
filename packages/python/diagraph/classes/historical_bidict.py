@@ -17,6 +17,9 @@ class HistoricalBidict(Generic[Key, Value]):
         self.keys = {}
         self.values_to_keys = {}
 
+    def __str__(self):
+        return str(self.keys)
+
     def __setitem__(self, key: Key, value: Value):
         self.keys[key] = self.keys.get(key, []) + [value]
         if is_not_hashable(value):
