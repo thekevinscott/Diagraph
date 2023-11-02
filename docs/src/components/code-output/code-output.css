@@ -1,0 +1,36 @@
+:host {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+
+  flex: 1;
+  background: white;
+  /* transition-duration: 0.4s; */
+  overflow-y: scroll;
+  max-height: 100%;
+  white-space: pre-wrap;
+}
+
+#output {
+  &.dark {
+    background: var(--ifm-background-surface-color);
+    color: white;
+  }
+
+}
+
+
+pre {
+  flex: 1;
+  margin: var(--padding);
+  padding: var(--padding);
+  background: rgba(0,0,0,0.1);
+  border-radius: var(--padding);
+  box-shadow: inset 0 0 6px rgba(0,0,0,0.1);
+  border: 1px solid transparent;
+    white-space: break-spaces;
+
+  &.error {
+    border: 1px solid red;
+  }
+}

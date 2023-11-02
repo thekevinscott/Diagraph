@@ -1,0 +1,25 @@
+code-button {
+  &.running {
+    sl-button::part(base) {
+      /* background-color: #ff1493; */
+  /*   & sl-icon { */
+  /*     --duration: 2s; */
+  /*     -webkit-animation:spin var(--duration) linear infinite; */
+  /*     -moz-animation:spin var(--duration) linear infinite; */
+  /*     animation:spin var(--duration) linear infinite; */
+  /*   } */
+  }
+}
+}
+@-moz-keyframes spin { 
+    100% { -moz-transform: rotate(360deg); } 
+}
+@-webkit-keyframes spin { 
+    100% { -webkit-transform: rotate(360deg); } 
+}
+@keyframes spin { 
+    100% { 
+        -webkit-transform: rotate(360deg); 
+        transform:rotate(360deg); 
+    } 
+}

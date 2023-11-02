@@ -1,0 +1,9 @@
+{
+  "compilerOptions": {
+    "useDefineForClassFields": false,
+    "types": ["vite/client"],
+    "target": "esnext",
+    "module": "nodenext",
+    "moduleResolution": "nodeNext"
+  }
+}

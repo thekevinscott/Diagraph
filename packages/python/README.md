@@ -413,14 +413,3 @@ gpt4 = OpenAI(model='gpt-4', temperature=0.2)
 def fn():
   return 'tell me a joke'
 ```
-
-## Integrations
-
-- Weights & Biases
-- Mermaidjs
-- Magnetic
-- Marvin
-- LLM (Simon's library)
-- Langchain
-- LlamaIndex
-
