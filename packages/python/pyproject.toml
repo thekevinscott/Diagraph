@@ -7,12 +7,12 @@ readme = "README.md"
 requires-python = ">=3.10"
 dependencies = [
   "pydantic",
-  "openai",
   "annotated-types",
   "llm",
   "networkx",
-  "tiktoken",
   "bidict",
+  "openai",
+  "tiktoken",
 ]
 description = "DAGs for LLM interactions"
 classifiers = [
