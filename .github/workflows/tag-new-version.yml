@@ -1,0 +1,31 @@
+name: CI
+on:
+  push:
+    branches: [ "main" ]
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Check pypi versions
+        uses: maybe-hello-world/pyproject-check-version@v3
+        id: versioncheck
+        with:
+          pyproject-path: "./pyproject.toml"    # default value
+
+      - name: check output
+        run: |
+            echo "Output: ${{ steps.versioncheck.outputs.local_version_is_higher }}"  # 'true' or 'false
+            echo "Local version: ${{ steps.versioncheck.outputs.local_version }}"     # e.g., 0.1.1
+            echo "Public version: ${{ steps.versioncheck.outputs.public_version }}"   # e.g., 0.1.0
+
+      - name: Test check
+        if: "contains( steps.versioncheck.outputs.local_version_is_higher , 'false')"
+        run: echo 'do not run'
+
+      - name: Tag new release
+        if: "contains( steps.versioncheck.outputs.local_version_is_higher , 'true')"
+        run: git tag -a ${{ steps.versioncheck.outputs.local_version }} -m "Tag ${{ steps.versioncheck.outputs.local_version }} for release" && git push --tags
