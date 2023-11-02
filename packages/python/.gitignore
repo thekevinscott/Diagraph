@@ -1,5 +1,9 @@
-__pycache__
-.python-version
+.pytest_cache
+.ruff_cache
 .venv
-venv
-dev
+__pycache__
+build
+diagraph.egg-info
+dist
+env
+.python-version

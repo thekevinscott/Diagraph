@@ -209,10 +209,16 @@ class Diagraph:
         # in order
         encountered_star = False
         for parameter in inspect.signature(fn).parameters.values():
-            # print(parameter)
             if is_annotated(parameter.annotation):
                 dep: Fn = get_dependency(parameter.annotation)
                 key_for_fn = self.fns.inverse(dep)
+                args.append(self.results[key_for_fn])
+            elif parameter.default is not None and parameter.default is not inspect._empty:
+                dep: Fn = parameter.default.dependency
+                try:
+                    key_for_fn = self.fns.inverse(dep)
+                except Exception:
+                    raise Exception(f'No function has been set for dep {dep}. Available functions: {self.fns}')
                 args.append(self.results[key_for_fn])
             elif not str(parameter).startswith("*"):
                 if encountered_star:
