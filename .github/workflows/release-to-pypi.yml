@@ -1,6 +1,10 @@
+# Listens for tag pushes
+# On detection, automatically pushes to pypi
+# Then, cuts a release to Github.com
 name: Release to PyPI
 
 "on":
+  workflow_dispatch:
   push:
     tags:
       - "^[0-9]+.[0-9]+.[0-9]+$"
@@ -23,7 +27,15 @@ jobs:
         uses: pypa/gh-action-pypi-publish@b7f401de30cb6434a1e19f805ff006643653240e
         with:
           verbose: true
-          packages-dir: ./packages/python/dist 
+          packages-dir: ./packages/python/dist
+
+      - uses: "marvinpinto/action-automatic-releases@latest"
+        with:
+          repo_token: "${{ secrets.GITHUB_TOKEN }}"
+          prerelease: false
+          # files: |
+          #   LICENSE.txt
+          #   *.jar
 
 permissions:
   id-token: write

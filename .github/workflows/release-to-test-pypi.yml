@@ -1,7 +1,10 @@
+# Listens for tag pushes
+# On detection, automatically pushes to test pypi
+# Then, cuts a release to Github.com
 name: Release to Test PyPI
 
 "on":
-  # workflow_dispatch:
+  workflow_dispatch:
   push:
     tags:
       # To publish a test release to test.pypi.org,
@@ -36,6 +39,14 @@ jobs:
           packages-dir: ./packages/python/dist 
           verbose: true
           repository-url: https://test.pypi.org/legacy/
+
+      - uses: "marvinpinto/action-automatic-releases@latest"
+        with:
+          repo_token: "${{ secrets.GITHUB_TOKEN }}"
+          prerelease: true
+          # files: |
+          #   LICENSE.txt
+          #   *.jar
 
 permissions:
   id-token: write
