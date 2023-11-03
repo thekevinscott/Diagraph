@@ -1,7 +1,7 @@
 # Runs on pushes to the main branch. Whenever a difference in version is detected,
 # this workflow automatically creates a new tag and pushes it, which
 # should trigger subsequent actions.
-name: Tag
+name: Tag & Release
 on:
   push:
     branches: [ "main" ]
@@ -25,13 +25,44 @@ jobs:
             echo "Local version: ${{ steps.versioncheck.outputs.local_version }}"     # e.g., 0.1.1
             echo "Public version: ${{ steps.versioncheck.outputs.public_version }}"   # e.g., 0.1.0
 
-      - name: Do not tag
-        if: "contains( steps.versioncheck.outputs.local_version_is_higher , 'false')"
-        run: echo 'Do not need to tag'
-
       - name: Tag new release
         if: "contains( steps.versioncheck.outputs.local_version_is_higher , 'true')"
+        working-directory: ./packages/python
         run: |
               git config --global user.name 'Github Actions'
               git config --global user.email 'thekevinscott@users.noreply.github.com'
               git tag -a ${{ steps.versioncheck.outputs.local_version }} -m "Tag ${{ steps.versioncheck.outputs.local_version }} for release" && git push --tags
+              python -m pip install -U pip setuptools build
+              python -m build
+
+      - name: Check Tag
+        id: check-tag
+        run: |
+          if [[ ${{ steps.versioncheck.outputs.local_version }} =~ /[0-9]+.[0-9]+.[0-9]+.rc[0-9]+/ ]]; then
+              echo "test_release=true" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Check Test Release
+        if: steps.check-tag.outputs.test_release == 'true'
+        run: |
+          echo "Is a test release"
+
+      # - "[0-9]+.[0-9]+.[0-9]+.rc[0-9]+"
+      # - "[0-9]+.[0-9]+.[0-9]+$"
+
+      - name: Publish to Test Pypi
+        uses: pypa/gh-action-pypi-publish@b7f401de30cb6434a1e19f805ff006643653240e
+        if: "contains( steps.versioncheck.outputs.local_version_is_higher , 'true')"
+        with:
+          packages-dir: ./packages/python/dist
+          verbose: true
+          repository-url: https://test.pypi.org/legacy/
+
+      - uses: "marvinpinto/action-automatic-releases@latest"
+        if: "contains( steps.versioncheck.outputs.local_version_is_higher , 'true')"
+        with:
+          repo_token: "${{ secrets.GITHUB_TOKEN }}"
+          prerelease: true
+          # files: |
+          #   LICENSE.txt
+          #   *.jar
