@@ -74,3 +74,8 @@ class Graph(Generic[Key]):
         key = self.get_int_key_for_node(key)
         int_representations = [i for _, i in list(self.__G__.out_edges(key))]
         return [self.get_node_for_int_key(i) for i in int_representations]
+
+    def _repr_html_(self) -> str:
+        return nx.draw(self.__G__)
+
+    # return render_repr_html(self.dg)

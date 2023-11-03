@@ -6,3 +6,7 @@ A graph for representing LLM interactions.
 
 See [packages/python/README.md](./packages/python/README.md).
 
+## Inspiration
+
+FastAPI
+Airflow
