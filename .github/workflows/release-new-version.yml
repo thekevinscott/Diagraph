@@ -66,3 +66,7 @@ jobs:
           # files: |
           #   LICENSE.txt
           #   *.jar
+          #
+permissions:
+  id-token: write
+  contents: read
