@@ -1,11 +1,14 @@
-name: CI
+# Runs on pushes to the main branch. Whenever a difference in version is detected,
+# this workflow automatically creates a new tag and pushes it, which
+# should trigger subsequent actions.
+name: Tag
 on:
   push:
     branches: [ "main" ]
   workflow_dispatch:
 
 jobs:
-  build:
+  Tag:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
