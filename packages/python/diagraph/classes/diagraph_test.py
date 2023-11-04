@@ -595,6 +595,33 @@ def describe_inputs():
 
         assert Diagraph(d2).run("foo").result == "foo_d0-d1a-foo_d0-d1b-d2"
 
+    def test_it_passes_default_inputs():
+        def d0(input: str = "foo"):
+            return f"d0:{input}"
+
+        def d1(i0: str = Depends(d0)):
+            return f"d1:{i0}"
+
+        assert Diagraph(d1).run().result == "d1:d0:foo"
+
+    def test_it_passes_multiple_default_inputs():
+        def d0(foo: str = "foo", bar: str = "bar"):
+            return f"d0:{foo}-{bar}"
+
+        def d1(i0: str = Depends(d0)):
+            return f"d1:{i0}"
+
+        assert Diagraph(d1).run().result == "d1:d0:foo-bar"
+
+    def test_it_passes_mixed_default_and_non_inputs():
+        def d0(foo: str, bar: str = "bar"):
+            return f"d0:{foo}-{bar}"
+
+        def d1(i0: str = Depends(d0)):
+            return f"d1:{i0}"
+
+        assert Diagraph(d1).run("baz").result == "d1:d0:baz-bar"
+
     def test_it_passes_input_to_each_fn():
         def d0(input: str):
             return f"{input}_d0"

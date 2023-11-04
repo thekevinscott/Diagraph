@@ -8,6 +8,7 @@ from ..decorators.is_decorated import is_decorated
 from .diagraph_layer import DiagraphLayer
 
 from ..utils.annotations import get_dependency, is_annotated
+from ..utils.depends import Depends
 
 from ..decorators.prompt import UserHandledException
 
@@ -74,8 +75,8 @@ class Diagraph:
         self.log_handler = log
         self.error_handler = error
 
-    # def _repr_html_(self) -> str:
-    #     return render_repr_html(self.dg)
+    def _repr_html_(self) -> str:
+        return self.__graph__._repr_html_()
 
     @overload
     def __getitem__(self, key: int) -> Optional[tuple[DiagraphNode]]:
@@ -209,24 +210,37 @@ class Diagraph:
         # in order
         encountered_star = False
         for parameter in inspect.signature(fn).parameters.values():
+            print("parameter", parameter.default)
+            # Depends can be passed as Annotated[str, Depends]
             if is_annotated(parameter.annotation):
                 dep: Fn = get_dependency(parameter.annotation)
                 key_for_fn = self.fns.inverse(dep)
                 args.append(self.results[key_for_fn])
-            elif parameter.default is not None and parameter.default is not inspect._empty:
-                dep: Fn = parameter.default.dependency
-                try:
-                    key_for_fn = self.fns.inverse(dep)
-                except Exception:
-                    raise Exception(f'No function has been set for dep {dep}. Available functions: {self.fns}')
-                args.append(self.results[key_for_fn])
+            # Depends can be passed as arg: str = Depends(dep)
+            # Regular args can be passed as :str = 'foo'
+            elif (
+                parameter.default is not None
+                and parameter.default is not inspect._empty
+            ):
+                if isinstance(parameter.default, Depends):
+                    dep: Fn = parameter.default.dependency
+                    try:
+                        key_for_fn = self.fns.inverse(dep)
+                    except Exception:
+                        raise Exception(
+                            f"No function has been set for dep {dep}. Available functions: {self.fns}"
+                        )
+                    args.append(self.results[key_for_fn])
+                else:
+                    args.append(parameter.default)
             elif not str(parameter).startswith("*"):
                 if encountered_star:
                     raise Exception(
                         "Found arguments defined after * args. Ensure *args and **kwargs come at the end of the function parameter definitions."
                     )
                 # else:
-                # print(arg_index, input_args)
+                print(arg_index, input_args)
+
                 if arg_index > len(input_args) - 1:
                     raise Exception(
                         f'No argument provided for "{parameter.name}" in function {fn.__name__}. This indicates you forgot to call ".run()" with sufficient arguments.'
