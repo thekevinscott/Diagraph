@@ -3,6 +3,7 @@ import inspect
 from datetime import datetime
 from typing import Any, Callable, Optional, overload
 from bidict import bidict
+from ..llm.llm import LLM
 from ..decorators.is_decorated import is_decorated
 
 from .diagraph_layer import DiagraphLayer
@@ -10,7 +11,7 @@ from .diagraph_layer import DiagraphLayer
 from ..utils.annotations import get_dependency, is_annotated
 from ..utils.depends import Depends
 
-from ..decorators.prompt import UserHandledException
+from ..decorators.prompt import UserHandledException, set_default_llm
 
 from ..utils.validate_node_ancestors import validate_node_ancestors
 
@@ -22,6 +23,21 @@ from .types import Fn
 from .diagraph_node import DiagraphNode
 
 from .historical_bidict import HistoricalBidict
+
+default_log_fn = None
+
+
+def set_default_log(log_fn):
+    global default_log_fn
+    default_log_fn = log_fn
+
+
+default_error_fn = None
+
+
+def set_default_error(error_fn):
+    global default_error_fn
+    default_error_fn = error_fn
 
 
 class Diagraph:
@@ -72,8 +88,8 @@ class Diagraph:
         self.terminal_nodes = [
             DiagraphNode(self, get_fn_name(node)) for node in terminal_nodes
         ]
-        self.log_handler = log
-        self.error_handler = error
+        self.log_handler = log or default_log_fn
+        self.error_handler = error or default_error_fn
 
     def _repr_html_(self) -> str:
         return self.__graph__._repr_html_()
@@ -261,3 +277,15 @@ class Diagraph:
 
     def __setitem__(self, node_key: Key, fn: Fn):
         self.fns[node_key] = fn
+
+    @staticmethod
+    def set_llm(llm: LLM):
+        set_default_llm(llm)
+
+    @staticmethod
+    def set_log(log_fn: Callable):
+        set_default_log(log_fn)
+
+    @staticmethod
+    def set_error(error_fn: Callable):
+        set_default_error(error_fn)
