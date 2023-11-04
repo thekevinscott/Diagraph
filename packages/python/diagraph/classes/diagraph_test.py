@@ -995,16 +995,16 @@ def describe_replay():
         def d0(input: str):
             return f"{input}_d0"
 
-        def d1a(input: str, d0: Annotated[str, Depends(d0)]):
+        def d1a(input: str, d0: str = Depends(d0)):
             return f"{input}_{d0}-d1a"
 
-        def d1b(input: str, d0: Annotated[str, Depends(d0)]):
+        def d1b(input: str, d0: str = Depends(d0)):
             return f"{input}_{d0}-d1b"
 
         def d2(
-            d1a: Annotated[str, Depends(d1a)],
-            d1b: Annotated[str, Depends(d1b)],
             input: str,
+            d1a: str = Depends(d1a),
+            d1b: str = Depends(d1b),
         ):
             return f"{d1a}_{d1b}-d2_{input}"
 
@@ -1016,10 +1016,10 @@ def describe_replay():
         def d0(input: str):
             return f"{input}_d0"
 
-        def d1(input: str, d0: Annotated[str, Depends(d0)]):
+        def d1(input: str, d0: str = Depends(d0)):
             return f"{input}_{d0}-d1"
 
-        def d2(d1: Annotated[str, Depends(d1)], input: str):
+        def d2(input: str, d1: str = Depends(d1)):
             return f"{d1}-d2-{input}"
 
         diagraph = Diagraph(d2)
@@ -1033,12 +1033,12 @@ def describe_replay():
         def d0(input: str):
             return f"{input}_d0"
 
-        def d1(input: str, d0: Annotated[str, Depends(d0)]):
+        def d1(input: str, d0: str = Depends(d0)):
             return f"{input}_{d0}-d1"
 
         def d2(
-            d1: Annotated[str, Depends(d1)],
             input: str,
+            d1: str = Depends(d1),
         ):
             return f"{input}_{d1}-d2"
 
@@ -1053,16 +1053,16 @@ def describe_replay():
         def d0(input: str):
             return f"{input}_d0"
 
-        def d1a(input: str, d0: Annotated[str, Depends(d0)]):
+        def d1a(input: str, d0: str = Depends(d0)):
             return f"{input}_{d0}-d1a"
 
-        def d1b(input: str, d0: Annotated[str, Depends(d0)]):
+        def d1b(input: str, d0: str = Depends(d0)):
             return f"{input}_{d0}-d1b"
 
         def d2(
-            d1a: Annotated[str, Depends(d1a)],
-            d1b: Annotated[str, Depends(d1b)],
             input: str,
+            d1a: str = Depends(d1a),
+            d1b: str = Depends(d1b),
         ):
             return "*".join(
                 [
@@ -1092,12 +1092,12 @@ def describe_replay():
         def d0(input: str):
             return f"{input}_d0"
 
-        def d1(input: str, d0: Annotated[str, Depends(d0)]):
+        def d1(input: str, d0: str = Depends(d0)):
             return f"{input}_{d0}-d1"
 
         def d2(
-            d1: Annotated[str, Depends(d1)],
             input: str,
+            d1: str = Depends(d1),
         ):
             return f"{d1}-d2_{input}"
 
@@ -1115,12 +1115,12 @@ def describe_replay():
         def d0(input: str):
             return f"{input}_d0"
 
-        def d1(input: str, d0: Annotated[str, Depends(d0)]):
+        def d1(input: str, d0: str = Depends(d0)):
             return f"{input}_{d0}-d1"
 
         def d2(
-            d1: Annotated[str, Depends(d1)],
             input: str,
+            d1: str = Depends(d1),
         ):
             return f"{d1}-d2_{input}"
 
@@ -1201,11 +1201,11 @@ def describe_prompt():
                 return input
 
             @prompt
-            def d1a(d0: Annotated[str, Depends(d0)]) -> str:
+            def d1a(d0: str = Depends(d0)) -> str:
                 return f"d1a:{d0}"
 
             @prompt
-            def d1b(d0: Annotated[str, Depends(d0)]) -> str:
+            def d1b(d0: str = Depends(d0)) -> str:
                 return f"d1b:{d0}"
 
             input = "foo"
@@ -1328,11 +1328,11 @@ def test_it_calls_tokens_on_layer():
             return input
 
         @prompt
-        def d1a(d0: Annotated[str, Depends(d0)]) -> str:
+        def d1a(d0: str = Depends(d0)) -> str:
             return f"d1a {d0}"
 
         @prompt
-        def d1b(d0: Annotated[str, Depends(d0)]) -> str:
+        def d1b(d0: str = Depends(d0)) -> str:
             return f"d1b {d0}"
 
         input = "foo bar"
