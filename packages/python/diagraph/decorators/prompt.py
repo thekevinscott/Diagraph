@@ -7,9 +7,18 @@ class UserHandledException(Exception):
     pass
 
 
+default_llm = OpenAI()
+
+
+def set_default_llm(llm):
+    global default_llm
+    default_llm = llm
+
+
 def prompt(_func=None, *, log=None, llm=None, error=None, return_type=None):
+    global default_llm
     if llm is None:
-        llm = OpenAI()
+        llm = default_llm
 
     def decorator(func):
         # print(func)
