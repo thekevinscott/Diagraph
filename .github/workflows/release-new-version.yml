@@ -59,7 +59,7 @@ jobs:
         with:
           repo_token: "${{ secrets.GITHUB_TOKEN }}"
           prerelease: true
-          automatic_release_tag: "latest"
+          automatic_release_tag: "${{ steps.versioncheck.outputs.local_version }}"
           # files: |
           #   LICENSE.txt
           #   *.jar
@@ -72,7 +72,7 @@ jobs:
         with:
           repo_token: "${{ secrets.GITHUB_TOKEN }}"
           prerelease: true
-          automatic_release_tag: "latest"
+          automatic_release_tag: "${{ steps.versioncheck.outputs.local_version }}"
           # files: |
           #   LICENSE.txt
           #   *.jar
