@@ -1,4 +1,6 @@
 import functools
+
+from ..llm.llm import LLM
 from ..llm.openai_llm import OpenAI
 from .is_decorated import IS_DECORATED_KEY
 
@@ -10,23 +12,30 @@ class UserHandledException(Exception):
 default_llm = OpenAI()
 
 
-def set_default_llm(llm):
+def set_default_llm(llm: LLM):
     global default_llm
+    if llm is None:
+        raise Exception("You cannot pass a null LLM")
     default_llm = llm
 
 
 def prompt(_func=None, *, log=None, llm=None, error=None, return_type=None):
-    global default_llm
-    if llm is None:
-        llm = default_llm
-
     def decorator(func):
         # print(func)
 
         @functools.wraps(func)
         def wrapper_fn(*args, **kwargs):
-            diagraph_log = getattr(wrapper_fn, "__log__", None)
-            diagraph_error = getattr(wrapper_fn, "__error__", None)
+            global default_llm
+            function_llm = getattr(wrapper_fn, "__function_llm__", None)
+            diagraph_llm = getattr(wrapper_fn, "__diagraph_llm__", None)
+            if function_llm is not None:
+                llm = function_llm
+            elif diagraph_llm is not None:
+                llm = diagraph_llm
+            else:
+                llm = default_llm
+            diagraph_log = getattr(wrapper_fn, "__diagraph_log__", None)
+            diagraph_error = getattr(wrapper_fn, "__diagraph_error__", None)
 
             def _log(event: str, chunk: str):
                 if log:
@@ -52,6 +61,7 @@ def prompt(_func=None, *, log=None, llm=None, error=None, return_type=None):
 
         setattr(wrapper_fn, IS_DECORATED_KEY, True)
         setattr(wrapper_fn, "__fn__", func)
+        setattr(wrapper_fn, "__function_llm__", llm)
         return wrapper_fn
 
     if _func is None:
