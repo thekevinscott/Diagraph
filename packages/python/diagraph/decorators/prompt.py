@@ -31,7 +31,7 @@ def prompt(_func=None, *, log=None, llm=None, error=None, return_type=None):
             def _log(event: str, chunk: str):
                 if log:
                     log(event, chunk)
-                if diagraph_log:
+                elif diagraph_log:
                     diagraph_log(event, chunk, wrapper_fn)
 
             generated_prompt = func(*args, **kwargs)
