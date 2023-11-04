@@ -1,5 +1,4 @@
 from __future__ import annotations
-import networkx as nx
 import inspect
 from datetime import datetime
 from typing import Any, Callable, Optional, overload

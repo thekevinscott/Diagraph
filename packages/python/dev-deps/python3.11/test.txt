@@ -4,9 +4,6 @@
 #
 #    pip-compile --allow-unsafe --output-file=dev-deps/python3.11/test.txt dev-deps/test.in
 #
---extra-index-url https://pypi.ngc.nvidia.com
---trusted-host pypi.ngc.nvidia.com
-
 coverage[toml]==7.3.2
     # via
     #   coverage
