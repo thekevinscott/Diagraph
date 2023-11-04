@@ -357,6 +357,73 @@ def describe_indexing():
             for node in nodes:
                 assert node in layer
 
+    def test_it_can_index_into_a_deep_reverse_triangle():
+        def d0a():
+            pass
+
+        def d0b():
+            pass
+
+        def d1a(d0a: str = Depends(d0a)):
+            pass
+
+        def d1b(d0b: str = Depends(d0b)):
+            pass
+
+        def d2(d1a: str = Depends(d1a), d1b: str = Depends(d1b)):
+            pass
+
+        diagraph = Diagraph(d2)
+
+        def check_node(diagraph, key):
+            node = diagraph[key]
+            assert isinstance(node, DiagraphNode)
+            return node.fn
+
+        def get_layer(diagraph, key):
+            layer = diagraph[key]
+            assert isinstance(layer, DiagraphLayer)
+            return layer
+
+        for node in [d0a, d0b, d1a, d1b, d2]:
+            assert check_node(diagraph, node) == node
+
+        for index, nodes in [
+            (
+                0,
+                (
+                    d0a,
+                    d0b,
+                ),
+            ),
+            (
+                1,
+                (
+                    d1a,
+                    d1b,
+                ),
+            ),
+            (2, (d2,)),
+            (
+                -3,
+                (
+                    d0a,
+                    d0b,
+                ),
+            ),
+            (
+                -2,
+                (
+                    d1a,
+                    d1b,
+                ),
+            ),
+            (-1, (d2,)),
+        ]:
+            layer = get_layer(diagraph, index)
+            for node in nodes:
+                assert node in layer
+
 
 def describe_run():
     def test_it_can_run_a_single_fn(mocker):
@@ -995,16 +1062,16 @@ def describe_replay():
         def d0(input: str):
             return f"{input}_d0"
 
-        def d1a(input: str, d0: Annotated[str, Depends(d0)]):
+        def d1a(input: str, d0: str = Depends(d0)):
             return f"{input}_{d0}-d1a"
 
-        def d1b(input: str, d0: Annotated[str, Depends(d0)]):
+        def d1b(input: str, d0: str = Depends(d0)):
             return f"{input}_{d0}-d1b"
 
         def d2(
-            d1a: Annotated[str, Depends(d1a)],
-            d1b: Annotated[str, Depends(d1b)],
             input: str,
+            d1a: str = Depends(d1a),
+            d1b: str = Depends(d1b),
         ):
             return f"{d1a}_{d1b}-d2_{input}"
 
@@ -1016,10 +1083,10 @@ def describe_replay():
         def d0(input: str):
             return f"{input}_d0"
 
-        def d1(input: str, d0: Annotated[str, Depends(d0)]):
+        def d1(input: str, d0: str = Depends(d0)):
             return f"{input}_{d0}-d1"
 
-        def d2(d1: Annotated[str, Depends(d1)], input: str):
+        def d2(input: str, d1: str = Depends(d1)):
             return f"{d1}-d2-{input}"
 
         diagraph = Diagraph(d2)
@@ -1033,12 +1100,12 @@ def describe_replay():
         def d0(input: str):
             return f"{input}_d0"
 
-        def d1(input: str, d0: Annotated[str, Depends(d0)]):
+        def d1(input: str, d0: str = Depends(d0)):
             return f"{input}_{d0}-d1"
 
         def d2(
-            d1: Annotated[str, Depends(d1)],
             input: str,
+            d1: str = Depends(d1),
         ):
             return f"{input}_{d1}-d2"
 
@@ -1053,16 +1120,16 @@ def describe_replay():
         def d0(input: str):
             return f"{input}_d0"
 
-        def d1a(input: str, d0: Annotated[str, Depends(d0)]):
+        def d1a(input: str, d0: str = Depends(d0)):
             return f"{input}_{d0}-d1a"
 
-        def d1b(input: str, d0: Annotated[str, Depends(d0)]):
+        def d1b(input: str, d0: str = Depends(d0)):
             return f"{input}_{d0}-d1b"
 
         def d2(
-            d1a: Annotated[str, Depends(d1a)],
-            d1b: Annotated[str, Depends(d1b)],
             input: str,
+            d1a: str = Depends(d1a),
+            d1b: str = Depends(d1b),
         ):
             return "*".join(
                 [
@@ -1092,12 +1159,12 @@ def describe_replay():
         def d0(input: str):
             return f"{input}_d0"
 
-        def d1(input: str, d0: Annotated[str, Depends(d0)]):
+        def d1(input: str, d0: str = Depends(d0)):
             return f"{input}_{d0}-d1"
 
         def d2(
-            d1: Annotated[str, Depends(d1)],
             input: str,
+            d1: str = Depends(d1),
         ):
             return f"{d1}-d2_{input}"
 
@@ -1115,12 +1182,12 @@ def describe_replay():
         def d0(input: str):
             return f"{input}_d0"
 
-        def d1(input: str, d0: Annotated[str, Depends(d0)]):
+        def d1(input: str, d0: str = Depends(d0)):
             return f"{input}_{d0}-d1"
 
         def d2(
-            d1: Annotated[str, Depends(d1)],
             input: str,
+            d1: str = Depends(d1),
         ):
             return f"{d1}-d2_{input}"
 
@@ -1201,11 +1268,11 @@ def describe_prompt():
                 return input
 
             @prompt
-            def d1a(d0: Annotated[str, Depends(d0)]) -> str:
+            def d1a(d0: str = Depends(d0)) -> str:
                 return f"d1a:{d0}"
 
             @prompt
-            def d1b(d0: Annotated[str, Depends(d0)]) -> str:
+            def d1b(d0: str = Depends(d0)) -> str:
                 return f"d1b:{d0}"
 
             input = "foo"
@@ -1328,11 +1395,11 @@ def test_it_calls_tokens_on_layer():
             return input
 
         @prompt
-        def d1a(d0: Annotated[str, Depends(d0)]) -> str:
+        def d1a(d0: str = Depends(d0)) -> str:
             return f"d1a {d0}"
 
         @prompt
-        def d1b(d0: Annotated[str, Depends(d0)]) -> str:
+        def d1b(d0: str = Depends(d0)) -> str:
             return f"d1b {d0}"
 
         input = "foo bar"
@@ -1393,6 +1460,24 @@ def describe_llm():
             log("end", None)
             return response
 
+    def test_it_sets_a_function_llm(mocker):
+        log = mocker.stub()
+
+        times = 3
+
+        @prompt(llm=MockLLM(times=times))
+        def fn():
+            return "test prompt"
+
+        Diagraph(fn, log=log).run()
+
+        assert log.call_count == 2 + times
+        log.assert_any_call("start", None, fn)
+        for i in range(times):
+            i = f"{i}"
+            log.assert_any_call("data", i, fn)
+        log.assert_any_call("end", None, fn)
+
     def test_it_sets_a_default_llm(mocker):
         log = mocker.stub()
 
@@ -1413,6 +1498,24 @@ def describe_llm():
             log.assert_any_call("data", i, fn)
         log.assert_any_call("end", None, fn)
 
+    def test_it_sets_a_diagraph_llm(mocker):
+        log = mocker.stub()
+
+        times = 3
+
+        @prompt()
+        def fn():
+            return "test prompt"
+
+        Diagraph(fn, log=log, llm=MockLLM(times=times)).run()
+
+        assert log.call_count == 2 + times
+        log.assert_any_call("start", None, fn)
+        for i in range(times):
+            i = f"{i}"
+            log.assert_any_call("data", i, fn)
+        log.assert_any_call("end", None, fn)
+
     def test_it_overrides_a_default_llm(mocker):
         log = mocker.stub()
 
@@ -1425,6 +1528,64 @@ def describe_llm():
             return "test prompt"
 
         Diagraph(fn, log=log).run()
+
+        assert log.call_count == 2 + times
+        log.assert_any_call("start", None, fn)
+        for i in range(times):
+            i = f"{i}"
+            log.assert_any_call("data", i, fn)
+        log.assert_any_call("end", None, fn)
+
+    def test_it_overrides_a_diagraph_llm(mocker):
+        log = mocker.stub()
+
+        times = 3
+
+        @prompt(llm=MockLLM(times=times))
+        def fn():
+            return "test prompt"
+
+        Diagraph(fn, log=log, llm=MockLLM(times=0)).run()
+
+        assert log.call_count == 2 + times
+        log.assert_any_call("start", None, fn)
+        for i in range(times):
+            i = f"{i}"
+            log.assert_any_call("data", i, fn)
+        log.assert_any_call("end", None, fn)
+
+    def test_it_overrides_a_diagraph_and_global_llm(mocker):
+        log = mocker.stub()
+
+        times = 3
+
+        Diagraph.set_llm(MockLLM(times=0))
+
+        @prompt(llm=MockLLM(times=times))
+        def fn():
+            return "test prompt"
+
+        Diagraph(fn, log=log, llm=MockLLM(times=0)).run()
+
+        assert log.call_count == 2 + times
+        log.assert_any_call("start", None, fn)
+        for i in range(times):
+            i = f"{i}"
+            log.assert_any_call("data", i, fn)
+        log.assert_any_call("end", None, fn)
+
+    def test_it_overrides_a_global_llm_from_a_diagraph_llm(mocker):
+        log = mocker.stub()
+
+        times = 3
+
+        Diagraph.set_llm(MockLLM(times=0))
+
+        @prompt()
+        def fn():
+            return "test prompt"
+
+        Diagraph(fn, log=log, llm=MockLLM(times=times)).run()
 
         assert log.call_count == 2 + times
         log.assert_any_call("start", None, fn)

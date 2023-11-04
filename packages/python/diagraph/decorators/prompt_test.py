@@ -1,5 +1,4 @@
 import pytest
-from typing import Annotated
 from ..classes.diagraph import Diagraph
 from ..utils.depends import Depends
 from .prompt import prompt
@@ -93,6 +92,7 @@ def describe_logs():
             i = f"{i}"
             log.assert_any_call("data", i, fn)
         log.assert_any_call("end", None, fn)
+        assert default_log.call_count == 0
 
     def test_it_handles_logs_for_a_fn(mocker):
         log = mocker.stub()
@@ -112,26 +112,73 @@ def describe_logs():
             log.assert_any_call("data", i)
         log.assert_any_call("end", None)
 
-    # def test_a_default_log_fn_can_be_overridden_at_the_function_level(mocker):
-    #     default_log = mocker.stub()
-    #     log = mocker.stub()
+    def test_a_diagraph_log_fn_can_be_overridden_at_the_function_level(mocker):
+        diagraph_log = mocker.stub()
+        log = mocker.stub()
 
-    #     times = 3
+        times = 3
 
-    #     Diagraph.set_log(default_log)
+        @prompt(llm=MockLLM(times=times), log=log)
+        def fn():
+            return "test prompt"
 
-    #     @prompt(llm=MockLLM(times=times), log=log)
-    #     def fn():
-    #         return "test prompt"
+        Diagraph(fn, log=diagraph_log).run()
 
-    #     Diagraph(fn).run()
+        assert log.call_count == 2 + times
+        log.assert_any_call("start", None)
+        for i in range(times):
+            i = f"{i}"
+            log.assert_any_call("data", i)
+        log.assert_any_call("end", None)
+        assert diagraph_log.call_count == 0
 
-    #     assert log.call_count == 2 + times
-    #     log.assert_any_call("start", None, fn)
-    #     for i in range(times):
-    #         i = f"{i}"
-    #         log.assert_any_call("data", i, fn)
-    #     log.assert_any_call("end", None, fn)
+    def test_a_global_log_fn_can_be_overridden_at_the_function_level(mocker):
+        global_log = mocker.stub()
+        log = mocker.stub()
+
+        times = 3
+
+        Diagraph.set_log(global_log)
+
+        @prompt(llm=MockLLM(times=times), log=log)
+        def fn():
+            return "test prompt"
+
+        Diagraph(fn).run()
+
+        assert log.call_count == 2 + times
+        log.assert_any_call("start", None)
+        for i in range(times):
+            i = f"{i}"
+            log.assert_any_call("data", i)
+        log.assert_any_call("end", None)
+        assert global_log.call_count == 0
+
+    def test_a_global_and_diagraph_log_fn_can_be_overridden_at_the_function_level(
+        mocker,
+    ):
+        global_log = mocker.stub()
+        diagraph_log = mocker.stub()
+        log = mocker.stub()
+
+        times = 3
+
+        Diagraph.set_log(global_log)
+
+        @prompt(llm=MockLLM(times=times), log=log)
+        def fn():
+            return "test prompt"
+
+        Diagraph(fn, log=diagraph_log).run()
+
+        assert log.call_count == 2 + times
+        log.assert_any_call("start", None)
+        for i in range(times):
+            i = f"{i}"
+            log.assert_any_call("data", i)
+        log.assert_any_call("end", None)
+        assert global_log.call_count == 0
+        assert diagraph_log.call_count == 0
 
 
 def describe_errors():
@@ -181,6 +228,7 @@ def describe_errors():
         assert isinstance(handle_errors.call_args_list[0][0][0], Exception)
         assert handle_errors.call_args_list[0][0][1] == fn
         assert len(handle_errors.call_args_list[0][0]) == 2
+        assert global_handle_errors.call_count == 0
 
     def test_it_handles_errors_at_a_function_level(mocker):
         handle_errors = mocker.stub()
@@ -212,6 +260,7 @@ def describe_errors():
         assert handle_errors.call_count == 1
         assert isinstance(handle_errors.call_args_list[0][0][0], Exception)
         assert len(handle_errors.call_args_list[0][0]) == 1
+        assert global_handle_errors.call_count == 0
 
     def test_it_handles_errors_at_a_function_level_and_overrides_global_and_diagraph_error_fn(
         mocker,
@@ -231,6 +280,8 @@ def describe_errors():
         assert handle_errors.call_count == 1
         assert isinstance(handle_errors.call_args_list[0][0][0], Exception)
         assert len(handle_errors.call_args_list[0][0]) == 1
+        assert global_handle_errors.call_count == 0
+        assert diagraph_handle_errors.call_count == 0
 
     def test_it_halts_execution_on_error_and_raises_without_handler():
         @prompt(llm=MockLLM())
@@ -238,7 +289,7 @@ def describe_errors():
             return "fn"
 
         @prompt(llm=MockLLM(error=True))
-        def bar(fn: Annotated[str, Depends(fn)]):
+        def bar(fn: str = Depends(fn)):
             return "bar"
 
         with pytest.raises(Exception):
@@ -252,7 +303,7 @@ def describe_errors():
             return "prompt"
 
         @prompt(llm=MockLLM(error=True))
-        def bar(fn: Annotated[str, Depends(fn)]):
+        def bar(fn: str = Depends(fn)):
             return "bar"
 
         diagraph = Diagraph(bar, error=handle_errors).run()
