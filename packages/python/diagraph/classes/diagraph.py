@@ -50,9 +50,15 @@ class Diagraph:
     fns: HistoricalBidict[Key, Fn]
     runs: list[Any]
     graph_mapping: bidict[Fn, str]
+    llm: Optional[LLM]
 
     def __init__(
-        self, *terminal_nodes: Key, log=None, error=None, use_string_keys=False
+        self,
+        *terminal_nodes: Key,
+        log=None,
+        error=None,
+        llm=None,
+        use_string_keys=False,
     ) -> None:
         graph_def = build_graph(*terminal_nodes)
         graph_mapping: dict[Fn, str] = dict()
@@ -82,6 +88,7 @@ class Diagraph:
         self.results = HistoricalBidict()
         self.prompts = HistoricalBidict()
         self.runs = []
+        self.llm = llm
 
         for key in self.__graph__.get_nodes():
             self.fns[key] = self.graph_mapping.inverse[key]
@@ -226,7 +233,7 @@ class Diagraph:
         # in order
         encountered_star = False
         for parameter in inspect.signature(fn).parameters.values():
-            print("parameter", parameter.default)
+            # print("parameter", parameter.default)
             # Depends can be passed as Annotated[str, Depends]
             if is_annotated(parameter.annotation):
                 dep: Fn = get_dependency(parameter.annotation)
@@ -271,8 +278,9 @@ class Diagraph:
                     for arg in input_args[arg_index:]:
                         args.append(arg)
 
-        setattr(fn, "__log__", self.log_handler)
-        setattr(fn, "__error__", self.error_handler)
+        setattr(fn, "__diagraph_log__", self.log_handler)
+        setattr(fn, "__diagraph_error__", self.error_handler)
+        setattr(fn, "__diagraph_llm__", self.llm)
         return fn(*args, **kwargs)
 
     def __setitem__(self, node_key: Key, fn: Fn):

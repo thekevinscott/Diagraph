@@ -1460,6 +1460,24 @@ def describe_llm():
             log("end", None)
             return response
 
+    def test_it_sets_a_function_llm(mocker):
+        log = mocker.stub()
+
+        times = 3
+
+        @prompt(llm=MockLLM(times=times))
+        def fn():
+            return "test prompt"
+
+        Diagraph(fn, log=log).run()
+
+        assert log.call_count == 2 + times
+        log.assert_any_call("start", None, fn)
+        for i in range(times):
+            i = f"{i}"
+            log.assert_any_call("data", i, fn)
+        log.assert_any_call("end", None, fn)
+
     def test_it_sets_a_default_llm(mocker):
         log = mocker.stub()
 
@@ -1480,6 +1498,24 @@ def describe_llm():
             log.assert_any_call("data", i, fn)
         log.assert_any_call("end", None, fn)
 
+    def test_it_sets_a_diagraph_llm(mocker):
+        log = mocker.stub()
+
+        times = 3
+
+        @prompt()
+        def fn():
+            return "test prompt"
+
+        Diagraph(fn, log=log, llm=MockLLM(times=times)).run()
+
+        assert log.call_count == 2 + times
+        log.assert_any_call("start", None, fn)
+        for i in range(times):
+            i = f"{i}"
+            log.assert_any_call("data", i, fn)
+        log.assert_any_call("end", None, fn)
+
     def test_it_overrides_a_default_llm(mocker):
         log = mocker.stub()
 
@@ -1492,6 +1528,64 @@ def describe_llm():
             return "test prompt"
 
         Diagraph(fn, log=log).run()
+
+        assert log.call_count == 2 + times
+        log.assert_any_call("start", None, fn)
+        for i in range(times):
+            i = f"{i}"
+            log.assert_any_call("data", i, fn)
+        log.assert_any_call("end", None, fn)
+
+    def test_it_overrides_a_diagraph_llm(mocker):
+        log = mocker.stub()
+
+        times = 3
+
+        @prompt(llm=MockLLM(times=times))
+        def fn():
+            return "test prompt"
+
+        Diagraph(fn, log=log, llm=MockLLM(times=0)).run()
+
+        assert log.call_count == 2 + times
+        log.assert_any_call("start", None, fn)
+        for i in range(times):
+            i = f"{i}"
+            log.assert_any_call("data", i, fn)
+        log.assert_any_call("end", None, fn)
+
+    def test_it_overrides_a_diagraph_and_global_llm(mocker):
+        log = mocker.stub()
+
+        times = 3
+
+        Diagraph.set_llm(MockLLM(times=0))
+
+        @prompt(llm=MockLLM(times=times))
+        def fn():
+            return "test prompt"
+
+        Diagraph(fn, log=log, llm=MockLLM(times=0)).run()
+
+        assert log.call_count == 2 + times
+        log.assert_any_call("start", None, fn)
+        for i in range(times):
+            i = f"{i}"
+            log.assert_any_call("data", i, fn)
+        log.assert_any_call("end", None, fn)
+
+    def test_it_overrides_a_global_llm_from_a_diagraph_llm(mocker):
+        log = mocker.stub()
+
+        times = 3
+
+        Diagraph.set_llm(MockLLM(times=0))
+
+        @prompt()
+        def fn():
+            return "test prompt"
+
+        Diagraph(fn, log=log, llm=MockLLM(times=times)).run()
 
         assert log.call_count == 2 + times
         log.assert_any_call("start", None, fn)
