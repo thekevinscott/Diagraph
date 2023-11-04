@@ -357,6 +357,73 @@ def describe_indexing():
             for node in nodes:
                 assert node in layer
 
+    def test_it_can_index_into_a_deep_reverse_triangle():
+        def d0a():
+            pass
+
+        def d0b():
+            pass
+
+        def d1a(d0a: str = Depends(d0a)):
+            pass
+
+        def d1b(d0b: str = Depends(d0b)):
+            pass
+
+        def d2(d1a: str = Depends(d1a), d1b: str = Depends(d1b)):
+            pass
+
+        diagraph = Diagraph(d2)
+
+        def check_node(diagraph, key):
+            node = diagraph[key]
+            assert isinstance(node, DiagraphNode)
+            return node.fn
+
+        def get_layer(diagraph, key):
+            layer = diagraph[key]
+            assert isinstance(layer, DiagraphLayer)
+            return layer
+
+        for node in [d0a, d0b, d1a, d1b, d2]:
+            assert check_node(diagraph, node) == node
+
+        for index, nodes in [
+            (
+                0,
+                (
+                    d0a,
+                    d0b,
+                ),
+            ),
+            (
+                1,
+                (
+                    d1a,
+                    d1b,
+                ),
+            ),
+            (2, (d2,)),
+            (
+                -3,
+                (
+                    d0a,
+                    d0b,
+                ),
+            ),
+            (
+                -2,
+                (
+                    d1a,
+                    d1b,
+                ),
+            ),
+            (-1, (d2,)),
+        ]:
+            layer = get_layer(diagraph, index)
+            for node in nodes:
+                assert node in layer
+
 
 def describe_run():
     def test_it_can_run_a_single_fn(mocker):
