@@ -41,6 +41,8 @@ def set_default_error(error_fn):
 
 
 class Diagraph:
+    """A directed acyclic graph (Diagraph) for managing and executing a graph of functions."""
+
     __graph__: Graph
     terminal_nodes: tuple[DiagraphNode]
     log_handler: Optional[Callable[[str, str, Key], None]]
@@ -60,11 +62,20 @@ class Diagraph:
         llm=None,
         use_string_keys=False,
     ) -> None:
+        """
+        Initialize a Diagraph.
+
+        Args:
+            terminal_nodes: The terminal nodes of the graph.
+            log (Optional[Callable[[str, str, Key], None]]): A logging function for capturing log messages.
+            error (Optional[Callable[[str, str, Key], None]]): An error handling function.
+            use_string_keys (bool): Whether to use string keys for functions in the graph.
+        """
         graph_def = build_graph(*terminal_nodes)
-        graph_mapping: dict[Fn, str] = dict()
+        graph_mapping: dict[Fn, str | Fn] = dict()
         graph_def_keys = list(graph_def.keys())
 
-        def get_fn_name(fn: Fn):
+        def get_fn_name(fn: Fn) -> str | Fn:
             if use_string_keys:
                 return fn.__name__
             return fn
@@ -92,6 +103,7 @@ class Diagraph:
 
         for key in self.__graph__.get_nodes():
             self.fns[key] = self.graph_mapping.inverse[key]
+
         self.terminal_nodes = [
             DiagraphNode(self, get_fn_name(node)) for node in terminal_nodes
         ]
@@ -110,6 +122,15 @@ class Diagraph:
         ...
 
     def __getitem__(self, key: Fn | int) -> DiagraphNode | tuple[DiagraphNode]:
+        """
+        Retrieve a DiagraphNode or DiagraphLayer associated with a function or depth key.
+
+        Args:
+            key (Fn | int): A function or depth key.
+
+        Returns:
+            DiagraphNode or tuple[DiagraphNode]: The DiagraphNode or DiagraphLayer associated with the key.
+        """
         node_keys = self.__graph__[key]
         if isinstance(node_keys, list):
             return DiagraphLayer(self, key, *node_keys)
@@ -118,9 +139,28 @@ class Diagraph:
         raise Exception(f"Unknown type: {type(node_keys)}")
 
     def run(self, *input_args, **kwargs):
+        """
+        Run the Diagraph from the beginning.
+
+        Args:
+            *input_args: Input arguments to be passed to the graph.
+
+        Returns:
+            Diagraph: The Diagraph instance.
+        """
         return self.__run_from__(0, *input_args, **kwargs)
 
     def __run_from__(self, node_key: Fn | int, *input_args, **kwargs):
+        """
+        Run the Diagraph from a specific node.
+
+        Args:
+            node_key (Fn | int): The node key or depth to start execution from.
+            *input_args: Input arguments to be passed to the graph.
+
+        Returns:
+            Diagraph: The Diagraph instance.
+        """
         run = {
             "start": datetime.now(),
             "node_key": node_key,
@@ -200,6 +240,12 @@ class Diagraph:
 
     @property
     def result(self):
+        """
+        Get the results of the terminal nodes.
+
+        Returns:
+            Any or tuple[Any]: The result of the terminal nodes, either as a single value or a tuple of values.
+        """
         results = []
         latest_run = self.runs[-1]
         if latest_run is None:
@@ -223,6 +269,16 @@ class Diagraph:
         return tuple(results)
 
     def __run_node__(self, node: Fn, *input_args, **kwargs):
+        """
+        Execute a single node in the Diagraph.
+
+        Args:
+            node (Fn): The function node to execute.
+            *input_args: Input arguments to be passed to the node.
+
+        Returns:
+            Any: The result of executing the node.
+        """
         args = []
         arg_index = 0
         fn = self.fns[node.key]
@@ -284,6 +340,13 @@ class Diagraph:
         return fn(*args, **kwargs)
 
     def __setitem__(self, node_key: Key, fn: Fn):
+        """
+        Add a function to the Diagraph.
+
+        Args:
+            node_key (Key): The key associated with the function.
+            fn (Fn): The function to add to the Diagraph.
+        """
         self.fns[node_key] = fn
 
     @staticmethod

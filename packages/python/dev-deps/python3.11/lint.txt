@@ -4,9 +4,6 @@
 #
 #    pip-compile --allow-unsafe --output-file=dev-deps/python3.11/lint.txt dev-deps/lint.in
 #
---extra-index-url https://pypi.ngc.nvidia.com
---trusted-host pypi.ngc.nvidia.com
-
 cfgv==3.4.0
     # via pre-commit
 distlib==0.3.7
