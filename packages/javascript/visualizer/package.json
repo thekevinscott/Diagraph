@@ -1,0 +1,49 @@
+{
+  "name": "@diagraph/visualizer",
+  "type": "module",
+  "version": "0.0.1",
+  "description": "",
+  "main": "./dist/diagraph.js",
+  "scripts": {
+    "build": "wireit",
+    "dev": "wireit"
+  },
+  "wireit": {
+    "dev": {
+      "command": "vite -c ./vite.config.ts",
+      "dependencies": [
+        "../../../internals/shared:build",
+        "../../../internals/code-editor:build"
+      ],
+      "files": [
+        "./src/**/*",
+        "package.json",
+        "tsconfig.json",
+        "global.d.ts"
+      ],
+      "output": [
+        "./dist/**/*"
+      ]
+    },
+    "build": {
+      "command": "vite build -c ./vite.config.ts"
+    }
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "@internals/code-editor": "workspace:*",
+    "@internals/shared": "workspace:*",
+    "@shoelace-style/shoelace": "^2.11.2",
+    "dagre": "^0.8.5",
+    "lit": "^3.0.2"
+  },
+  "devDependencies": {
+    "@types/dagre": "^0.7.51",
+    "nodemon": "^3.0.1",
+    "vite": "^4.5.0",
+    "vite-plugin-dts": "^3.6.1",
+    "wireit": "^0.14.1"
+  }
+}

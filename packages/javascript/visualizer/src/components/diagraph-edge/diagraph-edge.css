@@ -1,0 +1,6 @@
+svg {
+  position: absolute;
+  /* border: 1px solid red; */
+  /* background: rgba(0, 0, 0, 0.1); */
+  pointer-events: none;
+}

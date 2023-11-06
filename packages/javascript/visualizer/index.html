@@ -1,0 +1,31 @@
+<html>
+  <body>
+    <style>
+      body, html {
+        padding: 0;
+        margin: 0;
+      }
+
+    </style>
+    <script type="module" src="./src/index.ts"></script>
+    <!-- <diagraph-viz>
+      <diagraph-node depth="1" id="d1"  edges='["d0"]' fn="def starting():\n  return 'starting'" prompt="Starting" result="Some result"></diagraph-node>
+      <diagraph-node depth="0" id="d0" edges="[]" fn="def starting():\n  return 'starting'" prompt="Starting" result="Some result"></diagraph-node>
+    </diagraph-viz> -->
+    <!-- <diagraph-viz>
+      <diagraph-node depth="1" id="d1"  edges='["d0a", "d0b"]' fn="def starting():\n  return 'starting'" prompt="Starting" result="Some result"></diagraph-node>
+      <diagraph-node depth="0" id="d0a" edges="[]" fn="def starting():\n  return 'starting'" prompt="Starting" result="Some result"></diagraph-node>
+      <diagraph-node depth="0" id="d0b" edges="[]" fn="def starting():\n  return 'starting'" prompt="Starting" result="Some result"></diagraph-node>
+    </diagraph-viz> -->
+    
+    <diagraph-viz>
+      <diagraph-node depth="2" id="d2a" edges='["d1"]' fn="def d0a():\n  return 'terminal'" prompt="terminal" result="Some result"></diagraph-node>
+      <diagraph-node depth="2" id="d2b" edges='["d1"]' fn="def d0b():\n  return 'terminal'" prompt="terminal" result="Some result"></diagraph-node>
+      <diagraph-node depth="1" id="d1"  edges='["d0a", "d0b", "d0c"]' fn="def starting():\n  return 'starting'" prompt="Starting" result="Some result"></diagraph-node>
+      <diagraph-node depth="0" id="d0a" edges="[]" fn="def starting():\n  return 'starting'" prompt="Starting" result="Some result"></diagraph-node>
+      <diagraph-node depth="0" id="d0b" edges="[]" fn="def starting():\n  return 'starting'" prompt="Starting" result="Some result"></diagraph-node>
+      <diagraph-node depth="0" id="d0c" edges="[]" fn="def starting():\n  return 'starting'" prompt="Starting" result="Some result"></diagraph-node>
+    </diagraph-viz>
+ 
+  </body>
+</html>
