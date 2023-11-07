@@ -1,5 +1,6 @@
-from typing import Annotated
+from typing import Annotated, Callable
 from unittest.mock import patch
+
 from ..llm.llm import LLM
 import pytest
 from ..llm.openai_llm import OpenAI
@@ -448,28 +449,6 @@ def describe_run():
         d1_mock = mocker.Mock()
         d1_mock.return_value = "d1"
 
-        def d1(d0: Annotated[str, Depends(d0)]):
-            return d1_mock(d0)
-
-        diagraph = Diagraph(d1)
-
-        assert d0_mock.call_count == 0
-        assert d1_mock.call_count == 0
-        diagraph.run()
-        assert d0_mock.call_count == 1
-        assert d1_mock.call_count == 1
-        d1_mock.assert_called_with(d0_mock.return_value)
-
-    def test_it_can_run_a_single_dependency_with_default_syntax(mocker):
-        d0_mock = mocker.Mock()
-        d0_mock.return_value = "d0"
-
-        def d0():
-            return d0_mock()
-
-        d1_mock = mocker.Mock()
-        d1_mock.return_value = "d1"
-
         def d1(d0: str = Depends(d0)):
             return d1_mock(d0)
 
@@ -540,6 +519,694 @@ def describe_run():
         assert diagraph[0].result == "foo"
         assert diagraph[1].result == "foobar"
         assert diagraph[2].result == "foobarbaz"
+
+    def describe_a_complicated_graph():
+        @pytest.mark.parametrize(
+            "terminal_nodes,assertions",
+            [
+                (
+                    "d3a",
+                    (
+                        ("d0b", 1),
+                        ("d1c", 1),
+                        ("d2d", 1),
+                        ("d3a", 1),
+                        ("d0a", 0),
+                        ("d1a", 0),
+                        ("d1b", 0),
+                        ("d2a", 0),
+                        ("d2b", 0),
+                        ("d2c", 0),
+                    ),
+                ),
+                (
+                    "d2d",
+                    (
+                        ("d0b", 1),
+                        ("d1c", 1),
+                        ("d2d", 1),
+                        ("d3a", 0),
+                        ("d0a", 0),
+                        ("d1a", 0),
+                        ("d1b", 0),
+                        ("d2a", 0),
+                        ("d2b", 0),
+                        ("d2c", 0),
+                    ),
+                ),
+                (
+                    "d2c",
+                    (
+                        ("d0b", 1),
+                        ("d1c", 1),
+                        ("d2d", 0),
+                        ("d3a", 0),
+                        ("d0a", 0),
+                        ("d1a", 0),
+                        ("d1b", 0),
+                        ("d2a", 0),
+                        ("d2b", 0),
+                        ("d2c", 1),
+                    ),
+                ),
+                (
+                    "d2b",
+                    (
+                        ("d0b", 1),
+                        ("d1c", 1),
+                        ("d2d", 0),
+                        ("d3a", 0),
+                        ("d0a", 1),
+                        ("d1a", 1),
+                        ("d1b", 0),
+                        ("d2a", 0),
+                        ("d2b", 1),
+                        ("d2c", 0),
+                    ),
+                ),
+                (
+                    "d2a",
+                    (
+                        ("d0b", 0),
+                        ("d1c", 0),
+                        ("d2d", 0),
+                        ("d3a", 0),
+                        ("d0a", 1),
+                        ("d1a", 1),
+                        ("d1b", 0),
+                        ("d2a", 1),
+                        ("d2b", 0),
+                        ("d2c", 0),
+                    ),
+                ),
+                (
+                    "d1c",
+                    (
+                        ("d0b", 1),
+                        ("d1c", 1),
+                        ("d2d", 0),
+                        ("d3a", 0),
+                        ("d0a", 0),
+                        ("d1a", 0),
+                        ("d1b", 0),
+                        ("d2a", 0),
+                        ("d2b", 0),
+                        ("d2c", 0),
+                    ),
+                ),
+                (
+                    "d1b",
+                    (
+                        ("d0b", 1),
+                        ("d1c", 0),
+                        ("d2d", 0),
+                        ("d3a", 0),
+                        ("d0a", 0),
+                        ("d1a", 0),
+                        ("d1b", 1),
+                        ("d2a", 0),
+                        ("d2b", 0),
+                        ("d2c", 0),
+                    ),
+                ),
+                (
+                    "d1a",
+                    (
+                        ("d0b", 0),
+                        ("d1c", 0),
+                        ("d2d", 0),
+                        ("d3a", 0),
+                        ("d0a", 1),
+                        ("d1a", 1),
+                        ("d1b", 0),
+                        ("d2a", 0),
+                        ("d2b", 0),
+                        ("d2c", 0),
+                    ),
+                ),
+                (
+                    "d0b",
+                    (
+                        ("d0b", 1),
+                        ("d1c", 0),
+                        ("d2d", 0),
+                        ("d3a", 0),
+                        ("d0a", 0),
+                        ("d1a", 0),
+                        ("d1b", 0),
+                        ("d2a", 0),
+                        ("d2b", 0),
+                        ("d2c", 0),
+                    ),
+                ),
+                (
+                    "d0a",
+                    (
+                        ("d0b", 0),
+                        ("d1c", 0),
+                        ("d2d", 0),
+                        ("d3a", 0),
+                        ("d0a", 1),
+                        ("d1a", 0),
+                        ("d1b", 0),
+                        ("d2a", 0),
+                        ("d2b", 0),
+                        ("d2c", 0),
+                    ),
+                ),
+                (
+                    ("d0a", "d1a"),
+                    (
+                        ("d0b", 0),
+                        ("d1c", 0),
+                        ("d2d", 0),
+                        ("d3a", 0),
+                        ("d0a", 1),
+                        ("d1a", 1),
+                        ("d1b", 0),
+                        ("d2a", 0),
+                        ("d2b", 0),
+                        ("d2c", 0),
+                    ),
+                ),
+                (
+                    ("d0a", "d1a", "d2a"),
+                    (
+                        ("d0b", 0),
+                        ("d1c", 0),
+                        ("d2d", 0),
+                        ("d3a", 0),
+                        ("d0a", 1),
+                        ("d1a", 1),
+                        ("d1b", 0),
+                        ("d2a", 1),
+                        ("d2b", 0),
+                        ("d2c", 0),
+                    ),
+                ),
+                (
+                    ("d2a", "d2b"),
+                    (
+                        ("d0b", 1),
+                        ("d1c", 1),
+                        ("d2d", 0),
+                        ("d3a", 0),
+                        ("d0a", 1),
+                        ("d1a", 1),
+                        ("d1b", 0),
+                        ("d2a", 1),
+                        ("d2b", 1),
+                        ("d2c", 0),
+                    ),
+                ),
+                (
+                    ("d2a", "d2b", "d2c"),
+                    (
+                        ("d0b", 1),
+                        ("d1c", 1),
+                        ("d2d", 0),
+                        ("d3a", 0),
+                        ("d0a", 1),
+                        ("d1a", 1),
+                        ("d1b", 0),
+                        ("d2a", 1),
+                        ("d2b", 1),
+                        ("d2c", 1),
+                    ),
+                ),
+                (
+                    ("d2a", "d2b", "d2d"),
+                    (
+                        ("d0b", 1),
+                        ("d1c", 1),
+                        ("d2d", 1),
+                        ("d3a", 0),
+                        ("d0a", 1),
+                        ("d1a", 1),
+                        ("d1b", 0),
+                        ("d2a", 1),
+                        ("d2b", 1),
+                        ("d2c", 0),
+                    ),
+                ),
+                (
+                    ("d2a", "d2b", "d3a"),
+                    (
+                        ("d0b", 1),
+                        ("d1c", 1),
+                        ("d2d", 1),
+                        ("d3a", 1),
+                        ("d0a", 1),
+                        ("d1a", 1),
+                        ("d1b", 0),
+                        ("d2a", 1),
+                        ("d2b", 1),
+                        ("d2c", 0),
+                    ),
+                ),
+                (
+                    ("d2a", "d2b", "d2c", "d3a"),
+                    (
+                        ("d0b", 1),
+                        ("d1c", 1),
+                        ("d2d", 1),
+                        ("d3a", 1),
+                        ("d0a", 1),
+                        ("d1a", 1),
+                        ("d1b", 0),
+                        ("d2a", 1),
+                        ("d2b", 1),
+                        ("d2c", 1),
+                    ),
+                ),
+                (
+                    ("d2a", "d2b", "d2c", "d3a", "d1b"),
+                    (
+                        ("d0b", 1),
+                        ("d1c", 1),
+                        ("d2d", 1),
+                        ("d3a", 1),
+                        ("d0a", 1),
+                        ("d1a", 1),
+                        ("d1b", 1),
+                        ("d2a", 1),
+                        ("d2b", 1),
+                        ("d2c", 1),
+                    ),
+                ),
+            ],
+        )
+        def test_it_runs_the_whole_graph(mocker, terminal_nodes, assertions):
+            d0a_mock = mocker.Mock(id="d0")
+            d0a_mock.return_value = "d0"
+
+            def d0a():
+                return d0a_mock()
+
+            d1a_mock = mocker.Mock(id="d1a")
+            d1a_mock.return_value = "d1a"
+
+            def d1a(d0a=Depends(d0a)):
+                return d1a_mock()
+
+            d0b_mock = mocker.Mock(id="d0b")
+            d0b_mock.return_value = "d0b"
+
+            def d0b():
+                return d0b_mock()
+
+            d1b_mock = mocker.Mock(id="d1b")
+            d1b_mock.return_value = "d1b"
+
+            def d1b(d0b=Depends(d0b)):
+                return d1b_mock()
+
+            d1c_mock = mocker.Mock(id="d1c")
+            d1c_mock.return_value = "d1c"
+
+            def d1c(d0b=Depends(d0b)):
+                return d1c_mock()
+
+            d2a_mock = mocker.Mock(id="d2a")
+            d2a_mock.return_value = "d2a"
+
+            def d2a(d1a=Depends(d1a)):
+                return d2a_mock()
+
+            d2b_mock = mocker.Mock(id="d2b")
+            d2b_mock.return_value = "d2b"
+
+            def d2b(d1a=Depends(d1a), d1c=Depends(d1c)):
+                return d2b_mock()
+
+            d2c_mock = mocker.Mock(id="d2c")
+            d2c_mock.return_value = "d2c"
+
+            def d2c(d1c=Depends(d1c)):
+                return d2c_mock()
+
+            d2d_mock = mocker.Mock(id="d2d")
+            d2d_mock.return_value = "d2d"
+
+            def d2d(d1c=Depends(d1c)):
+                return d2d_mock()
+
+            d3a_mock = mocker.Mock(id="d3a")
+            d3a_mock.return_value = "d3a"
+
+            def d3a(d2d=Depends(d2d)):
+                return d3a_mock()
+
+            mocks: dict[str, mocker.Mock] = {
+                "d0b": d0b_mock,
+                "d1c": d1c_mock,
+                "d2d": d2d_mock,
+                "d3a": d3a_mock,
+                "d0a": d0a_mock,
+                "d1a": d1a_mock,
+                "d1b": d1b_mock,
+                "d2a": d2a_mock,
+                "d2b": d2b_mock,
+                "d2c": d2c_mock,
+            }
+
+            nodes: dict[str, Callable] = {
+                "d0b": d0b,
+                "d1c": d1c,
+                "d2d": d2d,
+                "d3a": d3a,
+                "d0a": d0a,
+                "d1a": d1a,
+                "d1b": d1b,
+                "d2a": d2a,
+                "d2b": d2b,
+                "d2c": d2c,
+            }
+
+            for key, expectation in assertions:
+                expectation = 0
+                try:
+                    assert mocks[key].call_count == expectation
+                except Exception as e:
+                    print(
+                        f'for key "{key}": expected call count {expectation}, got {mocks[key].call_count}'
+                    )
+                    raise e
+
+            if isinstance(terminal_nodes, tuple):
+                terminal_nodes = tuple([nodes[node] for node in terminal_nodes])
+            else:
+                terminal_nodes = tuple([nodes[terminal_nodes]])
+
+            Diagraph(*terminal_nodes).run()
+            for key, expectation in assertions:
+                try:
+                    assert mocks[key].call_count == expectation
+                except Exception as e:
+                    print(
+                        f'for key "{key}": expected call count {expectation}, got {mocks[key].call_count}'
+                    )
+                    raise e
+
+        @pytest.mark.parametrize(
+            "starting_nodes,assertions",
+            [
+                (
+                    "d0a",
+                    (
+                        ("d0a", 2),
+                        ("d0b", 1),
+                        ("d1a", 2),
+                        ("d1b", 1),
+                        ("d1c", 1),
+                        ("d2a", 2),
+                        ("d2b", 2),
+                        ("d2c", 1),
+                        ("d2d", 1),
+                        ("d3a", 1),
+                    ),
+                ),
+                (
+                    "d0b",
+                    (
+                        ("d0a", 1),
+                        ("d0b", 2),
+                        ("d1a", 1),
+                        ("d1b", 2),
+                        ("d1c", 2),
+                        ("d2a", 1),
+                        ("d2b", 2),
+                        ("d2c", 2),
+                        ("d2d", 2),
+                        ("d3a", 2),
+                    ),
+                ),
+                (
+                    "d1a",
+                    (
+                        ("d0a", 1),
+                        ("d0b", 1),
+                        ("d1a", 2),
+                        ("d1b", 1),
+                        ("d1c", 1),
+                        ("d2a", 2),
+                        ("d2b", 2),
+                        ("d2c", 1),
+                        ("d2d", 1),
+                        ("d3a", 1),
+                    ),
+                ),
+                (
+                    "d1b",
+                    (
+                        ("d0b", 1),
+                        ("d0a", 1),
+                        ("d1a", 1),
+                        ("d1b", 2),
+                        ("d1c", 1),
+                        ("d2a", 1),
+                        ("d2b", 1),
+                        ("d2c", 1),
+                        ("d2d", 1),
+                        ("d3a", 1),
+                    ),
+                ),
+                (
+                    "d1c",
+                    (
+                        ("d0b", 1),
+                        ("d0a", 1),
+                        ("d1a", 1),
+                        ("d1b", 1),
+                        ("d1c", 2),
+                        ("d2a", 1),
+                        ("d2b", 2),
+                        ("d2c", 2),
+                        ("d2d", 2),
+                        ("d3a", 2),
+                    ),
+                ),
+                (
+                    "d2a",
+                    (
+                        ("d0a", 1),
+                        ("d0b", 1),
+                        ("d1a", 1),
+                        ("d1b", 1),
+                        ("d1c", 1),
+                        ("d2a", 2),
+                        ("d2b", 1),
+                        ("d2c", 1),
+                        ("d2d", 1),
+                        ("d3a", 1),
+                    ),
+                ),
+                (
+                    "d2b",
+                    (
+                        ("d0a", 1),
+                        ("d0b", 1),
+                        ("d1a", 1),
+                        ("d1b", 1),
+                        ("d1c", 1),
+                        ("d2a", 1),
+                        ("d2b", 2),
+                        ("d2c", 1),
+                        ("d2d", 1),
+                        ("d3a", 1),
+                    ),
+                ),
+                (
+                    "d2c",
+                    (
+                        ("d0a", 1),
+                        ("d0b", 1),
+                        ("d1a", 1),
+                        ("d1b", 1),
+                        ("d1c", 1),
+                        ("d2a", 1),
+                        ("d2b", 1),
+                        ("d2c", 2),
+                        ("d2d", 1),
+                        ("d3a", 1),
+                    ),
+                ),
+                (
+                    "d2d",
+                    (
+                        ("d0a", 1),
+                        ("d0b", 1),
+                        ("d1a", 1),
+                        ("d1b", 1),
+                        ("d1c", 1),
+                        ("d2a", 1),
+                        ("d2b", 1),
+                        ("d2c", 1),
+                        ("d2d", 2),
+                        ("d3a", 2),
+                    ),
+                ),
+                (
+                    "d3a",
+                    (
+                        ("d0a", 1),
+                        ("d0b", 1),
+                        ("d1a", 1),
+                        ("d1b", 1),
+                        ("d1c", 1),
+                        ("d2a", 1),
+                        ("d2b", 1),
+                        ("d2c", 1),
+                        ("d2d", 1),
+                        ("d3a", 2),
+                    ),
+                ),
+                # (
+                #     ["d3a", "d2b"],
+                #     (
+                #         ("d0a", 1),
+                #         ("d0b", 1),
+                #         ("d1a", 1),
+                #         ("d1b", 1),
+                #         ("d1c", 1),
+                #         ("d2a", 1),
+                #         ("d2b", 2),
+                #         ("d2c", 1),
+                #         ("d2d", 1),
+                #         ("d3a", 2),
+                #     ),
+                # ),
+            ],
+        )
+        def test_it_runs_the_whole_graph_with_cached_data(
+            mocker, starting_nodes, assertions
+        ):
+            d0a_mock = mocker.Mock(id="d0")
+            d0a_mock.return_value = "d0"
+
+            def d0a():
+                return d0a_mock()
+
+            d1a_mock = mocker.Mock(id="d1a")
+            d1a_mock.return_value = "d1a"
+
+            def d1a(d0a=Depends(d0a)):
+                return d1a_mock()
+
+            d0b_mock = mocker.Mock(id="d0b")
+            d0b_mock.return_value = "d0b"
+
+            def d0b():
+                return d0b_mock()
+
+            d1b_mock = mocker.Mock(id="d1b")
+            d1b_mock.return_value = "d1b"
+
+            def d1b(d0b=Depends(d0b)):
+                return d1b_mock()
+
+            d1c_mock = mocker.Mock(id="d1c")
+            d1c_mock.return_value = "d1c"
+
+            def d1c(d0b=Depends(d0b)):
+                return d1c_mock()
+
+            d2a_mock = mocker.Mock(id="d2a")
+            d2a_mock.return_value = "d2a"
+
+            def d2a(d1a=Depends(d1a)):
+                return d2a_mock()
+
+            d2b_mock = mocker.Mock(id="d2b")
+            d2b_mock.return_value = "d2b"
+
+            def d2b(d1a=Depends(d1a), d1c=Depends(d1c)):
+                return d2b_mock()
+
+            d2c_mock = mocker.Mock(id="d2c")
+            d2c_mock.return_value = "d2c"
+
+            def d2c(d1c=Depends(d1c)):
+                return d2c_mock()
+
+            d2d_mock = mocker.Mock(id="d2d")
+            d2d_mock.return_value = "d2d"
+
+            def d2d(d1c=Depends(d1c)):
+                return d2d_mock()
+
+            d3a_mock = mocker.Mock(id="d3a")
+            d3a_mock.return_value = "d3a"
+
+            def d3a(d2d=Depends(d2d)):
+                return d3a_mock()
+
+            mocks: dict[str, mocker.Mock] = {
+                "d0b": d0b_mock,
+                "d1c": d1c_mock,
+                "d2d": d2d_mock,
+                "d3a": d3a_mock,
+                "d0a": d0a_mock,
+                "d1a": d1a_mock,
+                "d1b": d1b_mock,
+                "d2a": d2a_mock,
+                "d2b": d2b_mock,
+                "d2c": d2c_mock,
+            }
+
+            nodes: dict[str, Callable] = {
+                "d0b": d0b,
+                "d1c": d1c,
+                "d2d": d2d,
+                "d3a": d3a,
+                "d0a": d0a,
+                "d1a": d1a,
+                "d1b": d1b,
+                "d2a": d2a,
+                "d2b": d2b,
+                "d2c": d2c,
+            }
+
+            for key, _ in assertions:
+                expectation = 0
+                try:
+                    assert mocks[key].call_count == expectation
+                except Exception as e:
+                    print(
+                        f'for key "{key}": expected call count {expectation}, got {mocks[key].call_count}'
+                    )
+                    raise e
+
+            dg = Diagraph(*tuple(nodes.values())).run()
+
+            g = {}
+            for key, val in dg.__graph__.graph_def.items():
+                g[key.__name__] = [v.__name__ for v in val]
+            print(g)
+
+            for key, _ in assertions:
+                expectation = 1
+                try:
+                    assert mocks[key].call_count == expectation
+                    expectation
+                except Exception as e:
+                    print(
+                        f'for key "{key}": expected call count {expectation}, got {mocks[key].call_count}'
+                    )
+                    raise e
+
+            print("------ ")
+            dg[nodes[starting_nodes]].run()
+            print("------ post run, assert that all are as expected -----")
+
+            for key, expectation in assertions:
+                try:
+                    assert mocks[key].call_count == expectation
+                except Exception as e:
+                    print(
+                        f'for key "{key}": expected call count {expectation}, got {mocks[key].call_count}'
+                    )
+                    raise e
 
 
 def describe_inputs():
@@ -757,12 +1424,12 @@ def describe_inputs():
         def d0(input: str):
             return f"{input}_d0"
 
-        def d1a(input: str, i: Annotated[str, Depends(d0)]):
+        def d1a(input: str, i: str = Depends(d0)):
             return f"{input}_{i}-d1a"
 
         def d1b(
-            i: Annotated[str, Depends(d0)],
             input: str,
+            i: str = Depends(d0),
         ):
             return f"{input}_{i}-d1b"
 
@@ -933,15 +1600,20 @@ def describe_inputs():
 
                 @prompt
                 def improvement(
-                    joke: Annotated[str, Depends(tell_me_a_joke)],
-                    explanation: Annotated[str, Depends(explanation)],
+                    joke: str = Depends(tell_me_a_joke),
+                    explanation: str = Depends(explanation),
                 ) -> str:
                     return f"{joke} {explanation} improve"
 
+                print("0")
                 diagraph = Diagraph(improvement).run()
+                print("1")
                 assert diagraph.result == "joke_ joke_ explain_ improve_"
+                print("2")
                 assert diagraph[tell_me_a_joke].result == "joke_"
+                print("3")
                 assert diagraph[explanation].result == "joke_ explain_"
+                print("4")
                 assert diagraph[improvement].result == diagraph.result
                 assert diagraph[0].result == "joke_"
                 assert diagraph[1].result == "joke_ explain_"

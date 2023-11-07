@@ -3,6 +3,7 @@ import inspect
 from datetime import datetime
 from typing import Any, Callable, Optional, overload
 from bidict import bidict
+from ..utils.get_execution_graph import get_execution_graph
 from ..visualization.render_repr_html import render_repr_html
 from ..llm.llm import LLM
 from ..decorators.is_decorated import is_decorated
@@ -26,6 +27,7 @@ from .diagraph_node import DiagraphNode
 from .historical_bidict import HistoricalBidict
 
 default_log_fn = None
+
 
 def set_default_log(log_fn):
     global default_log_fn
@@ -96,8 +98,8 @@ class Diagraph:
             graph_def[get_fn_name(item)] = new_val
         self.graph_mapping = bidict(graph_mapping)
         self.__graph__ = Graph(graph_def)
-        self.fns = HistoricalBidict()
         self.results = HistoricalBidict()
+        self.fns = HistoricalBidict()
         self.prompts = HistoricalBidict()
         self.runs = []
         self.llm = llm
@@ -125,14 +127,14 @@ class Diagraph:
     #     return str(self.__graph__)
 
     @overload
-    def __getitem__(self, key: int) -> Optional[tuple[DiagraphNode]]:
+    def __getitem__(self, key: int) -> DiagraphLayer:
         ...
 
     @overload
-    def __getitem__(self, key: Fn) -> Optional[DiagraphNode]:
+    def __getitem__(self, key: Fn) -> DiagraphNode:
         ...
 
-    def __getitem__(self, key: Fn | int) -> DiagraphNode | tuple[DiagraphNode]:
+    def __getitem__(self, key: Fn | int) -> DiagraphNode | DiagraphLayer:
         """
         Retrieve a DiagraphNode or DiagraphLayer associated with a function or depth key.
 
@@ -144,7 +146,11 @@ class Diagraph:
         """
         node_keys = self.__graph__[key]
         if isinstance(node_keys, list):
-            return DiagraphLayer(self, key, *node_keys)
+            if isinstance(key, int):
+                return DiagraphLayer(self, key, *node_keys)
+            raise Exception(
+                f"Unexpected key when trying to build a diagraph layer: {key}"
+            )
         elif isinstance(node_keys, Fn) or isinstance(node_keys, str):
             return DiagraphNode(self, node_keys)
         raise Exception(f"Unknown type: {type(node_keys)}")
@@ -183,6 +189,7 @@ class Diagraph:
         nodes = self[node_key]  # nodes is a diagraph node
         if not isinstance(nodes, DiagraphLayer):
             nodes = (nodes,)
+
         run["starting_nodes"] = nodes
         run["dirty"] = True
         validate_node_ancestors(nodes)
@@ -193,55 +200,28 @@ class Diagraph:
         run["active_depth"] = depth
 
         ran = set()
+        if isinstance(node_key, int):
+            node_keys = [node.key for node in nodes.nodes]
+        else:
+            node_keys = [node.key for node in nodes]
+
         try:
-            while True:
-                layer = []
-                # for node in self[depth]:
-                for node in nodes:
-                    if node not in ran:
-                        run["nodes"][node.key] = {
-                            "depth": depth,
-                            "executed": None,
-                        }
-                        ran.add(node)
-                        if is_decorated(node.fn):
-                            encountered_prompt = False
-                            for r in self.__run_node__(node, *input_args, **kwargs):
-                                if encountered_prompt is False:
-                                    encountered_prompt = True
-                                    if r is None:
-                                        raise Exception(
-                                            f"Prompt returned from function {node.fn.__name__} is None. This is an error, you must return a valid response for the LLM."
-                                        )
-                                    node.prompt = r
-                                else:
-                                    result = r
-                        else:
-                            result = self.__run_node__(node, *input_args, **kwargs)
-                        run["nodes"][node.key] = {
-                            "executed": datetime.now(),
-                            ## TODO: This should reference the result object directly
-                            "result": result,
-                            "depth": depth,
-                        }
-                        node.result = result
-                    if node.children:
-                        for child in node.children:
-                            if child not in layer:
-                                run["nodes"][child.key] = {
-                                    "executed": None,
-                                    "depth": depth,
-                                }
-                                layer.append(child)
-                run["active_depth"] = depth
-
-                if len(layer):
-                    depth += 1
-                    nodes = self[depth]
-                    # nodes = layer
-                else:
-                    break
-
+            for node_keys in get_execution_graph(self.__graph__, node_keys):
+                for node_key in node_keys:
+                    node = self[node_key]
+                    run["nodes"][node_key] = {
+                        # "depth": depth,
+                        "executed": None,
+                    }
+                    result = self.__run_node__(node, *input_args, **kwargs)
+                    run["nodes"][node_key] = {
+                        "executed": datetime.now(),
+                        ## TODO: This should reference the result object directly
+                        "result": result,
+                        # "depth": depth,
+                    }
+                    node.result = result
+                # run["active_depth"] = depth
             run["complete"] = True
 
         except UserHandledException:
@@ -263,21 +243,25 @@ class Diagraph:
             raise Exception("Diagraph has not been run yet")
         if latest_run.get("complete"):
             results = [node.result for node in self.terminal_nodes]
+            if len(results) == 1:
+                return results[0]
+            return tuple(results)
         else:
-            latest_depth = latest_run.get("active_depth")
-            for node_key, node_run_value in latest_run.get("nodes").items():
-                if node_run_value.get("depth") == latest_depth:
-                    if node_run_value.get("executed") is None:
-                        results.append(None)
-                    else:
-                        node = self[node_key]
-                        results.append(node.result)
+            return None
+        #     latest_depth = latest_run.get("active_depth")
+        #     for node_key, node_run_value in latest_run.get("nodes").items():
+        #         if node_run_value.get("depth") == latest_depth:
+        #             if node_run_value.get("executed") is None:
+        #                 results.append(None)
+        #             else:
+        #                 node = self[node_key]
+        #                 results.append(node.result)
 
-        if len(results) == 1:
-            return results[0]
-        return tuple(results)
+        # if len(results) == 1:
+        #     return results[0]
+        # return tuple(results)
 
-    def __run_node__(self, node: Fn, *input_args, **kwargs):
+    def __run_node__(self, node: DiagraphNode, *input_args, **kwargs):
         """
         Execute a single node in the Diagraph.
 
@@ -301,7 +285,12 @@ class Diagraph:
             if is_annotated(parameter.annotation):
                 dep: Fn = get_dependency(parameter.annotation)
                 key_for_fn = self.fns.inverse(dep)
-                args.append(self.results[key_for_fn])
+                try:
+                    args.append(self.results[key_for_fn])
+                except Exception as e:
+                    raise Exception(
+                        f"Failed to get saved result for fn {key_for_fn}, at parameter {parameter}: {e}"
+                    )
             # Depends can be passed as arg: str = Depends(dep)
             # Regular args can be passed as :str = 'foo'
             elif (
@@ -316,7 +305,10 @@ class Diagraph:
                         raise Exception(
                             f"No function has been set for dep {dep}. Available functions: {self.fns}"
                         )
-                    args.append(self.results[key_for_fn])
+                    try:
+                        args.append(self.results[key_for_fn])
+                    except Exception as e:
+                        raise Exception(f"Failed to get result for {key_for_fn}: {e}")
                 else:
                     args.append(parameter.default)
             elif not str(parameter).startswith("*"):
@@ -340,7 +332,20 @@ class Diagraph:
         setattr(fn, "__diagraph_log__", self.log_handler)
         setattr(fn, "__diagraph_error__", self.error_handler)
         setattr(fn, "__diagraph_llm__", self.llm)
-        return fn(*args, **kwargs)
+        if is_decorated(fn):
+            encountered_prompt = False
+            for r in fn(*args, **kwargs):
+                if encountered_prompt is False:
+                    encountered_prompt = True
+                    if r is None:
+                        raise Exception(
+                            f"Prompt returned from function {node.fn.__name__} is None. This is an error, you must return a valid response for the LLM."
+                        )
+                    node.prompt = r
+                else:
+                    return r
+        else:
+            return fn(*args, **kwargs)
 
     def __setitem__(self, node_key: Key, fn: Fn):
         """

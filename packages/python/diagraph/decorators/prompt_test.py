@@ -307,5 +307,6 @@ def describe_errors():
             return "bar"
 
         diagraph = Diagraph(bar, error=handle_errors).run()
-        assert diagraph.result == "012"
+        assert diagraph.result == None
+        assert diagraph[fn].result == "012"
         assert handle_errors.call_count == 1

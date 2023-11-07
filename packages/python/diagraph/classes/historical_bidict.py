@@ -1,4 +1,3 @@
-import json
 from typing import Generic, TypeVar
 
 Key = TypeVar("Key")
@@ -35,12 +34,12 @@ class HistoricalBidict(Generic[Key, Value]):
             self.values_to_keys[value] = key
 
     def __getitem__(self, key: Key):
-        try:
-            return self.keys[key][-1]
-        except Exception:
-            raise Exception(
-                f"Could not find key {key} in self keys {json.dumps(self.keys)}"
-            )
+        if key not in self.keys:
+            raise Exception(f"Key {key} not found in {self.keys}")
+        if len(self.keys[key]) == 0:
+            raise Exception(f"No records found for key {key} not found in {self.keys}")
+
+        return self.keys[key][-1]
 
     def inverse(self, value: Value):
         if is_not_hashable(value):
