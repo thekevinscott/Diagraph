@@ -76,6 +76,11 @@ class Graph(Generic[Key]):
         return [self.get_node_for_int_key(i) for i in int_representations]
 
     def _repr_html_(self) -> str:
+        # return '''<p>HI</p>'''
         return nx.draw(self.__G__)
+
+    def __str__(self) -> str:
+        return str(self.__G__)
+        # return nx.write_network_text(self.__G__)
 
     # return render_repr_html(self.dg)

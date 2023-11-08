@@ -3,6 +3,7 @@ import inspect
 from datetime import datetime
 from typing import Any, Callable, Optional, overload
 from bidict import bidict
+from ..visualization.render_repr_html import render_repr_html
 from ..llm.llm import LLM
 from ..decorators.is_decorated import is_decorated
 
@@ -26,7 +27,6 @@ from .historical_bidict import HistoricalBidict
 
 default_log_fn = None
 
-
 def set_default_log(log_fn):
     global default_log_fn
     default_log_fn = log_fn
@@ -44,6 +44,7 @@ class Diagraph:
     """A directed acyclic graph (Diagraph) for managing and executing a graph of functions."""
 
     __graph__: Graph
+
     terminal_nodes: tuple[DiagraphNode]
     log_handler: Optional[Callable[[str, str, Key], None]]
     error_handler: Optional[Callable[[str, str, Key], None]]
@@ -111,7 +112,17 @@ class Diagraph:
         self.error_handler = error or default_error_fn
 
     def _repr_html_(self) -> str:
-        return self.__graph__._repr_html_()
+        html = render_repr_html(self)
+        return html
+        # return repr_
+        # graph_repr = self.__graph__._repr_html_()
+        # if graph_repr is not None:
+        #     return graph_repr
+
+        # return 'Empty Diagraph'
+
+    def __str__(self) -> str:
+        return str(self.__graph__)
 
     @overload
     def __getitem__(self, key: int) -> Optional[tuple[DiagraphNode]]:
