@@ -254,9 +254,7 @@ class Diagraph:
             results = [node.result for node in self.terminal_nodes]
         else:
             latest_depth = latest_run.get("active_depth")
-            # print(latest_depth)
             for node_key, node_run_value in latest_run.get("nodes").items():
-                # print("node", node_key, node_run_value)
                 if node_run_value.get("depth") == latest_depth:
                     if node_run_value.get("executed") is None:
                         results.append(None)
@@ -282,14 +280,12 @@ class Diagraph:
         args = []
         arg_index = 0
         fn = self.fns[node.key]
-        # print("input args", input_args)
         # If a user has explicitly specified a dependency via an annotation, we hydrate
         # it below.
         # If an argument is _not_ specified as a dependency, pull off the next input arg
         # in order
         encountered_star = False
         for parameter in inspect.signature(fn).parameters.values():
-            # print("parameter", parameter.default)
             # Depends can be passed as Annotated[str, Depends]
             if is_annotated(parameter.annotation):
                 dep: Fn = get_dependency(parameter.annotation)
@@ -317,9 +313,6 @@ class Diagraph:
                     raise Exception(
                         "Found arguments defined after * args. Ensure *args and **kwargs come at the end of the function parameter definitions."
                     )
-                # else:
-                print(arg_index, input_args)
-
                 if arg_index > len(input_args) - 1:
                     raise Exception(
                         f'No argument provided for "{parameter.name}" in function {fn.__name__}. This indicates you forgot to call ".run()" with sufficient arguments.'
@@ -329,7 +322,6 @@ class Diagraph:
             else:
                 encountered_star = True
 
-                # print(arg_index, len(input_args))
                 if arg_index < len(input_args):
                     for arg in input_args[arg_index:]:
                         args.append(arg)

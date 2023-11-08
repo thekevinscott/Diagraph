@@ -6,7 +6,14 @@ Value = TypeVar("Value")
 
 
 def is_not_hashable(value):
-    return isinstance(value, (list, dict, set))
+    if isinstance(value, (list, dict, set)):
+        return True
+
+    if isinstance(value, tuple):
+        for val in value:
+            if is_not_hashable(val):
+                return True
+    return False
 
 
 class HistoricalBidict(Generic[Key, Value]):
@@ -22,9 +29,9 @@ class HistoricalBidict(Generic[Key, Value]):
 
     def __setitem__(self, key: Key, value: Value):
         self.keys[key] = self.keys.get(key, []) + [value]
-        if is_not_hashable(value):
-            self.values_to_keys[str(value)] = key
-        else:
+        if is_not_hashable(value) is False:
+            #     self.values_to_keys[str(value)] = key
+            # else:
             self.values_to_keys[value] = key
 
     def __getitem__(self, key: Key):
@@ -37,7 +44,10 @@ class HistoricalBidict(Generic[Key, Value]):
 
     def inverse(self, value: Value):
         if is_not_hashable(value):
-            return self.values_to_keys[str(value)]
+            raise Exception(
+                f"Value {value} is not hashable and cannot be used as an inverse key"
+            )
+            # return self.values_to_keys[str(value)]
         return self.values_to_keys[value]
 
     def historical(self, key: Key, index: int):
