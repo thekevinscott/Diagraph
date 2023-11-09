@@ -7,7 +7,8 @@ from pkg_resources import resource_stream, get_distribution
 
 
 def load_from_dist(url: str):
-    return load_resource(f"../../javascript/visualizer/dist/{url}")
+    return load_resource(f"../assets/dist/{url}")
+    # return load_resource(f"../../javascript/visualizer/dist/{url}")
 
 def load_resource(url: str, name = 'diagraph') -> str:
     return resource_stream(name, url).read().decode('utf-8')
@@ -22,7 +23,6 @@ def render_repr_html(diagraph):
     if len(links) == 0:
         for int_key in nx.topological_sort(G):
             fn = diagraph.__graph__.get_node_for_int_key(int_key)
-            print(fn)
             graph[fn.__name__] = []
     else:
         for link in links:
