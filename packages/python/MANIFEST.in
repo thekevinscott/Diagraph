@@ -1,3 +1,4 @@
-include *.js
+include assets/dist/*.js
+include assets/dist/*.css
 include LICENSE
 exclude env/bin/*.py

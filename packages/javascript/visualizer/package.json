@@ -5,6 +5,8 @@
   "description": "",
   "main": "./dist/vizualizer.js",
   "scripts": {
+    "build:prod": "wireit",
+    "move-assets": "wireit",
     "build": "wireit",
     "build:watch": "wireit",
     "dev": "wireit"
@@ -15,6 +17,12 @@
     },
     "build:watch": {
       "command": "vite build -c ./vite.config.ts --watch"
+    },
+    "build:prod": {
+      "command": "pnpm build && pnpm move-assets"
+    },
+    "move-assets": {
+      "command": "cp -r ./dist ../../python/assets"
     },
     "build": {
       "command": "vite build -c ./vite.config.ts",

@@ -7,3 +7,4 @@ diagraph.egg-info
 dist
 env
 .python-version
+assets/dist/*
