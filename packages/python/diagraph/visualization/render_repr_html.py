@@ -20,7 +20,9 @@ def render_repr_html(diagraph):
     nodes = []
     links = nx.node_link_data(G)["links"]
     if len(links) == 0:
-        for fn in nx.topological_sort(G):
+        for int_key in nx.topological_sort(G):
+            fn = diagraph.__graph__.get_node_for_int_key(int_key)
+            print(fn)
             graph[fn.__name__] = []
     else:
         for link in links:
