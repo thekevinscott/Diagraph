@@ -66,7 +66,7 @@ def render_repr_html(diagraph):
     "graph": graph,
     "version": get_distribution('diagraph').version
     })
-    print(props)
+    # print(props)
     random_number = random.randint(0, 100000000)
     root_id = f'root-{random_number}'
     style = "#" + root_id + """ {
