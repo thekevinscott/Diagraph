@@ -103,7 +103,7 @@ class DiagraphLayer:
         Returns:
             None
         """
-        self.diagraph.__run_from__(self.key, *input_args, **kwargs)
+        return self.diagraph.__run_from__(self.key, *input_args, **kwargs)
 
     @property
     def result(self):
