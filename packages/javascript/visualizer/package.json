@@ -22,7 +22,7 @@
       "command": "pnpm build && pnpm move-assets"
     },
     "move-assets": {
-      "command": "cp -r ./dist ../../python/assets"
+      "command": "cp -r ./dist ../../python/diagraph/assets"
     },
     "build": {
       "command": "vite build -c ./vite.config.ts",
