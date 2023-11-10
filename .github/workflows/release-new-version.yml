@@ -56,17 +56,17 @@ jobs:
           packages-dir: ./packages/python/dist
           verbose: true  
 
-      - name: Cut a Test Release
-        uses: "marvinpinto/action-automatic-releases@latest"
-        if: "contains( steps.versioncheck.outputs.local_version_is_higher , 'true') && contains( steps.versioncheck.outputs.is_test , 'true')"
-        with:
-          repo_token: "${{ secrets.GITHUB_TOKEN }}"
-          prerelease: true
-          automatic_release_tag: "${{ steps.versioncheck.outputs.local_version }}"
-          # files: |
-          #   LICENSE.txt
-          #   *.jar
-          #
+      # - name: Cut a Test Release
+      #   uses: "marvinpinto/action-automatic-releases@latest"
+      #   if: "contains( steps.versioncheck.outputs.local_version_is_higher , 'true') && contains( steps.versioncheck.outputs.is_test , 'true')"
+      #   with:
+      #     repo_token: "${{ secrets.GITHUB_TOKEN }}"
+      #     prerelease: true
+      #     automatic_release_tag: "${{ steps.versioncheck.outputs.local_version }}"
+      #     # files: |
+      #     #   LICENSE.txt
+      #     #   *.jar
+      #     #
 
 
       - name: Cut a Production Release
