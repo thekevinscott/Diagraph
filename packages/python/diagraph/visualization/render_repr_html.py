@@ -7,7 +7,7 @@ from pkg_resources import resource_stream, get_distribution
 
 
 def load_from_dist(url: str):
-    return load_resource(f"./assets/dist/{url}")
+    return load_resource(f"./assets/{url}")
     # return load_resource(f"../../javascript/visualizer/dist/{url}")
 
 def load_resource(url: str, name = 'diagraph') -> str:
