@@ -121,8 +121,8 @@ class Diagraph:
 
         # return 'Empty Diagraph'
 
-    def __str__(self) -> str:
-        return str(self.__graph__)
+    # def __str__(self) -> str:
+    #     return str(self.__graph__)
 
     @overload
     def __getitem__(self, key: int) -> Optional[tuple[DiagraphNode]]:

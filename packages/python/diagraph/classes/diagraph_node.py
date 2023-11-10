@@ -137,7 +137,7 @@ class DiagraphNode:
         Returns:
             None
         """
-        self.diagraph.__run_from__(self.key, *input_args)
+        return self.diagraph.__run_from__(self.key, *input_args)
 
     @property
     def result(self):

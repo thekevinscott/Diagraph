@@ -1056,6 +1056,20 @@ def describe_running_from_an_index():
         diagraph[0].run("foo")
         assert diagraph.result == "foo_foo_foo_d0-d1-d2"
 
+    def test_it_runs_and_returns_result_from_a_key(mocker):
+        def d0(input: str):
+            return f"d0:{input}"
+
+        diagraph = Diagraph(d0)
+        assert diagraph[d0].run("foo").result == 'd0:foo'
+
+    def test_it_runs_and_returns_result_from_an_index(mocker):
+        def d0(input: str):
+            return f"d0:{input}"
+
+        diagraph = Diagraph(d0)
+        assert diagraph[0].run("foo").result == 'd0:foo'
+
 
 def describe_replay():
     def test_it_gets_result_from_a_node():
