@@ -1,5 +1,4 @@
 import pytest
-from typing import Annotated
 
 
 from .depends import Depends
@@ -19,7 +18,7 @@ def describe_validate_node_ancestors():
         def d0():
             return "d0"
 
-        def d1(d0: Annotated[str, Depends(d0)]):
+        def d1(d0: str = Depends(d0)):
             return "d1"
 
         nodes = Diagraph(d1)[1]
@@ -30,7 +29,7 @@ def describe_validate_node_ancestors():
         def d0():
             return "d0"
 
-        def d1(d0: Annotated[str, Depends(d0)]):
+        def d1(d0: str = Depends(d0)):
             return "d1"
 
         diagraph = Diagraph(d1)
@@ -41,10 +40,10 @@ def describe_validate_node_ancestors():
         def d0():
             return "d0"
 
-        def d1(d0: Annotated[str, Depends(d0)]):
+        def d1(d0: str = Depends(d0)):
             return "d1"
 
-        def d2(d1: Annotated[str, Depends(d1)]):
+        def d2(d1: str = Depends(d1)):
             return "d2"
 
         diagraph = Diagraph(d2)
@@ -58,7 +57,7 @@ def describe_validate_node_ancestors():
         def d1():
             return "d1"
 
-        def d2(d0: Annotated[str, Depends(d0)], d1: Annotated[str, Depends(d1)]):
+        def d2(d0: str = Depends(d0), d1: str = Depends(d1)):
             return "d2"
 
         diagraph = Diagraph(d2)
@@ -74,10 +73,10 @@ def describe_validate_node_ancestors():
         def d0():
             return "d0"
 
-        def d1(d0: Annotated[str, Depends(d0)]):
+        def d1(d0: str = Depends(d0)):
             return "d1"
 
-        def d2(d0: Annotated[str, Depends(d0)], d1: Annotated[str, Depends(d1)]):
+        def d2(d0: str = Depends(d0), d1: str = Depends(d1)):
             return "d2"
 
         diagraph = Diagraph(d2)

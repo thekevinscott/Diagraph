@@ -1,5 +1,3 @@
-from typing import Annotated
-
 from .diagraph import Diagraph
 
 from ..utils.depends import Depends
@@ -14,10 +12,10 @@ def describe_diagraph_layer():
         def d0():
             return "d0"
 
-        def d1(d0: Annotated[str, Depends(d0)]):
+        def d1(d0: str = Depends(d0)):
             return "d1"
 
-        def d2(d0: Annotated[str, Depends(d0)]):
+        def d2(d0: str = Depends(d0)):
             return "d2"
 
         for node in Diagraph(d1, d2)[1]:
@@ -27,10 +25,10 @@ def describe_diagraph_layer():
         def d0():
             return "d0"
 
-        def d1(d0: Annotated[str, Depends(d0)]):
+        def d1(d0: str = Depends(d0)):
             return "d1"
 
-        def d2(d0: Annotated[str, Depends(d0)]):
+        def d2(d0: str = Depends(d0)):
             return "d2"
 
         diagraph = Diagraph(d1, d2)
@@ -41,10 +39,10 @@ def describe_diagraph_layer():
         def d0():
             return "d0"
 
-        def d1(d0: Annotated[str, Depends(d0)]):
+        def d1(d0: str = Depends(d0)):
             return "d1"
 
-        def d2(d0: Annotated[str, Depends(d0)]):
+        def d2(d0: str = Depends(d0)):
             return "d2"
 
         diagraph = Diagraph(d1, d2)
@@ -55,10 +53,10 @@ def describe_diagraph_layer():
         def d0():
             return "d0"
 
-        def d1(d0: Annotated[str, Depends(d0)]):
+        def d1(d0: str = Depends(d0)):
             return "d1"
 
-        def d2(d0: Annotated[str, Depends(d0)]):
+        def d2(d0: str = Depends(d0)):
             return "d2"
 
         layer = Diagraph(d1, d2)[1]
@@ -70,10 +68,10 @@ def describe_diagraph_layer():
         def d0():
             return "d0"
 
-        def d1(d0: Annotated[str, Depends(d0)]):
+        def d1(d0: str = Depends(d0)):
             return "d1"
 
-        def d2(d0: Annotated[str, Depends(d0)]):
+        def d2(d0: str = Depends(d0)):
             return "d2"
 
         diagraph = Diagraph(d1, d2).run()
@@ -84,10 +82,10 @@ def describe_diagraph_layer():
         def d0():
             return "d0"
 
-        def d1(d0: Annotated[str, Depends(d0)]):
+        def d1(d0: str = Depends(d0)):
             return f"{d0} d1"
 
-        def d2(d0: Annotated[str, Depends(d0)]):
+        def d2(d0: str = Depends(d0)):
             return f"{d0} d2"
 
         diagraph = Diagraph(d1, d2).run()
