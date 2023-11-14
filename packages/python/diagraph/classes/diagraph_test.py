@@ -1,4 +1,4 @@
-from typing import Annotated, Callable
+from typing import Callable
 from unittest.mock import patch
 
 from ..llm.llm import LLM
@@ -41,10 +41,10 @@ def describe_indexing():
         def foo():
             return "foo"
 
-        def bar(foo: Annotated[str, Depends(foo)]):
+        def bar(foo: str = Depends(foo)):
             return "bar"
 
-        def baz(bar: Annotated[str, Depends(bar)]):
+        def baz(bar: str = Depends(bar)):
             return "baz"
 
         diagraph = Diagraph(baz)
@@ -57,15 +57,13 @@ def describe_indexing():
         def l0():
             return "foo"
 
-        def l1_l(l0: Annotated[str, Depends(l0)]):
+        def l1_l(l0: str = Depends(l0)):
             return "bar"
 
-        def l1_r(l0: Annotated[str, Depends(l0)]):
+        def l1_r(l0: str = Depends(l0)):
             return "baz"
 
-        def l2(
-            l1_l: Annotated[str, Depends(l1_l)], l1_r: Annotated[str, Depends(l1_r)]
-        ):
+        def l2(l1_l: str = Depends(l1_l), l1_r: str = Depends(l1_r)):
             return "qux"
 
         diagraph = Diagraph(l2)
@@ -82,15 +80,13 @@ def describe_indexing():
         def l0():
             return "foo"
 
-        def l1_l(l0: Annotated[str, Depends(l0)]):
+        def l1_l(l0: str = Depends(l0)):
             return "bar"
 
-        def l1_r(l0: Annotated[str, Depends(l0)]):
+        def l1_r(l0: str = Depends(l0)):
             return "baz"
 
-        def l2(
-            l1_l: Annotated[str, Depends(l1_l)], l1_r: Annotated[str, Depends(l1_r)]
-        ):
+        def l2(l1_l: str = Depends(l1_l), l1_r: str = Depends(l1_r)):
             return "qux"
 
         diagraph = Diagraph(l2)
@@ -102,31 +98,29 @@ def describe_indexing():
         def l0():
             pass
 
-        def l1_l(l0: Annotated[str, Depends(l0)]):
+        def l1_l(l0: str = Depends(l0)):
             pass
 
-        def l1_r(l0: Annotated[str, Depends(l0)]):
+        def l1_r(l0: str = Depends(l0)):
             pass
 
-        def l2_l(
-            l1_l: Annotated[str, Depends(l1_l)], l1_r: Annotated[str, Depends(l1_r)]
-        ):
+        def l2_l(l1_l: str = Depends(l1_l), l1_r: str = Depends(l1_r)):
             pass
 
-        def l2_r(l1_r: Annotated[str, Depends(l1_r)]):
+        def l2_r(l1_r: str = Depends(l1_r)):
             pass
 
         def l3_l(
-            l2_l: Annotated[str, Depends(l2_l)],
-            l1_r: Annotated[str, Depends(l1_r)],
-            l0: Annotated[str, Depends(l0)],
+            l2_l: str = Depends(l2_l),
+            l1_r: str = Depends(l1_r),
+            l0: str = Depends(l0),
         ):
             pass
 
         def l4(
-            l3_l: Annotated[str, Depends(l3_l)],
-            l1_r: Annotated[str, Depends(l1_r)],
-            l2_r: Annotated[str, Depends(l2_r)],
+            l3_l: str = Depends(l3_l),
+            l1_r: str = Depends(l1_r),
+            l2_r: str = Depends(l2_r),
         ):
             pass
 
@@ -164,21 +158,19 @@ def describe_indexing():
         def l0():
             pass
 
-        def l1_l(l0: Annotated[str, Depends(l0)]):
+        def l1_l(l0: str = Depends(l0)):
             pass
 
-        def l1_r(l0: Annotated[str, Depends(l0)]):
+        def l1_r(l0: str = Depends(l0)):
             pass
 
-        def l2_l(l1_l: Annotated[str, Depends(l1_l)]):
+        def l2_l(l1_l: str = Depends(l1_l)):
             pass
 
-        def l2_r(l1_r: Annotated[str, Depends(l1_r)]):
+        def l2_r(l1_r: str = Depends(l1_r)):
             pass
 
-        def l3_l(
-            l2_l: Annotated[str, Depends(l2_l)], l1_r: Annotated[str, Depends(l1_r)]
-        ):
+        def l3_l(l2_l: str = Depends(l2_l), l1_r: str = Depends(l1_r)):
             pass
 
         diagraph = Diagraph(l3_l, l2_r)
@@ -216,15 +208,13 @@ def describe_indexing():
         def l0_r():
             pass
 
-        def l1_l(l0_l: Annotated[str, Depends(l0_l)]):
+        def l1_l(l0_l: str = Depends(l0_l)):
             pass
 
-        def l1_r(l0_r: Annotated[str, Depends(l0_r)]):
+        def l1_r(l0_r: str = Depends(l0_r)):
             pass
 
-        def l2(
-            l1_l: Annotated[str, Depends(l1_l)], l1_r: Annotated[str, Depends(l1_r)]
-        ):
+        def l2(l1_l: str = Depends(l1_l), l1_r: str = Depends(l1_r)):
             pass
 
         diagraph = Diagraph(l2)
@@ -262,10 +252,10 @@ def describe_indexing():
         def d0():
             pass
 
-        def d1a(d0: Annotated[str, Depends(d0)]):
+        def d1a(d0: str = Depends(d0)):
             pass
 
-        def d1b(d0: Annotated[str, Depends(d0)]):
+        def d1b(d0: str = Depends(d0)):
             pass
 
         diagraph = Diagraph(d1a, d1b)
@@ -318,7 +308,7 @@ def describe_indexing():
         def d0b():
             pass
 
-        def d1(d0a: Annotated[str, Depends(d0a)], db0: Annotated[str, Depends(d0b)]):
+        def d1(d0a: str = Depends(d0a), db0: str = Depends(d0b)):
             pass
 
         diagraph = Diagraph(d1)
@@ -471,13 +461,13 @@ def describe_run():
         d1_mock = mocker.Mock()
         d1_mock.return_value = "d1"
 
-        def d1(d0: Annotated[str, Depends(d0)]):
+        def d1(d0: str = Depends(d0)):
             return d1_mock(d0)
 
         d2_mock = mocker.Mock()
         d2_mock.return_value = "d2"
 
-        def d2(d1: Annotated[str, Depends(d1)]):
+        def d2(d1: str = Depends(d1)):
             return d2_mock(d1)
 
         diagraph = Diagraph(d2)
@@ -496,10 +486,10 @@ def describe_run():
         def l0():
             return "foo"
 
-        def l1(l0: Annotated[str, Depends(l0)]):
+        def l1(l0: str = Depends(l0)):
             return f"{l0}bar"
 
-        def l2(l1: Annotated[str, Depends(l1)]):
+        def l2(l1: str = Depends(l1)):
             return f"{l1}baz"
 
         assert Diagraph(l2).run().result == "foobarbaz"
@@ -508,10 +498,10 @@ def describe_run():
         def l0():
             return "foo"
 
-        def l1(l0: Annotated[str, Depends(l0)]):
+        def l1(l0: str = Depends(l0)):
             return f"{l0}bar"
 
-        def l2(l1: Annotated[str, Depends(l1)]):
+        def l2(l1: str = Depends(l1)):
             return f"{l1}baz"
 
         diagraph = Diagraph(l2)
@@ -1214,15 +1204,13 @@ def describe_inputs():
         def l0():
             return "l0"
 
-        def l1_l(l0: Annotated[str, Depends(l0)]):
+        def l1_l(l0: str = Depends(l0)):
             return f"{l0}l1_l"
 
-        def l1_r(l0: Annotated[str, Depends(l0)]):
+        def l1_r(l0: str = Depends(l0)):
             return f"{l0}l1_r"
 
-        def l2(
-            l1_l: Annotated[str, Depends(l1_l)], l1_r: Annotated[str, Depends(l1_r)]
-        ):
+        def l2(l1_l: str = Depends(l1_l), l1_r: str = Depends(l1_r)):
             return f"{l1_l}{l1_r}l2"
 
         assert Diagraph(l2).run().result == "l0l1_ll0l1_rl2"
@@ -1231,19 +1219,19 @@ def describe_inputs():
         def l0():
             return "l0"
 
-        def l1_l(l0: Annotated[str, Depends(l0)]):
+        def l1_l(l0: str = Depends(l0)):
             return f"{l0}l1_l"
 
-        def l1_c(l0: Annotated[str, Depends(l0)]):
+        def l1_c(l0: str = Depends(l0)):
             return f"{l0}l1_c"
 
-        def l1_r(l0: Annotated[str, Depends(l0)]):
+        def l1_r(l0: str = Depends(l0)):
             return f"{l0}l1_r"
 
         def l2(
-            l1_l: Annotated[str, Depends(l1_l)],
-            l1_c: Annotated[str, Depends(l1_c)],
-            l1_r: Annotated[str, Depends(l1_r)],
+            l1_l: str = Depends(l1_l),
+            l1_c: str = Depends(l1_c),
+            l1_r: str = Depends(l1_r),
         ):
             return f"{l1_l}{l1_c}{l1_r}l2"
 
@@ -1253,16 +1241,16 @@ def describe_inputs():
         def l0():
             return "l0"
 
-        def l1_l(l0: Annotated[str, Depends(l0)]):
+        def l1_l(l0: str = Depends(l0)):
             return f"{l0}l1_l"
 
-        def l1_r(l0: Annotated[str, Depends(l0)]):
+        def l1_r(l0: str = Depends(l0)):
             return f"{l0}l1_r"
 
-        def l2_l(l1_l: Annotated[str, Depends(l1_l)]):
+        def l2_l(l1_l: str = Depends(l1_l)):
             return f"{l1_l}l2_l"
 
-        def l2_r(l1_r: Annotated[str, Depends(l1_r)]):
+        def l2_r(l1_r: str = Depends(l1_r)):
             return f"{l1_r}l2_r"
 
         result = Diagraph(l2_l, l2_r).run().result
@@ -1277,13 +1265,13 @@ def describe_inputs():
         def d0b():
             return "d0b"
 
-        def d1a(i: Annotated[str, Depends(d0a)]):
+        def d1a(i: str = Depends(d0a)):
             return f"{i}d1a"
 
-        def d1b(i: Annotated[str, Depends(d0b)]):
+        def d1b(i: str = Depends(d0b)):
             return f"{i}d1b"
 
-        def d2(a: Annotated[str, Depends(d1a)], b: Annotated[str, Depends(d1b)]):
+        def d2(a: str = Depends(d1a), b: str = Depends(d1b)):
             return f"{a}{b}d2"
 
         assert Diagraph(d2).run().result == "d0ad1ad0bd1bd2"
@@ -1295,19 +1283,19 @@ def describe_inputs():
         def d0b():
             return "d0b"
 
-        def d1a(i: Annotated[str, Depends(d0a)]):
+        def d1a(i: str = Depends(d0a)):
             return f"{i}-d1a"
 
-        def d1b(i: Annotated[str, Depends(d0b)]):
+        def d1b(i: str = Depends(d0b)):
             return f"{i}-d1b"
 
-        def d2(a: Annotated[str, Depends(d1a)], b: Annotated[str, Depends(d1b)]):
+        def d2(a: str = Depends(d1a), b: str = Depends(d1b)):
             return f"{a}-{b}-d2"
 
-        def d3a(a: Annotated[str, Depends(d2)]):
+        def d3a(a: str = Depends(d2)):
             return f"{a}-d3a"
 
-        def d3b(a: Annotated[str, Depends(d2)]):
+        def d3b(a: str = Depends(d2)):
             return f"{a}-d3b"
 
         result = Diagraph(d3a, d3b).run().result
@@ -1319,13 +1307,13 @@ def describe_inputs():
         def d0(input: str):
             return f"{input}_d0"
 
-        def d1a(i: Annotated[str, Depends(d0)]):
+        def d1a(i: str = Depends(d0)):
             return f"{i}-d1a"
 
-        def d1b(i: Annotated[str, Depends(d0)]):
+        def d1b(i: str = Depends(d0)):
             return f"{i}-d1b"
 
-        def d2(i1: Annotated[str, Depends(d1a)], i2: Annotated[str, Depends(d1b)]):
+        def d2(i1: str = Depends(d1a), i2: str = Depends(d1b)):
             return f"{i1}-{i2}-d2"
 
         assert Diagraph(d2).run("foo").result == "foo_d0-d1a-foo_d0-d1b-d2"
@@ -1361,16 +1349,16 @@ def describe_inputs():
         def d0(input: str):
             return f"{input}_d0"
 
-        def d1a(input: str, i: Annotated[str, Depends(d0)]):
+        def d1a(input: str, i: str = Depends(d0)):
             return f"{input}_{i}-d1a"
 
-        def d1b(input: str, i: Annotated[str, Depends(d0)]):
+        def d1b(input: str, i: str = Depends(d0)):
             return f"{input}_{i}-d1b"
 
         def d2(
             input: str,
-            i1: Annotated[str, Depends(d1a)],
-            i2: Annotated[str, Depends(d1b)],
+            i1: str = Depends(d1a),
+            i2: str = Depends(d1b),
         ):
             return f"{input}_{i1}-{i2}-d2"
 
@@ -1380,19 +1368,19 @@ def describe_inputs():
         def d0(input: str):
             return f"{input}_d0"
 
-        def d1a(i: Annotated[str, Depends(d0)], input: str):
+        def d1a(input: str, i: str = Depends(d0)):
             return f"{input}_{i}-d1a"
 
         def d1b(
-            i: Annotated[str, Depends(d0)],
-            input: str,
+            i: str = Depends(d0),
+            input: str = "",
         ):
             return f"{input}_{i}-d1b"
 
         def d2(
-            i1: Annotated[str, Depends(d1a)],
-            i2: Annotated[str, Depends(d1b)],
             input: str,
+            i1: str = Depends(d1a),
+            i2: str = Depends(d1b),
         ):
             return f"{input}_{i1}-{i2}-d2"
 
@@ -1402,19 +1390,19 @@ def describe_inputs():
         def d0(input: str):
             return f"{input}_d0"
 
-        def d1a(input: str, i: Annotated[str, Depends(d0)]):
+        def d1a(input: str, i: str = Depends(d0)):
             return f"{input}_{i}-d1a"
 
         def d1b(
-            i: Annotated[str, Depends(d0)],
-            input: str,
+            i: str = Depends(d0),
+            input: str = "",
         ):
             return f"{input}_{i}-d1b"
 
         def d2(
-            i1: Annotated[str, Depends(d1a)],
-            input: str,
-            i2: Annotated[str, Depends(d1b)],
+            i1: str = Depends(d1a),
+            input: str = "",
+            i2: str = Depends(d1b),
         ):
             return f"{input}_{i1}-{i2}-d2"
 
@@ -1434,9 +1422,9 @@ def describe_inputs():
             return f"{input}_{i}-d1b"
 
         def d2(
-            i1: Annotated[str, Depends(d1a)],
-            input: str,
-            i2: Annotated[str, Depends(d1b)],
+            i1: str = Depends(d1a),
+            input: str = "",
+            i2: str = Depends(d1b),
         ):
             return f"{input}_{i1}-{i2}-d2"
 
@@ -1449,20 +1437,20 @@ def describe_inputs():
         def d0(input_1: str):
             return f"{input_1}_d0"
 
-        def d1a(input_1: str, i: Annotated[str, Depends(d0)], input_2: str):
+        def d1a(input_1: str, i: str = Depends(d0), input_2: str = ""):
             return f"{input_1}_{i}-d1a_{input_2}"
 
         def d1b(
-            i: Annotated[str, Depends(d0)],
-            input_1: str,
+            i: str = Depends(d0),
+            input_1: str = "",
         ):
             return f"{input_1}_{i}-d1b"
 
         def d2(
-            i1: Annotated[str, Depends(d1a)],
-            input_1: str,
-            input_2: str,
-            i2: Annotated[str, Depends(d1b)],
+            i1: str = Depends(d1a),
+            input_1: str = "",
+            input_2: str = "",
+            i2: str = Depends(d1b),
         ):
             return f"{input_1}_{i1}-{i2}-d2_{input_2}"
 
@@ -1475,16 +1463,16 @@ def describe_inputs():
         def d0(input1, input2: str, input3):
             return f"d0:{input1}+{input2}+{input3}"
 
-        def d1a(input1, d0: Annotated[str, Depends(d0)], input2):
+        def d1a(input1, d0: str = Depends(d0), input2=""):
             return f"d1a:{input1}+{input2}+{d0}"
 
-        def d1b(input1, d0: Annotated[str, Depends(d0)], input2, input3):
+        def d1b(input1, d0: str = Depends(d0), input2="", input3=""):
             return f"d1b:{input1}+{input2}+{d0}"
 
         def d2(
-            d1a: Annotated[str, Depends(d1a)],
-            input1,
-            d1b: Annotated[str, Depends(d1b)],
+            d1a: str = Depends(d1a),
+            input1="",
+            d1b: str = Depends(d1b),
         ):
             return f"d2:{input1}+{d1a}+{d1b}"
 
@@ -1504,16 +1492,16 @@ def describe_inputs():
         def d0(input1: str, input2: list[int], input3: tuple[str]):
             return f"d0:{input1}+{join_list(input2)}+{join_tuple(input3)}"
 
-        def d1a(input1, d0: Annotated[str, Depends(d0)], input2):
+        def d1a(input1, d0: str = Depends(d0), input2=""):
             return f"d1a:{input1}+{join_list(input2)}+{d0}"
 
-        def d1b(input1, d0: Annotated[str, Depends(d0)], _input2, input3):
+        def d1b(input1, d0: str = Depends(d0), _input2="", input3=""):
             return f"d1b:{input1}+{join_tuple(input3)}+{d0}"
 
         def d2(
-            d1a: Annotated[str, Depends(d1a)],
-            input1,
-            d1b: Annotated[str, Depends(d1b)],
+            d1a: str = Depends(d1a),
+            input1="",
+            d1b: str = Depends(d1b),
         ):
             return f"d2:{input1}+{d1a}+{d1b}"
 
@@ -1595,7 +1583,7 @@ def describe_inputs():
                     return "joke"
 
                 @prompt
-                def explanation(joke: Annotated[str, Depends(tell_me_a_joke)]) -> str:
+                def explanation(joke: str = Depends(tell_me_a_joke)) -> str:
                     return f"{joke} explain"
 
                 @prompt
@@ -1635,8 +1623,8 @@ def describe_running_from_an_index():
         l1.return_value = "l1"
         l2 = mocker.stub()
         l2.return_value = "l2"
-        l1.__annotations__ = {"l0": Annotated[str, Depends(l0)]}
-        l2.__annotations__ = {"l1": Annotated[str, Depends(l1)]}
+        l1.__parameters__ = {"l0": Depends(l0)}
+        l2.__parameters__ = {"l1": Depends(l1)}
 
         with pytest.raises(Exception):
             diagraph = Diagraph(l2)
@@ -1646,12 +1634,12 @@ def describe_running_from_an_index():
         def d0(input: str):
             return f"{input}_d0"
 
-        def d1(input: str, d0: Annotated[str, Depends(d0)]):
+        def d1(input: str, d0: str = Depends(d0)):
             return f"{input}_{d0}-d1"
 
         def d2(
-            d1: Annotated[str, Depends(d1)],
-            input: str,
+            d1: str = Depends(d1),
+            input: str = "",
         ):
             return f"{input}_{d1}-d2"
 
@@ -1664,12 +1652,12 @@ def describe_running_from_an_index():
         def d0(input: str):
             return f"{input}_d0"
 
-        def d1(input: str, d0: Annotated[str, Depends(d0)]):
+        def d1(input: str, d0: str = Depends(d0)):
             return f"{input}_{d0}-d1"
 
         def d2(
-            d1: Annotated[str, Depends(d1)],
-            input: str,
+            d1: str = Depends(d1),
+            input: str = "",
         ):
             return f"{input}_{d1}-d2"
 
@@ -1682,16 +1670,16 @@ def describe_running_from_an_index():
         def d0(input: str):
             return f"{input}_d0"
 
-        def d1a(input: str, d0: Annotated[str, Depends(d0)]):
+        def d1a(input: str, d0: str = Depends(d0)):
             return f"{input}_{d0}-d1a"
 
-        def d1b(input: str, d0: Annotated[str, Depends(d0)]):
+        def d1b(input: str, d0: str = Depends(d0)):
             return f"{input}_{d0}-d1b"
 
         def d2(
-            d1a: Annotated[str, Depends(d1a)],
-            d1b: Annotated[str, Depends(d1b)],
-            input: str,
+            d1a: str = Depends(d1a),
+            d1b: str = Depends(d1b),
+            input: str = "",
         ):
             return f"{d1a}*{d1b}*d2_{input}"
 
@@ -1710,12 +1698,12 @@ def describe_running_from_an_index():
         def d0(input: str):
             return f"{input}_d0"
 
-        def d1(input: str, d0: Annotated[str, Depends(d0)]):
+        def d1(input: str, d0: str = Depends(d0)):
             return f"{input}_{d0}-d1"
 
         def d2(
-            d1: Annotated[str, Depends(d1)],
-            input: str,
+            d1: str = Depends(d1),
+            input: str = "",
         ):
             return f"{input}_{d1}-d2"
 
@@ -1881,10 +1869,10 @@ def describe_replay():
 #         def l0():
 #             return "foo"
 
-#         def l1(l0: Annotated[str, Depends(l0)]):
+#         def l1(l0: str = Depends(l0)):
 #             return "bar"
 
-#         def l2(l1: Annotated[str, Depends(l1)]):
+#         def l2(l1: str = Depends(l1)):
 #             return "baz"
 
 #         diagraph = Diagraph(l2)

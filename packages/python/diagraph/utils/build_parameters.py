@@ -4,28 +4,15 @@ from typing import Any
 from ..classes.types import Fn
 from .depends import Depends
 
-from .annotations import get_dependency, is_annotated
-
 
 def build_parameters(diagraph, fn: Fn, input_args: tuple) -> list[Any]:
     args = []
     arg_index = 0
     encountered_star = False
     for parameter in inspect.signature(fn).parameters.values():
-        # Depends can be passed as Annotated[str, Depends]
-        if is_annotated(parameter.annotation):
-            print("Deprecated")
-            dep: Fn = get_dependency(parameter.annotation)
-            key_for_fn = diagraph.fns.inverse(dep)
-            try:
-                args.append(diagraph.results[key_for_fn])
-            except Exception as e:
-                raise Exception(
-                    f"Failed to get saved result for fn {key_for_fn}, at parameter {parameter}: {e}"
-                )
         # Depends can be passed as arg: str = Depends(dep)
         # Regular args can be passed as :str = 'foo'
-        elif parameter.default is not None and parameter.default is not inspect._empty:
+        if parameter.default is not None and parameter.default is not inspect._empty:
             if isinstance(parameter.default, Depends):
                 dep: Fn = parameter.default.dependency
                 try:
