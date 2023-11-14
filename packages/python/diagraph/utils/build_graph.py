@@ -1,10 +1,17 @@
 from typing import TypeVar
+import inspect
+from typing import Callable
+from .depends import Depends
 from ordered_set import OrderedSet
-
-from ..utils.annotations import get_dependencies
 
 
 T = TypeVar("T")
+
+
+def get_dependencies(node: Callable):
+    for val in inspect.signature(node).parameters.values():
+        if isinstance(val.default, Depends):
+            yield val.default
 
 
 def build_graph(*_nodes: T):
