@@ -6,7 +6,6 @@
   "main": "./dist/vizualizer.js",
   "scripts": {
     "build:prod": "wireit",
-    "move-assets": "wireit",
     "build": "wireit",
     "build:watch": "wireit",
     "dev": "wireit"
@@ -19,10 +18,7 @@
       "command": "vite build -c ./vite.config.ts --watch"
     },
     "build:prod": {
-      "command": "pnpm build && pnpm move-assets"
-    },
-    "move-assets": {
-      "command": "cp -r ./dist ../../python/diagraph/assets"
+      "command": "pnpm build"
     },
     "build": {
       "command": "vite build -c ./vite.config.ts",
@@ -62,6 +58,7 @@
     "@types/react": "^18.2.37",
     "@types/react-dom": "^18.2.15",
     "@vitejs/plugin-react": "^4.1.1",
+    "fs-extra": "^11.1.1",
     "nodemon": "^3.0.1",
     "vite": "^4.5.0",
     "vite-plugin-dts": "^3.6.1",

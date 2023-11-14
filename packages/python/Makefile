@@ -5,7 +5,7 @@ test:
 	nosetests tests
 
 copy_assets:
-	cd ../.. && pnpm install --force && cd packages/javascript/visualizer && pnpm build:prod
+	cd ../.. && pnpm install && cd packages/javascript/visualizer && pnpm build:prod
 
 build_package:
 	python3 -m build

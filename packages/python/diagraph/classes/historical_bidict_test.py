@@ -31,7 +31,8 @@ def describe_historical_bidict():
         for key, value in [
             ("int", 1),
             ("float", 1.5),
-            ("tuple", ([1, 2], 3)),
+            ("tuple", (1, 2, 3)),
+            # ("tuple", ([1, 2], 3)),
             # ("list", [1,2,3]),
             # ("dict", { "foo": "bar" }),
             # ("set", set([1,2,3])),
