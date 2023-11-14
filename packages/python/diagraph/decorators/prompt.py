@@ -21,8 +21,6 @@ def set_default_llm(llm: LLM):
 
 def prompt(_func=None, *, log=None, llm=None, error=None, return_type=None):
     def decorator(func):
-        # print(func)
-
         @functools.wraps(func)
         def wrapper_fn(*args, **kwargs):
             global default_llm

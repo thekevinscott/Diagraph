@@ -1,4 +1,5 @@
 from typing import TypeVar
+from ordered_set import OrderedSet
 
 from ..utils.annotations import get_dependencies
 
@@ -11,7 +12,7 @@ def build_graph(*_nodes: T):
     seen = set()
     nodes: list[T] = list(_nodes)
     for node in nodes:
-        graph[node] = graph.get(node, set())
+        graph[node] = graph.get(node, OrderedSet())
         if node not in seen:
             seen.add(node)
             for depends in get_dependencies(node):

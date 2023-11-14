@@ -24,16 +24,18 @@ def describe_historical_bidict():
 
     def test_it_appends_all_kinds_of_data():
         hdict = HistoricalBidict()
+
         class FakeClass:
             pass
+
         for key, value in [
             ("int", 1),
             ("float", 1.5),
-            ("tuple", (1,2,3)),
+            ("tuple", ([1, 2], 3)),
             # ("list", [1,2,3]),
             # ("dict", { "foo": "bar" }),
             # ("set", set([1,2,3])),
-            # ("frozenset", frozenset([1,2,3])),
+            ("frozenset", frozenset([1, 2, 3])),
             ("class_def", FakeClass),
             ("instantiated_class", FakeClass()),
         ]:

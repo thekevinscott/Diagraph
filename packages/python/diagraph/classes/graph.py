@@ -10,12 +10,12 @@ Key = TypeVar("Key")
 class Graph(Generic[Key]):
     __G__: nx.DiGraph
     __key_to_int__: dict[Key, int]
-    graph_def: dict[Key, Key]
+    graph_def: dict[Key, list[Key]]
     depth_map_by_depth: dict[int, list[Key]]
     depth_map_by_key: dict[Key, int]
 
-    def __init__(self, graph_def: dict[Key, Key]):
-        self.graph_def = graph_def
+    def __init__(self, graph_def: dict[Key, list[Key]]):
+        self.graph_def = {key: list(val) for key, val in graph_def.items()}
         self.__key_to_int__ = {}
         self.__G__ = nx.convert_node_labels_to_integers(
             nx.DiGraph(self.graph_def), label_attribute="ref"
@@ -33,7 +33,7 @@ class Graph(Generic[Key]):
     def get_int_key_for_node(self, key: Key) -> int:
         return self.__key_to_int__[key]
 
-    def get_node_for_int_key(self, key: int):
+    def get_node_for_int_key(self, key: int) -> Key:
         return self.__G__.nodes[key]["ref"]
 
     def __getitem__(self, key: Key | int | slice):
@@ -51,7 +51,7 @@ class Graph(Generic[Key]):
         if isinstance(key, int):
             if key < 0:
                 key = max(self.depth_map_by_depth.keys()) + 1 + key
-            nodes_at_depth = self.depth_map_by_depth[key]
+            nodes_at_depth: list[int] = self.depth_map_by_depth[key]
             return [self.get_node_for_int_key(int_rep) for int_rep in nodes_at_depth]
 
         int_rep = self.__key_to_int__[key]
@@ -70,10 +70,17 @@ class Graph(Generic[Key]):
         int_representations = [i for i, _ in list(self.__G__.in_edges(key))]
         return [self.get_node_for_int_key(i) for i in int_representations]
 
-    def out_edges(self, key: Key):
-        key = self.get_int_key_for_node(key)
-        int_representations = [i for _, i in list(self.__G__.out_edges(key))]
+    def out_edges(self, int_key: Key):
+        int_key = self.get_int_key_for_node(int_key)
+        int_representations = [i for _, i in list(self.__G__.out_edges(int_key))]
         return [self.get_node_for_int_key(i) for i in int_representations]
+
+    @property
+    def root_nodes(self) -> list[Key]:
+        int_keys: list[int] = [
+            n for n in self.__G__.nodes() if self.__G__.out_degree(n) == 0
+        ]
+        return [self.get_node_for_int_key(i) for i in int_keys]
 
     def _repr_html_(self) -> str:
         # return '''<p>HI</p>'''
