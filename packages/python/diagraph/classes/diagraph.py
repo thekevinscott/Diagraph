@@ -1,8 +1,8 @@
 from __future__ import annotations
-import inspect
 from datetime import datetime
 from typing import Any, Callable, Optional, overload
 from bidict import bidict
+from ..utils.build_parameters import build_parameters
 from ..utils.get_execution_graph import get_execution_graph
 from ..visualization.render_repr_html import render_repr_html
 from ..llm.llm import LLM
@@ -10,8 +10,6 @@ from ..decorators.is_decorated import is_decorated
 
 from .diagraph_layer import DiagraphLayer
 
-from ..utils.annotations import get_dependency, is_annotated
-from ..utils.depends import Depends
 
 from ..decorators.prompt import UserHandledException, set_default_llm
 
@@ -271,62 +269,13 @@ class Diagraph:
         Returns:
             Any: The result of executing the node.
         """
-        args = []
-        arg_index = 0
-        fn = self.fns[node.key]
         # If a user has explicitly specified a dependency via an annotation, we hydrate
         # it below.
         # If an argument is _not_ specified as a dependency, pull off the next input arg
         # in order
-        encountered_star = False
-        for parameter in inspect.signature(fn).parameters.values():
-            # Depends can be passed as Annotated[str, Depends]
-            if is_annotated(parameter.annotation):
-                dep: Fn = get_dependency(parameter.annotation)
-                key_for_fn = self.fns.inverse(dep)
-                try:
-                    args.append(self.results[key_for_fn])
-                except Exception as e:
-                    raise Exception(
-                        f"Failed to get saved result for fn {key_for_fn}, at parameter {parameter}: {e}"
-                    )
-            # Depends can be passed as arg: str = Depends(dep)
-            # Regular args can be passed as :str = 'foo'
-            elif (
-                parameter.default is not None
-                and parameter.default is not inspect._empty
-            ):
-                if isinstance(parameter.default, Depends):
-                    dep: Fn = parameter.default.dependency
-                    try:
-                        key_for_fn = self.fns.inverse(dep)
-                    except Exception:
-                        raise Exception(
-                            f"No function has been set for dep {dep}. Available functions: {self.fns}"
-                        )
-                    try:
-                        args.append(self.results[key_for_fn])
-                    except Exception as e:
-                        raise Exception(f"Failed to get result for {key_for_fn}: {e}")
-                else:
-                    args.append(parameter.default)
-            elif not str(parameter).startswith("*"):
-                if encountered_star:
-                    raise Exception(
-                        "Found arguments defined after * args. Ensure *args and **kwargs come at the end of the function parameter definitions."
-                    )
-                if arg_index > len(input_args) - 1:
-                    raise Exception(
-                        f'No argument provided for "{parameter.name}" in function {fn.__name__}. This indicates you forgot to call ".run()" with sufficient arguments.'
-                    )
-                args.append(input_args[arg_index])
-                arg_index += 1
-            else:
-                encountered_star = True
+        fn = self.fns[node.key]
 
-                if arg_index < len(input_args):
-                    for arg in input_args[arg_index:]:
-                        args.append(arg)
+        args = build_parameters(self, fn, input_args)
 
         setattr(fn, "__diagraph_log__", self.log_handler)
         setattr(fn, "__diagraph_error__", self.error_handler)
