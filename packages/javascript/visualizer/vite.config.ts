@@ -1,12 +1,25 @@
 import { defineConfig } from 'vite';
+import path from 'path';
 import react from '@vitejs/plugin-react';
+import { copy } from 'fs-extra';
+import * as url from 'url';
+const __dirname = url.fileURLToPath(new URL('.', import.meta.url));
 
 // https://vitejs.dev/config/
 export default defineConfig({
   define: {
     'process.env': {}
   },
-  plugins: [react()],
+  plugins: [react(),
+  {
+    name: 'postbuild-copy', // the name of your custom plugin. Could be anything.
+    closeBundle: async () => {
+      const src = path.resolve(__dirname, './dist');
+      const target = path.resolve(__dirname, '../../python/diagraph/assets/dist');
+      await copy(src, target);
+    }
+  },
+  ],
   build: {
     target: 'esnext',
     minify: false,

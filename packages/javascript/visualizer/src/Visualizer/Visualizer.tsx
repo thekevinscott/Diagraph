@@ -54,6 +54,7 @@ export const LayoutFlow = (props: Props) => {
   const { nodes, edges, onNodesChange, onEdgesChange, switchLayout, layout } = useFlow(props);
 
   const { isFullScreen, containerRef, goFullScreen } = useFullScreen();
+  console.log('up')
 
   return (
     <div className={styles.container} ref={containerRef}>
