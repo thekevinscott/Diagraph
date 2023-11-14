@@ -199,7 +199,6 @@ class Diagraph:
         run["starting_depth"] = depth
         run["active_depth"] = depth
 
-        ran = set()
         if isinstance(node_key, int):
             node_keys = [node.key for node in nodes.nodes]
         else:

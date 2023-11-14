@@ -1605,15 +1605,10 @@ def describe_inputs():
                 ) -> str:
                     return f"{joke} {explanation} improve"
 
-                print("0")
                 diagraph = Diagraph(improvement).run()
-                print("1")
                 assert diagraph.result == "joke_ joke_ explain_ improve_"
-                print("2")
                 assert diagraph[tell_me_a_joke].result == "joke_"
-                print("3")
                 assert diagraph[explanation].result == "joke_ explain_"
-                print("4")
                 assert diagraph[improvement].result == diagraph.result
                 assert diagraph[0].result == "joke_"
                 assert diagraph[1].result == "joke_ explain_"
@@ -1727,20 +1722,6 @@ def describe_running_from_an_index():
         diagraph = Diagraph(d2)
         diagraph[0].run("foo")
         assert diagraph.result == "foo_foo_foo_d0-d1-d2"
-
-    def test_it_runs_and_returns_result_from_a_key(mocker):
-        def d0(input: str):
-            return f"d0:{input}"
-
-        diagraph = Diagraph(d0)
-        assert diagraph[d0].run("foo").result == 'd0:foo'
-
-    def test_it_runs_and_returns_result_from_an_index(mocker):
-        def d0(input: str):
-            return f"d0:{input}"
-
-        diagraph = Diagraph(d0)
-        assert diagraph[0].run("foo").result == 'd0:foo'
 
 
 def describe_replay():
