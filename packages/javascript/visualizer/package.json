@@ -17,9 +17,6 @@
     "build:watch": {
       "command": "vite build -c ./vite.config.ts --watch"
     },
-    "build:prod": {
-      "command": "pnpm build"
-    },
     "build": {
       "command": "vite build -c ./vite.config.ts",
       "dependencies": [],
