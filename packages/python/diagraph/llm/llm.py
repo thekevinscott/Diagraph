@@ -1,8 +1,8 @@
-from typing import Any
+from typing import Any, Awaitable
 
 
 class LLM:
     kwargs: dict[str, Any]
 
-    async def run(self, *args, **kwargs):
-        pass
+    async def run(self, *args, **kwargs) -> Awaitable[Any]:
+        ...
