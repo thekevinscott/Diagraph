@@ -11,7 +11,7 @@ def cast_to_input(prompt):
 
 DEFAULT_MODEL = "gpt-3.5-turbo"
 
-Log = Callable[[str, str], None]
+Log = Callable[[str, str | None], None]
 
 
 class OpenAI(LLM):
@@ -20,7 +20,7 @@ class OpenAI(LLM):
     def __init__(self, **kwargs):
         self.kwargs = kwargs
 
-    def run(self, prompt, log: Log, model=None, stream=None, **kwargs):
+    async def run(self, prompt, log: Log, model=None, stream=None, **kwargs):
         model = model if model else self.kwargs.get("model", DEFAULT_MODEL)
         messages = cast_to_input(prompt)
 
@@ -31,7 +31,7 @@ class OpenAI(LLM):
             "model": model,
         }
         started = False
-        for resp in openai.ChatCompletion.create(
+        async for resp in openai.ChatCompletion.acreate(
             messages=messages, stream=True, **kwargs
         ):
             if started is False:

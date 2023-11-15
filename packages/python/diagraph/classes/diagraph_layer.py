@@ -1,4 +1,5 @@
 from __future__ import annotations
+from asyncio import run
 from typing import Any
 from .diagraph_node import DiagraphNode
 from .graph import Key
@@ -103,7 +104,9 @@ class DiagraphLayer:
         Returns:
             None
         """
-        return self.diagraph.__run_from__(self.key, *input_args, **kwargs)
+
+        run(self.diagraph.__run_from__(self.key, *input_args, **kwargs))
+        return self.diagraph
 
     @property
     def result(self):

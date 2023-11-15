@@ -1,3 +1,4 @@
+import inspect
 import functools
 
 from ..llm.llm import LLM
@@ -22,7 +23,7 @@ def set_default_llm(llm: LLM):
 def prompt(_func=None, *, log=None, llm=None, error=None, return_type=None):
     def decorator(func):
         @functools.wraps(func)
-        def wrapper_fn(*args, **kwargs):
+        async def wrapper_fn(*args, **kwargs):
             global default_llm
             function_llm = getattr(wrapper_fn, "__function_llm__", None)
             diagraph_llm = getattr(wrapper_fn, "__diagraph_llm__", None)
@@ -41,11 +42,14 @@ def prompt(_func=None, *, log=None, llm=None, error=None, return_type=None):
                 elif diagraph_log:
                     diagraph_log(event, chunk, wrapper_fn)
 
-            generated_prompt = func(*args, **kwargs)
+            if inspect.iscoroutinefunction(func):
+                generated_prompt = await func(*args, **kwargs)
+            else:
+                generated_prompt = func(*args, **kwargs)
             yield generated_prompt
 
             try:
-                yield llm.run(generated_prompt, log=_log)
+                yield await llm.run(generated_prompt, log=_log)
             except Exception as e:
                 # TODO: Should both error functions be called? Or should one supersede the other?
                 if error:
