@@ -1,4 +1,5 @@
 from __future__ import annotations
+from asyncio import run
 from typing import Any, Callable
 import tiktoken
 
@@ -127,7 +128,7 @@ class DiagraphNode:
         # print(getattr(self.fn, IS_DECORATED_KEY, False))
         return is_decorated(self.fn)
 
-    def run(self, *input_args):
+    def run(self, *input_args, **kwargs):
         """
         Run the Diagraph starting from the current node.
 
@@ -137,7 +138,9 @@ class DiagraphNode:
         Returns:
             None
         """
-        return self.diagraph.__run_from__(self.key, *input_args)
+
+        run(self.diagraph.__run_from__(self.key, *input_args, **kwargs))
+        return self.diagraph
 
     @property
     def result(self):

@@ -37,21 +37,21 @@ def describe_openai_llm():
     def test_it_instantiates():
         OpenAI()
 
-    def test_it_runs():
+    async def test_it_runs():
         def handle_log(event, data):
             pass
 
         with patch("openai.ChatCompletion.create") as create:
             create.return_value = mock_openai_return_value()
-            assert OpenAI().run("foo", log=handle_log) == "0"
+            assert await OpenAI().run("foo", log=handle_log) == "0"
 
-    def test_it_passes_kwargs_and_parses_string_by_default():
+    async def test_it_passes_kwargs_and_parses_string_by_default():
         def handle_log(event, data):
             pass
 
         with patch("openai.ChatCompletion.create") as create:
             create.return_value = mock_openai_return_value()
-            OpenAI().run("foo", log=handle_log, foo="foo")
+            await OpenAI().run("foo", log=handle_log, foo="foo")
             create.assert_called_with(
                 messages=[{"role": "user", "content": "foo"}],
                 model=DEFAULT_MODEL,
@@ -59,13 +59,13 @@ def describe_openai_llm():
                 stream=True,
             )
 
-    def test_it_accepts_alternate_models():
+    async def test_it_accepts_alternate_models():
         def handle_log(event, data):
             pass
 
         with patch("openai.ChatCompletion.create") as create:
             create.return_value = mock_openai_return_value()
-            OpenAI(model="gpt-foo").run("foo", log=handle_log)
+            await OpenAI(model="gpt-foo").run("foo", log=handle_log)
             create.assert_called_with(
                 messages=[{"role": "user", "content": "foo"}],
                 model="gpt-foo",
@@ -74,7 +74,7 @@ def describe_openai_llm():
 
         with patch("openai.ChatCompletion.create") as create:
             create.return_value = mock_openai_return_value()
-            OpenAI().run("foo", log=handle_log, model="gpt-bar")
+            await OpenAI().run("foo", log=handle_log, model="gpt-bar")
             create.assert_called_with(
                 messages=[{"role": "user", "content": "foo"}],
                 model="gpt-bar",
@@ -83,7 +83,7 @@ def describe_openai_llm():
 
         with patch("openai.ChatCompletion.create") as create:
             create.return_value = mock_openai_return_value()
-            OpenAI(model="gpt-foo").run("foo", log=handle_log, model="gpt-bar")
+            await OpenAI(model="gpt-foo").run("foo", log=handle_log, model="gpt-bar")
             create.assert_called_with(
                 messages=[{"role": "user", "content": "foo"}],
                 model="gpt-bar",
@@ -91,21 +91,21 @@ def describe_openai_llm():
             )
 
     def describe_logs():
-        def test_it_does_not_call_start_if_encountering_an_error(mocker):
+        async def test_it_does_not_call_start_if_encountering_an_error(mocker):
             handle_log = mocker.stub()
 
             with patch("openai.ChatCompletion.create") as create:
                 create.side_effect = Exception("wruh wroh")
                 with pytest.raises(Exception):
-                    OpenAI(model="gpt-foo").run("foo", log=handle_log)
+                    await OpenAI(model="gpt-foo").run("foo", log=handle_log)
                 assert handle_log.call_count == 0
 
-        def test_it_calls_all_events(mocker):
+        async def test_it_calls_all_events(mocker):
             handle_log = mocker.stub()
 
             with patch("openai.ChatCompletion.create") as create:
                 create.return_value = mock_openai_return_value(3)
-                OpenAI(model="gpt-foo").run("foo", log=handle_log)
+                await OpenAI(model="gpt-foo").run("foo", log=handle_log)
 
                 handle_log.assert_any_call("start", None)
                 handle_log.assert_any_call("data", "0")
@@ -113,12 +113,12 @@ def describe_openai_llm():
                 handle_log.assert_any_call("data", "2")
                 handle_log.assert_any_call("end", None)
 
-    def test_it_returns_content_response(mocker):
+    async def test_it_returns_content_response(mocker):
         handle_log = mocker.stub()
 
         with patch("openai.ChatCompletion.create") as create:
             create.return_value = mock_openai_return_value(3)
-            assert OpenAI(model="gpt-foo").run("foo", log=handle_log) == "012"
+            assert await OpenAI(model="gpt-foo").run("foo", log=handle_log) == "012"
 
 
 # # except openai.error.Timeout as e:

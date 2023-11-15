@@ -13,7 +13,7 @@ class MockLLM:
         self.kwargs = kwargs
         self.error = error
 
-    def run(self, prompt, log, model=None, stream=None, **kwargs):
+    async def run(self, prompt, log, model=None, stream=None, **kwargs):
         response = ""
         kwargs = {
             **self.kwargs,

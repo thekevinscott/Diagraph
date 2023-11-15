@@ -1,4 +1,5 @@
 from __future__ import annotations
+import inspect
 from datetime import datetime
 from typing import Any, Callable, Optional, overload
 from bidict import bidict
@@ -7,9 +8,9 @@ from ..utils.get_execution_graph import get_execution_graph
 from ..visualization.render_repr_html import render_repr_html
 from ..llm.llm import LLM
 from ..decorators.is_decorated import is_decorated
+from asyncio import run, gather
 
 from .diagraph_layer import DiagraphLayer
-
 
 from ..decorators.prompt import UserHandledException, set_default_llm
 
@@ -163,9 +164,11 @@ class Diagraph:
         Returns:
             Diagraph: The Diagraph instance.
         """
-        return self.__run_from__(0, *input_args, **kwargs)
 
-    def __run_from__(self, node_key: Fn | int, *input_args, **kwargs):
+        run(self.__run_from__(0, *input_args, **kwargs))
+        return self
+
+    async def __run_from__(self, node_key: Fn | int, *input_args, **kwargs):
         """
         Run the Diagraph from a specific node.
 
@@ -203,22 +206,13 @@ class Diagraph:
             node_keys = [node.key for node in nodes]
 
         try:
-            for node_keys in get_execution_graph(self.__graph__, node_keys):
-                for node_key in node_keys:
-                    node = self[node_key]
-                    run["nodes"][node_key] = {
-                        # "depth": depth,
-                        "executed": None,
-                    }
-                    result = self.__run_node__(node, *input_args, **kwargs)
-                    run["nodes"][node_key] = {
-                        "executed": datetime.now(),
-                        ## TODO: This should reference the result object directly
-                        "result": result,
-                        # "depth": depth,
-                    }
-                    node.result = result
-                # run["active_depth"] = depth
+            await gather(
+                *[
+                    self.__execute_node__(self[key], *input_args, **kwargs)
+                    for keys in get_execution_graph(self.__graph__, node_keys)
+                    for key in keys
+                ]
+            )
             run["complete"] = True
 
         except UserHandledException:
@@ -245,20 +239,11 @@ class Diagraph:
             return tuple(results)
         else:
             return None
-        #     latest_depth = latest_run.get("active_depth")
-        #     for node_key, node_run_value in latest_run.get("nodes").items():
-        #         if node_run_value.get("depth") == latest_depth:
-        #             if node_run_value.get("executed") is None:
-        #                 results.append(None)
-        #             else:
-        #                 node = self[node_key]
-        #                 results.append(node.result)
 
-        # if len(results) == 1:
-        #     return results[0]
-        # return tuple(results)
+    async def __execute_node__(self, node: DiagraphNode, *input_args, **kwargs):
+        node.result = await self.__run_node__(node, *input_args, **kwargs)
 
-    def __run_node__(self, node: DiagraphNode, *input_args, **kwargs):
+    async def __run_node__(self, node: DiagraphNode, *input_args, **kwargs):
         """
         Execute a single node in the Diagraph.
 
@@ -282,7 +267,7 @@ class Diagraph:
         setattr(fn, "__diagraph_llm__", self.llm)
         if is_decorated(fn):
             encountered_prompt = False
-            for r in fn(*args, **kwargs):
+            async for r in fn(*args, **kwargs):
                 if encountered_prompt is False:
                     encountered_prompt = True
                     if r is None:
@@ -293,7 +278,10 @@ class Diagraph:
                 else:
                     return r
         else:
-            return fn(*args, **kwargs)
+            if inspect.iscoroutinefunction(fn):
+                return await fn(*args, **kwargs)
+            else:
+                return fn(*args, **kwargs)
 
     def __setitem__(self, node_key: Key, fn: Fn):
         """
