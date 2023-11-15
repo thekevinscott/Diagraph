@@ -7,7 +7,7 @@ import pytest
 from ..llm.openai_llm import OpenAI
 
 
-from .diagraph_layer import DiagraphLayer
+from .diagraph_node_group import DiagraphNodeGroup
 from .diagraph import Diagraph
 from .diagraph_node import DiagraphNode
 from ..utils.depends import Depends
@@ -50,9 +50,9 @@ def describe_indexing():
 
         diagraph = Diagraph(baz)
 
-        assert isinstance(diagraph[0], DiagraphLayer) and diagraph[0][0].fn == foo
-        assert isinstance(diagraph[2], DiagraphLayer) and diagraph[2][0].fn == baz
-        assert isinstance(diagraph[-1], DiagraphLayer) and diagraph[-1][0].fn == baz
+        assert isinstance(diagraph[0], DiagraphNodeGroup) and diagraph[0][0].fn == foo
+        assert isinstance(diagraph[2], DiagraphNodeGroup) and diagraph[2][0].fn == baz
+        assert isinstance(diagraph[-1], DiagraphNodeGroup) and diagraph[-1][0].fn == baz
 
     def test_it_gets_back_a_tuple_for_parallels():
         def l0():
@@ -71,7 +71,7 @@ def describe_indexing():
 
         def check_tuple(key):
             nodes = diagraph[key]
-            assert isinstance(nodes, DiagraphLayer) and len(nodes) == 2
+            assert isinstance(nodes, DiagraphNodeGroup) and len(nodes) == 2
             return set([n.fn for n in nodes])
 
         assert check_tuple(1) == {l1_l, l1_r}
@@ -134,7 +134,7 @@ def describe_indexing():
 
         def get_layer(diagraph, key):
             layer = diagraph[key]
-            assert isinstance(layer, DiagraphLayer)
+            assert isinstance(layer, DiagraphNodeGroup)
             return layer
 
         for node in [l0, l1_l, l1_r, l2_l, l2_r, l3_l, l4]:
@@ -183,7 +183,7 @@ def describe_indexing():
 
         def get_layer(diagraph, key):
             layer = diagraph[key]
-            assert isinstance(layer, DiagraphLayer)
+            assert isinstance(layer, DiagraphNodeGroup)
             return layer
 
         for node in [l0, l1_l, l1_r, l2_l, l3_l, l2_r]:
@@ -227,7 +227,7 @@ def describe_indexing():
 
         def get_layer(diagraph, key):
             layer = diagraph[key]
-            assert isinstance(layer, DiagraphLayer)
+            assert isinstance(layer, DiagraphNodeGroup)
             return layer
 
         for node in [l0_l, l0_r, l1_l, l1_r, l2]:
@@ -268,7 +268,7 @@ def describe_indexing():
 
         def get_layer(diagraph, key):
             layer = diagraph[key]
-            assert isinstance(layer, DiagraphLayer)
+            assert isinstance(layer, DiagraphNodeGroup)
             return layer
 
         for node in [d0, d1a, d1b]:
@@ -321,7 +321,7 @@ def describe_indexing():
 
         def get_layer(diagraph, key):
             layer = diagraph[key]
-            assert isinstance(layer, DiagraphLayer)
+            assert isinstance(layer, DiagraphNodeGroup)
             return layer
 
         for node in [d0a, d0b, d1]:
@@ -374,7 +374,7 @@ def describe_indexing():
 
         def get_layer(diagraph, key):
             layer = diagraph[key]
-            assert isinstance(layer, DiagraphLayer)
+            assert isinstance(layer, DiagraphNodeGroup)
             return layer
 
         for node in [d0a, d0b, d1a, d1b, d2]:

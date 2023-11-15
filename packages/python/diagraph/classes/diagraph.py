@@ -10,7 +10,7 @@ from ..llm.llm import LLM
 from ..decorators.is_decorated import is_decorated
 from asyncio import run, gather
 
-from .diagraph_layer import DiagraphLayer
+from .diagraph_node_group import DiagraphNodeGroup
 
 from ..decorators.prompt import UserHandledException, set_default_llm
 
@@ -126,14 +126,14 @@ class Diagraph:
     #     return str(self.__graph__)
 
     @overload
-    def __getitem__(self, key: int) -> DiagraphLayer:
+    def __getitem__(self, key: int) -> DiagraphNodeGroup:
         ...
 
     @overload
     def __getitem__(self, key: Fn) -> DiagraphNode:
         ...
 
-    def __getitem__(self, key: Fn | int) -> DiagraphNode | DiagraphLayer:
+    def __getitem__(self, key: Fn | int) -> DiagraphNode | DiagraphNodeGroup:
         """
         Retrieve a DiagraphNode or DiagraphLayer associated with a function or depth key.
 
@@ -146,7 +146,7 @@ class Diagraph:
         node_keys = self.__graph__[key]
         if isinstance(node_keys, list):
             if isinstance(key, int):
-                return DiagraphLayer(self, key, *node_keys)
+                return DiagraphNodeGroup(self, key, *node_keys)
             raise Exception(
                 f"Unexpected key when trying to build a diagraph layer: {key}"
             )
@@ -188,7 +188,7 @@ class Diagraph:
         }
         self.runs.append(run)
         nodes = self[node_key]  # nodes is a diagraph node
-        if not isinstance(nodes, DiagraphLayer):
+        if not isinstance(nodes, DiagraphNodeGroup):
             nodes = (nodes,)
 
         run["starting_nodes"] = nodes

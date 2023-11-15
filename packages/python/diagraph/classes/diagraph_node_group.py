@@ -5,11 +5,11 @@ from .diagraph_node import DiagraphNode
 from .graph import Key
 
 
-class DiagraphLayer:
+class DiagraphNodeGroup:
     """A layer of DiagraphNodes representing a set of related nodes in a Diagraph."""
 
     diagraph: Any
-    nodes: tuple[DiagraphNode]
+    nodes: tuple[DiagraphNode, ...]
     key: int
 
     def __init__(self, diagraph: Any, key: int, *node_keys: Key):
