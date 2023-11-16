@@ -1,12 +1,12 @@
 from .diagraph import Diagraph
 
 from ..utils.depends import Depends
-from .diagraph_layer import DiagraphLayer
+from .diagraph_node_group import DiagraphNodeGroup
 
 
-def describe_diagraph_layer():
+def describe_diagraph_node_group():
     def test_it_instantiates():
-        DiagraphLayer(Diagraph(), 0)
+        DiagraphNodeGroup(Diagraph(), 0)
 
     def test_it_iterates_through_nodes():
         def d0():
