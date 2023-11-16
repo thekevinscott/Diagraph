@@ -1,4 +1,5 @@
 from __future__ import annotations
+import nest_asyncio
 import inspect
 from datetime import datetime
 from typing import Any, Callable, Optional, overload
@@ -25,6 +26,8 @@ from .types import Fn
 from .diagraph_node import DiagraphNode
 
 from .historical_bidict import HistoricalBidict
+
+nest_asyncio.apply()
 
 default_log_fn = None
 
