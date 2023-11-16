@@ -1,6 +1,6 @@
 from __future__ import annotations
 from typing import Callable, Generator, TypeVar
-from ordered_set import OrderedSet
+from ..classes.ordered_set import OrderedSet
 from .get_subgraph_def import get_subgraph_def
 
 # from packages.python.diagraph.classes.diagraph_node import DiagraphNode

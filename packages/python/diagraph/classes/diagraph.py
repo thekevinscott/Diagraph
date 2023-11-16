@@ -3,7 +3,7 @@ import inspect
 from datetime import datetime
 from typing import Any, Callable, Optional, overload
 from bidict import bidict
-from ordered_set import OrderedSet
+from .ordered_set import OrderedSet
 from ..utils.build_parameters import build_parameters
 from ..utils.get_execution_graph import get_execution_graph
 from ..visualization.render_repr_html import render_repr_html

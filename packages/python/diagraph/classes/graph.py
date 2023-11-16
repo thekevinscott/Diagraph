@@ -1,7 +1,7 @@
 from __future__ import annotations
 from typing import Generic, TypeVar, overload
 import networkx as nx
-from ordered_set import OrderedSet
+from .ordered_set import OrderedSet
 
 from ..utils.build_layer_map import build_layer_map
 
