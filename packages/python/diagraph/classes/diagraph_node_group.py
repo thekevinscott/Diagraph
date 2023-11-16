@@ -2,7 +2,7 @@ from __future__ import annotations
 from asyncio import run
 from typing import Any
 from .diagraph_node import DiagraphNode
-from .graph import Key
+from .types import Fn
 
 
 class DiagraphNodeGroup:
@@ -12,17 +12,16 @@ class DiagraphNodeGroup:
     nodes: tuple[DiagraphNode, ...]
     key: int
 
-    def __init__(self, diagraph: Any, key: int, *node_keys: Key):
+    def __init__(self, diagraph: Any, key: int, *node_keys: Fn):
         """
         Initialize a DiagraphLayer.
 
         Args:
             diagraph (Any): The Diagraph instance that contains this layer.
-            key (int): The key associated with the layer.
             *node_keys (Key): Variable number of keys representing nodes in the layer.
         """
-        self.diagraph = diagraph
         self.key = key
+        self.diagraph = diagraph
         nodes = []
         for node in node_keys:
             nodes.append(DiagraphNode(self.diagraph, node))
@@ -46,22 +45,16 @@ class DiagraphNodeGroup:
         """
         return f"DiagraphLayer({[str(n) for n in self.nodes]})"
 
-    def __getitem__(self, key: Key | int | slice):
+    def __getitem__(self, key: Fn | int):
         """
         Get a specific node or a subset of nodes from the layer.
 
         Args:
-            key (Key | int | slice): The key, index, or slice to access the nodes.
+            key (Key | int): The key, index, or slice to access the nodes.
 
         Returns:
             DiagraphNode or tuple[DiagraphNode]: The requested node or nodes.
         """
-        if isinstance(key, slice):
-            if key.step is not None:
-                raise Exception("Slicing with a step is not supported")
-            # start, stop = key.start, key.stop
-            # if start is not None or stop is not None:
-            raise Exception("Slicing not implemented yet")
         if isinstance(key, int):
             return self.nodes[key]
 
@@ -79,7 +72,7 @@ class DiagraphNodeGroup:
         """
         return len(self.nodes)
 
-    def __contains__(self, item: Key):
+    def __contains__(self, item: Fn):
         """
         Check if a specific node key is present in the layer.
 

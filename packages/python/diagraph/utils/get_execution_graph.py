@@ -5,13 +5,13 @@ from .get_subgraph_def import get_subgraph_def
 
 # from packages.python.diagraph.classes.diagraph_node import DiagraphNode
 # from ..classes.diagraph import Diagraph
-from ..classes.graph import Graph, Key
+from ..classes.graph import Graph, K
 
-GetChildren = Callable[[Key], list[Key]]
+GetChildren = Callable[[K], list[K]]
 
 
 def ancestor_is_upstream_dependency(
-    graph: Graph, potential_upstream_dependency: Key, parent: Key
+    graph: Graph, potential_upstream_dependency: K, parent: K
 ) -> bool:
     for ancestor in graph.out_edges(potential_upstream_dependency):
         if ancestor == parent:
@@ -22,7 +22,7 @@ def ancestor_is_upstream_dependency(
 
 
 def has_unexecuted_upstream_dependencies(
-    graph: Graph, child: Key, parent: Key, seen: set[Key]
+    graph: Graph, child: K, parent: K, seen: set[K]
 ) -> bool:
     for ancestor in graph.out_edges(child):
         if (
@@ -34,7 +34,7 @@ def has_unexecuted_upstream_dependencies(
     return False
 
 
-def get_execution_graph(graph: Graph, _node_keys: list[Key]) -> Generator[list[Key]]:
+def get_execution_graph(graph: Graph, _node_keys: list[K]) -> Generator[list[K]]:
     subgraph_def = get_subgraph_def(graph, _node_keys)
     subgraph = Graph(subgraph_def)
     nodes = subgraph.root_nodes
@@ -43,7 +43,7 @@ def get_execution_graph(graph: Graph, _node_keys: list[Key]) -> Generator[list[K
     seen = set(nodes)
 
     while len(nodes):
-        out_edges: OrderedSet[Key] = OrderedSet()
+        out_edges: OrderedSet[K] = OrderedSet()
         for key in nodes:
             for child in subgraph.in_edges(key):
                 if child not in seen:
