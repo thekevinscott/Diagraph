@@ -45,7 +45,7 @@ def set_default_error(error_fn):
 class Diagraph:
     """A directed acyclic graph (Diagraph) for managing and executing a graph of functions."""
 
-    __graph__: Graph
+    __graph__: Graph[Fn]
 
     terminal_nodes: tuple[DiagraphNode, ...]
     log_handler: Optional[Callable[[str, str, Fn], None]]
@@ -136,18 +136,18 @@ class Diagraph:
 
     def __getitem__(self, key: Fn | int) -> DiagraphNode | DiagraphNodeGroup:
         """
-        Retrieve a DiagraphNode or DiagraphLayer associated with a function or depth key.
+        Retrieve a DiagraphNode or DiagraphNodeGroup associated with a function or depth key.
 
         Args:
             key (Fn | int): A function or depth key.
 
         Returns:
-            DiagraphNode or tuple[DiagraphNode]: The DiagraphNode or DiagraphLayer associated with the key.
+            DiagraphNode or tuple[DiagraphNode]: The DiagraphNode or DiagraphNodeGroup associated with the key.
         """
         node_keys = self.__graph__[key]
         if isinstance(node_keys, list):
             if isinstance(key, int):
-                return DiagraphNodeGroup(self, key, *node_keys)
+                return DiagraphNodeGroup(self, *node_keys)
             raise Exception(
                 f"Unexpected key when trying to build a diagraph layer: {key}"
             )
@@ -166,10 +166,12 @@ class Diagraph:
             Diagraph: The Diagraph instance.
         """
 
-        run(self.__run_from__(0, *input_args, **kwargs))
+        root_nodes: list[Fn] = self.__graph__.root_nodes
+        group = DiagraphNodeGroup(self, *root_nodes)
+        run(self.__run_from__(group, *input_args, **kwargs))
         return self
 
-    async def __run_from__(self, node_key: Fn | int, *input_args, **kwargs):
+    async def __run_from__(self, group: DiagraphNodeGroup | DiagraphNode, *input_args, **kwargs):
         """
         Run the Diagraph from a specific node.
 
@@ -180,35 +182,35 @@ class Diagraph:
         Returns:
             Diagraph: The Diagraph instance.
         """
+        node_group = get_diagraph_node_group(self, group)
         run = {
             "start": datetime.now(),
-            "node_key": node_key,
+            "node_group": node_group,
             "input": input_args,
             "kwargs": kwargs,
             "nodes": {},
+            "dirty": True,
         }
         self.runs.append(run)
-        nodes = get_diagraph_node_group(self, node_key)
 
-        run["starting_nodes"] = nodes
-        run["dirty"] = True
-        validate_node_ancestors(nodes)
+        run["starting_nodes"] = node_group
+        validate_node_ancestors(node_group)
         run["dirty"] = False
 
-        depth = node_key if isinstance(node_key, int) else nodes[0].depth
-        run["starting_depth"] = depth
-        run["active_depth"] = depth
+        # depth = node_key if isinstance(node_key, int) else node_group[0].depth
+        # run["starting_depth"] = depth
+        # run["active_depth"] = depth
 
-        if isinstance(node_key, int):
-            node_keys = [node.key for node in nodes.nodes]
-        else:
-            node_keys = [node.key for node in nodes]
+        # if isinstance(node_key, int):
+        #     node_keys = [node.key for node in node_group.nodes]
+        # else:
+        #     node_keys = [node.key for node in node_group]
 
         try:
             await gather(
                 *[
                     self.__execute_node__(self[key], *input_args, **kwargs)
-                    for keys in get_execution_graph(self.__graph__, node_keys)
+                    for keys in get_execution_graph(self.__graph__, [n.key for n in node_group.nodes])
                     for key in keys
                 ]
             )
@@ -296,14 +298,8 @@ class Diagraph:
 
 
 def get_diagraph_node_group(
-    diagraph: Diagraph, node_key: int | Fn
+    diagraph: Diagraph, group: DiagraphNodeGroup | DiagraphNode,
 ) -> DiagraphNodeGroup:
-    nodes = diagraph[node_key]
-    print(nodes)
-    if not isinstance(nodes, DiagraphNodeGroup):
-        return DiagraphNodeGroup(
-            diagraph,
-            0,
-            nodes.fn,
-        )
-    return nodes
+    if not isinstance(group, DiagraphNodeGroup):
+        return DiagraphNodeGroup(diagraph, group)
+    return group

@@ -1,5 +1,5 @@
 from __future__ import annotations
-from asyncio import run
+from asyncio import run as asyncio_run
 from typing import Any
 from .diagraph_node import DiagraphNode
 from .types import Fn
@@ -10,21 +10,22 @@ class DiagraphNodeGroup:
 
     diagraph: Any
     nodes: tuple[DiagraphNode, ...]
-    key: int
 
-    def __init__(self, diagraph: Any, key: int, *node_keys: Fn):
+    def __init__(self, diagraph: Any, *node_keys: Fn | DiagraphNode):
         """
-        Initialize a DiagraphLayer.
+        Initialize a DiagraphNodeGroup.
 
         Args:
             diagraph (Any): The Diagraph instance that contains this layer.
             *node_keys (Key): Variable number of keys representing nodes in the layer.
         """
-        self.key = key
         self.diagraph = diagraph
         nodes = []
         for node in node_keys:
-            nodes.append(DiagraphNode(self.diagraph, node))
+            if isinstance(node, DiagraphNode):
+                nodes.append(node)
+            else:
+                nodes.append(DiagraphNode(self.diagraph, node))
         self.nodes = tuple(nodes)
 
     def __iter__(self):
@@ -38,12 +39,12 @@ class DiagraphNodeGroup:
 
     def __str__(self):
         """
-        Get a string representation of the DiagraphLayer.
+        Get a string representation of the DiagraphNodeGroup.
 
         Returns:
             str: A string representation of the layer.
         """
-        return f"DiagraphLayer({[str(n) for n in self.nodes]})"
+        return f"DiagraphNodeGroup({[str(n) for n in self.nodes]})"
 
     def __getitem__(self, key: Fn | int):
         """
@@ -98,7 +99,7 @@ class DiagraphNodeGroup:
             None
         """
 
-        run(self.diagraph.__run_from__(self.key, *input_args, **kwargs))
+        asyncio_run(self.diagraph.__run_from__(self, *input_args, **kwargs))
         return self.diagraph
 
     @property

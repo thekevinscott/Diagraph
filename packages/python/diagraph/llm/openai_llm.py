@@ -31,9 +31,10 @@ class OpenAI(LLM):
             "model": model,
         }
         started = False
-        async for resp in openai.ChatCompletion.acreate(
+        iterator = await openai.ChatCompletion.acreate(
             messages=messages, stream=True, **kwargs
-        ):
+        )
+        async for resp in iterator:
             if started is False:
                 log("start", None)
                 started = True

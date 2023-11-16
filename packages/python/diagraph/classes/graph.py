@@ -1,6 +1,7 @@
 from __future__ import annotations
 from typing import Generic, TypeVar, overload
 import networkx as nx
+from ordered_set import OrderedSet
 
 from ..utils.build_layer_map import build_layer_map
 
@@ -14,7 +15,7 @@ class Graph(Generic[K]):
     depth_map_by_depth: dict[int, list[K]]
     depth_map_by_key: dict[K, int]
 
-    def __init__(self, graph_def: dict[K, list[K]]):
+    def __init__(self, graph_def: dict[K, list[K] | OrderedSet[K]]):
         self.graph_def = {key: list(val) for key, val in graph_def.items()}
         self.__key_to_int__ = {}
         self.__G__ = nx.convert_node_labels_to_integers(
@@ -74,13 +75,13 @@ class Graph(Generic[K]):
         return nx.node_link_data(self.__G__)
 
     def in_edges(self, key: K):
-        key = self.get_int_key_for_node(key)
-        int_representations = [i for i, _ in list(self.__G__.in_edges(key))]
+        int_key = self.get_int_key_for_node(key)
+        int_representations = [i for i, _ in list(self.__G__.in_edges(int_key))]
         return [self.get_node_for_int_key(i) for i in int_representations]
 
     def out_edges(self, int_key: K):
-        int_key = self.get_int_key_for_node(int_key)
-        int_representations = [i for _, i in list(self.__G__.out_edges(int_key))]
+        node = self.get_int_key_for_node(int_key)
+        int_representations = [i for _, i in list(self.__G__.out_edges(node))]
         return [self.get_node_for_int_key(i) for i in int_representations]
 
     @property

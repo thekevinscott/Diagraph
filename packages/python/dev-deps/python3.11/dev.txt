@@ -70,9 +70,12 @@ pyproject-hooks==1.0.0
 pytest==7.4.3
     # via
     #   -r dev-deps/dev.in
+    #   pytest-asyncio
     #   pytest-cov
     #   pytest-describe
     #   pytest-mock
+pytest-asyncio==0.21.1
+    # via -r dev-deps/dev.in
 pytest-cov==4.1.0
     # via -r dev-deps/dev.in
 pytest-describe==2.1.0
