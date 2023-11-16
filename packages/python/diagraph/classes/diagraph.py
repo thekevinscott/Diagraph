@@ -3,6 +3,7 @@ import inspect
 from datetime import datetime
 from typing import Any, Callable, Optional, overload
 from bidict import bidict
+from ordered_set import OrderedSet
 from ..utils.build_parameters import build_parameters
 from ..utils.get_execution_graph import get_execution_graph
 from ..visualization.render_repr_html import render_repr_html
@@ -73,9 +74,9 @@ class Diagraph:
             error (Optional[Callable[[str, str, Key], None]]): An error handling function.
             use_string_keys (bool): Whether to use string keys for functions in the graph.
         """
-        graph_def = build_graph(*terminal_nodes)
+        graph_def: dict[Fn, OrderedSet[Fn]] = build_graph(*terminal_nodes)
         graph_mapping: dict[Fn, str | Fn] = dict()
-        graph_def_keys = list(graph_def.keys())
+        graph_def_keys: list[Fn] = list(graph_def.keys())
 
         def get_fn_name(fn: Fn) -> str | Fn:
             if use_string_keys:

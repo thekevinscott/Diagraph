@@ -1,10 +1,10 @@
 from __future__ import annotations
-from typing import Generic, TypeVar
+from typing import Generic, TypeVar, overload
 import networkx as nx
 
 from ..utils.build_layer_map import build_layer_map
 
-K = TypeVar("Key")
+K = TypeVar("K")
 
 
 class Graph(Generic[K]):
@@ -27,7 +27,7 @@ class Graph(Generic[K]):
             ref = self.__G__.nodes[int_representation]["ref"]
             self.__key_to_int__[ref] = int_representation
 
-    def get_nodes(self):
+    def get_nodes(self) -> list[K]:
         return [self.__G__.nodes[int_rep]["ref"] for int_rep in self.__G__.nodes()]
 
     def get_int_key_for_node(self, key: K) -> int:
@@ -36,26 +36,34 @@ class Graph(Generic[K]):
     def get_node_for_int_key(self, key: int) -> K:
         return self.__G__.nodes[key]["ref"]
 
-    def __getitem__(self, key: K | int | slice):
-        if isinstance(key, slice):
-            if key.step is not None:
-                raise Exception("Slicing with a step is not supported")
-            start, stop = key.start, key.stop
-            if start is not None or stop is not None:
-                raise Exception("Slicing not implemented yet")
-            return Graph(
-                {
-                    **self.graph_def,
-                }
-            )
+    @overload
+    def __getitem__(self, key: int) -> list[K]:
+        ...
+
+    @overload
+    def __getitem__(self, key: K) -> K:
+        ...
+
+    # def __getitem__(self, key: K | int | slice):
+    #     if isinstance(key, slice):
+    #         if key.step is not None:
+    #             raise Exception("Slicing with a step is not supported")
+    #         start, stop = key.start, key.stop
+    #         if start is not None or stop is not None:
+    #             raise Exception("Slicing not implemented yet")
+    #         return Graph(
+    #             {
+    #                 **self.graph_def,
+    #             }
+    #         )
+    def __getitem__(self, key: K | int):
         if isinstance(key, int):
             if key < 0:
                 key = max(self.depth_map_by_depth.keys()) + 1 + key
             nodes_at_depth: list[int] = self.depth_map_by_depth[key]
             return [self.get_node_for_int_key(int_rep) for int_rep in nodes_at_depth]
 
-        int_rep = self.__key_to_int__[key]
-        return self.get_node_for_int_key(int_rep)
+        return key
 
     def __setitem__(self, old: K, new: K):
         self.__key_to_int__[new] = self.__key_to_int__[old]
