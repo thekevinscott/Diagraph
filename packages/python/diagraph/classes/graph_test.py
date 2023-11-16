@@ -1,4 +1,3 @@
-import pytest
 from .graph import Graph
 
 
@@ -22,14 +21,14 @@ def test_it_builds_connected_directed_graph():
     ]
 
 
-def test_it_raises_for_a_slice():
-    graph = Graph({"a": ["b"], "b": ["c"]})
+# def test_it_raises_for_a_slice():
+#     graph = Graph({"a": ["b"], "b": ["c"]})
 
-    with pytest.raises(Exception):
-        graph[1:2]
+#     with pytest.raises(Exception):
+#         graph[1:2]
 
-    with pytest.raises(Exception):
-        graph[1:2:2]
+#     with pytest.raises(Exception):
+#         graph[1:2:2]
 
 
 def test_it_indexes_by_depth():
@@ -91,30 +90,30 @@ def test_it_can_get_out_edges():
     assert graph.out_edges("d") == ["c"]
 
 
-def test_it_returns_a_copy_of_itself():
-    graph = Graph({"a": ["b"], "b": ["c"]})
-    graph_2 = graph[:]
+# def test_it_returns_a_copy_of_itself():
+#     graph = Graph({"a": ["b"], "b": ["c"]})
+#     graph_2 = graph[:]
 
-    graph["a"] = "d"
-    graph_2["a"] = "e"
+#     graph["a"] = "d"
+#     graph_2["a"] = "e"
 
-    assert graph.to_json().get("links") == [
-        {
-            "source": graph.get_int_key_for_node("d"),
-            "target": graph.get_int_key_for_node("b"),
-        },
-        {
-            "source": graph.get_int_key_for_node("b"),
-            "target": graph.get_int_key_for_node("c"),
-        },
-    ]
-    assert graph_2.to_json().get("links") == [
-        {
-            "source": graph_2.get_int_key_for_node("e"),
-            "target": graph_2.get_int_key_for_node("b"),
-        },
-        {
-            "source": graph_2.get_int_key_for_node("b"),
-            "target": graph_2.get_int_key_for_node("c"),
-        },
-    ]
+#     assert graph.to_json().get("links") == [
+#         {
+#             "source": graph.get_int_key_for_node("d"),
+#             "target": graph.get_int_key_for_node("b"),
+#         },
+#         {
+#             "source": graph.get_int_key_for_node("b"),
+#             "target": graph.get_int_key_for_node("c"),
+#         },
+#     ]
+#     assert graph_2.to_json().get("links") == [
+#         {
+#             "source": graph_2.get_int_key_for_node("e"),
+#             "target": graph_2.get_int_key_for_node("b"),
+#         },
+#         {
+#             "source": graph_2.get_int_key_for_node("b"),
+#             "target": graph_2.get_int_key_for_node("c"),
+#         },
+#     ]

@@ -15,7 +15,7 @@ def describe_validate_node_ancestors():
         validate_node_ancestors(nodes)
 
     def test_it_validates_a_single_empty_ancestor():
-        def d0():
+        def d0() -> str:
             return "d0"
 
         def d1(d0: str = Depends(d0)):

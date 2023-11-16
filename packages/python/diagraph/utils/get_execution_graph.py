@@ -1,17 +1,19 @@
 from __future__ import annotations
-from typing import Callable, Generator
-from ordered_set import OrderedSet
+from typing import Callable, Generator, TypeVar
+from ..classes.ordered_set import OrderedSet
 from .get_subgraph_def import get_subgraph_def
 
 # from packages.python.diagraph.classes.diagraph_node import DiagraphNode
 # from ..classes.diagraph import Diagraph
-from ..classes.graph import Graph, Key
+from ..classes.graph import Graph
 
-GetChildren = Callable[[Key], list[Key]]
+K = TypeVar("K")
+
+GetChildren = Callable[[K], list[K]]
 
 
 def ancestor_is_upstream_dependency(
-    graph: Graph, potential_upstream_dependency: Key, parent: Key
+    graph: Graph, potential_upstream_dependency: K, parent: K
 ) -> bool:
     for ancestor in graph.out_edges(potential_upstream_dependency):
         if ancestor == parent:
@@ -22,7 +24,7 @@ def ancestor_is_upstream_dependency(
 
 
 def has_unexecuted_upstream_dependencies(
-    graph: Graph, child: Key, parent: Key, seen: set[Key]
+    graph: Graph, child: K, parent: K, seen: set[K]
 ) -> bool:
     for ancestor in graph.out_edges(child):
         if (
@@ -34,16 +36,17 @@ def has_unexecuted_upstream_dependencies(
     return False
 
 
-def get_execution_graph(graph: Graph, _node_keys: list[Key]) -> Generator[list[Key]]:
-    subgraph_def = get_subgraph_def(graph, _node_keys)
-    subgraph = Graph(subgraph_def)
+# TODO: modify node_keys to accept a DiagraphNodeGroup
+def get_execution_graph(graph: Graph, _node_keys: list[K]) -> Generator[list[K], None, None]:
+    subgraph_def: dict[K, OrderedSet[K]] = get_subgraph_def(graph, _node_keys)
+    subgraph: Graph[K] = Graph(subgraph_def)
     nodes = subgraph.root_nodes
     yield nodes
 
     seen = set(nodes)
 
     while len(nodes):
-        out_edges: OrderedSet[Key] = OrderedSet()
+        out_edges: OrderedSet[K] = OrderedSet({})
         for key in nodes:
             for child in subgraph.in_edges(key):
                 if child not in seen:

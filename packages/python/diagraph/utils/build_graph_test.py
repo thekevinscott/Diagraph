@@ -19,6 +19,8 @@ def test_works_with_a_stub(mocker):
     def stub():
         return mock_instance()
 
+    print('stub', stub)
+    print(build_graph(stub))
     assert build_graph(stub) == {stub: set()}
 
 
@@ -159,8 +161,8 @@ def test_it_handles_strings_at_end():
 
     def baz(
         string_arg: str,
-        bar: str = Depends(bar),
-        foo: str = Depends(foo),
+        bar = Depends(bar),
+        foo = Depends(foo),
     ) -> str:
         return f"baz: {string_arg} {foo} {bar}"
 
@@ -172,7 +174,7 @@ def describe_get_dependencies():
         def fn(a: int = Depends(1), b: str = Depends("b")):
             return a
 
-        dependencies = [d.dependency for d in list(get_dependencies(fn))]
+        dependencies = [d for d in list(get_dependencies(fn))]
         assert dependencies == [
             1,
             "b",
@@ -182,7 +184,7 @@ def describe_get_dependencies():
         def fn(a: int = Depends(1), b: str = Depends("b")):
             return a
 
-        dependencies = [d.dependency for d in list(get_dependencies(fn))]
+        dependencies = [d for d in list(get_dependencies(fn))]
         assert dependencies == [
             1,
             "b",

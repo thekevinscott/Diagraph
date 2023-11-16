@@ -1,14 +1,15 @@
 from __future__ import annotations
-from asyncio import run
+from asyncio import run as asyncio_run
 from typing import Any, Callable
 import tiktoken
 
 # To get the tokeniser corresponding to a specific model in the OpenAI API:
 from ..decorators.is_decorated import is_decorated
-from .graph import Graph, Key
+from .graph import Graph
+from .types import Fn
 
 
-def is_function(key: Key):
+def is_function(key: Fn):
     """
     Check if a given key is a callable function.
 
@@ -26,9 +27,9 @@ class DiagraphNode:
 
     diagraph: Any
     __graph__: Graph
-    key: Key
+    key: Fn
 
-    def __init__(self, diagraph, key: Key):
+    def __init__(self, diagraph, key: Fn):
         """
         Initialize a DiagraphNode.
 
@@ -139,7 +140,7 @@ class DiagraphNode:
             None
         """
 
-        run(self.diagraph.__run_from__(self.key, *input_args, **kwargs))
+        asyncio_run(self.diagraph.__run_from__(self.key, *input_args, **kwargs))
         return self.diagraph
 
     @property

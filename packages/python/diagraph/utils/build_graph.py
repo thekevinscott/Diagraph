@@ -1,29 +1,27 @@
-from typing import TypeVar
 import inspect
-from typing import Callable
+from typing import Callable, Generator
 from .depends import Depends
-from ordered_set import OrderedSet
+from ..classes.ordered_set import OrderedSet
+from ..classes.types import Fn as Fn
 
 
-T = TypeVar("T")
 
-
-def get_dependencies(node: Callable):
+def get_dependencies(node: Callable) -> Generator[Fn, None, None]:
     for val in inspect.signature(node).parameters.values():
         if isinstance(val.default, Depends):
-            yield val.default
+            yield val.default.dependency
 
 
-def build_graph(*_nodes: T):
-    graph = {}
+def build_graph(*_nodes: Fn) -> dict[Fn, OrderedSet[Fn]]:
+    graph: dict[Fn, OrderedSet[Fn]] = {}
     seen = set()
-    nodes: list[T] = list(_nodes)
+    nodes: list[Fn] = list(_nodes)
     for node in nodes:
-        graph[node] = graph.get(node, OrderedSet())
+        if node not in graph:
+            graph[node] = OrderedSet({})
         if node not in seen:
             seen.add(node)
-            for depends in get_dependencies(node):
-                dep = depends.dependency
+            for dep in get_dependencies(node):
                 if dep not in seen:
                     nodes.append(dep)
 

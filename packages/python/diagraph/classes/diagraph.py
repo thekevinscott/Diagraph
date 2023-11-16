@@ -1,8 +1,10 @@
 from __future__ import annotations
+import nest_asyncio
 import inspect
 from datetime import datetime
 from typing import Any, Callable, Optional, overload
 from bidict import bidict
+from .ordered_set import OrderedSet
 from ..utils.build_parameters import build_parameters
 from ..utils.get_execution_graph import get_execution_graph
 from ..visualization.render_repr_html import render_repr_html
@@ -18,12 +20,14 @@ from ..utils.validate_node_ancestors import validate_node_ancestors
 
 from ..utils.build_graph import build_graph
 
-from .graph import Graph, Key
+from .graph import Graph
 from .types import Fn
 
 from .diagraph_node import DiagraphNode
 
 from .historical_bidict import HistoricalBidict
+
+nest_asyncio.apply()
 
 default_log_fn = None
 
@@ -44,21 +48,21 @@ def set_default_error(error_fn):
 class Diagraph:
     """A directed acyclic graph (Diagraph) for managing and executing a graph of functions."""
 
-    __graph__: Graph
+    __graph__: Graph[Fn]
 
-    terminal_nodes: tuple[DiagraphNode]
-    log_handler: Optional[Callable[[str, str, Key], None]]
-    error_handler: Optional[Callable[[str, str, Key], None]]
-    results: HistoricalBidict[Key, Any]
-    prompts: HistoricalBidict[Key, str]
-    fns: HistoricalBidict[Key, Fn]
+    terminal_nodes: tuple[DiagraphNode, ...]
+    log_handler: Optional[Callable[[str, str, Fn], None]]
+    error_handler: Optional[Callable[[str, str, Fn], None]]
+    results: HistoricalBidict[Fn, Any]
+    prompts: HistoricalBidict[Fn, str]
+    fns: HistoricalBidict[Fn, Fn]
     runs: list[Any]
     graph_mapping: bidict[Fn, str]
     llm: Optional[LLM]
 
     def __init__(
         self,
-        *terminal_nodes: Key,
+        *terminal_nodes: Fn,
         log=None,
         error=None,
         llm=None,
@@ -73,9 +77,9 @@ class Diagraph:
             error (Optional[Callable[[str, str, Key], None]]): An error handling function.
             use_string_keys (bool): Whether to use string keys for functions in the graph.
         """
-        graph_def = build_graph(*terminal_nodes)
+        graph_def: dict[Fn, OrderedSet[Fn]] = build_graph(*terminal_nodes)
         graph_mapping: dict[Fn, str | Fn] = dict()
-        graph_def_keys = list(graph_def.keys())
+        graph_def_keys: list[Fn] = list(graph_def.keys())
 
         def get_fn_name(fn: Fn) -> str | Fn:
             if use_string_keys:
@@ -106,9 +110,9 @@ class Diagraph:
         for key in self.__graph__.get_nodes():
             self.fns[key] = self.graph_mapping.inverse[key]
 
-        self.terminal_nodes = [
+        self.terminal_nodes = tuple(
             DiagraphNode(self, get_fn_name(node)) for node in terminal_nodes
-        ]
+        )
         self.log_handler = log or default_log_fn
         self.error_handler = error or default_error_fn
 
@@ -135,18 +139,18 @@ class Diagraph:
 
     def __getitem__(self, key: Fn | int) -> DiagraphNode | DiagraphNodeGroup:
         """
-        Retrieve a DiagraphNode or DiagraphLayer associated with a function or depth key.
+        Retrieve a DiagraphNode or DiagraphNodeGroup associated with a function or depth key.
 
         Args:
             key (Fn | int): A function or depth key.
 
         Returns:
-            DiagraphNode or tuple[DiagraphNode]: The DiagraphNode or DiagraphLayer associated with the key.
+            DiagraphNode or tuple[DiagraphNode]: The DiagraphNode or DiagraphNodeGroup associated with the key.
         """
         node_keys = self.__graph__[key]
         if isinstance(node_keys, list):
             if isinstance(key, int):
-                return DiagraphNodeGroup(self, key, *node_keys)
+                return DiagraphNodeGroup(self, *node_keys)
             raise Exception(
                 f"Unexpected key when trying to build a diagraph layer: {key}"
             )
@@ -165,10 +169,12 @@ class Diagraph:
             Diagraph: The Diagraph instance.
         """
 
-        run(self.__run_from__(0, *input_args, **kwargs))
+        root_nodes: list[Fn] = self.__graph__.root_nodes
+        group = DiagraphNodeGroup(self, *root_nodes)
+        run(self.__run_from__(group, *input_args, **kwargs))
         return self
 
-    async def __run_from__(self, node_key: Fn | int, *input_args, **kwargs):
+    async def __run_from__(self, group: DiagraphNodeGroup | DiagraphNode, *input_args, **kwargs):
         """
         Run the Diagraph from a specific node.
 
@@ -179,37 +185,35 @@ class Diagraph:
         Returns:
             Diagraph: The Diagraph instance.
         """
+        node_group = get_diagraph_node_group(self, group)
         run = {
             "start": datetime.now(),
-            "node_key": node_key,
+            "node_group": node_group,
             "input": input_args,
             "kwargs": kwargs,
             "nodes": {},
+            "dirty": True,
         }
         self.runs.append(run)
-        nodes = self[node_key]  # nodes is a diagraph node
-        if not isinstance(nodes, DiagraphNodeGroup):
-            nodes = (nodes,)
 
-        run["starting_nodes"] = nodes
-        run["dirty"] = True
-        validate_node_ancestors(nodes)
+        run["starting_nodes"] = node_group
+        validate_node_ancestors(node_group)
         run["dirty"] = False
 
-        depth = node_key if isinstance(node_key, int) else nodes[0].depth
-        run["starting_depth"] = depth
-        run["active_depth"] = depth
+        # depth = node_key if isinstance(node_key, int) else node_group[0].depth
+        # run["starting_depth"] = depth
+        # run["active_depth"] = depth
 
-        if isinstance(node_key, int):
-            node_keys = [node.key for node in nodes.nodes]
-        else:
-            node_keys = [node.key for node in nodes]
+        # if isinstance(node_key, int):
+        #     node_keys = [node.key for node in node_group.nodes]
+        # else:
+        #     node_keys = [node.key for node in node_group]
 
         try:
             await gather(
                 *[
                     self.__execute_node__(self[key], *input_args, **kwargs)
-                    for keys in get_execution_graph(self.__graph__, node_keys)
+                    for keys in get_execution_graph(self.__graph__, [n.key for n in node_group.nodes])
                     for key in keys
                 ]
             )
@@ -266,24 +270,14 @@ class Diagraph:
         setattr(fn, "__diagraph_error__", self.error_handler)
         setattr(fn, "__diagraph_llm__", self.llm)
         if is_decorated(fn):
-            encountered_prompt = False
-            async for r in fn(*args, **kwargs):
-                if encountered_prompt is False:
-                    encountered_prompt = True
-                    if r is None:
-                        raise Exception(
-                            f"Prompt returned from function {node.fn.__name__} is None. This is an error, you must return a valid response for the LLM."
-                        )
-                    node.prompt = r
-                else:
-                    return r
+            return await fn(node, *args, **kwargs)
         else:
             if inspect.iscoroutinefunction(fn):
                 return await fn(*args, **kwargs)
             else:
                 return fn(*args, **kwargs)
 
-    def __setitem__(self, node_key: Key, fn: Fn):
+    def __setitem__(self, node_key: Fn, fn: Fn):
         """
         Add a function to the Diagraph.
 
@@ -304,3 +298,11 @@ class Diagraph:
     @staticmethod
     def set_error(error_fn: Callable):
         set_default_error(error_fn)
+
+
+def get_diagraph_node_group(
+    diagraph: Diagraph, group: DiagraphNodeGroup | DiagraphNode,
+) -> DiagraphNodeGroup:
+    if not isinstance(group, DiagraphNodeGroup):
+        return DiagraphNodeGroup(diagraph, group)
+    return group

@@ -12,44 +12,42 @@ def describe_cast_to_input():
         assert cast_to_input(input) == input
 
 
-def mock_openai_return_value(times=1):
-    return iter(
-        [
-            {
-                "id": "chatcmpl-8F67ICEUxk7Xqjy2qdGv5gx5mj0Bm",
-                "object": "chat.completion.chunk",
-                "created": 1698609124,
-                "model": "gpt-3.5-turbo-0613",
-                "choices": [
-                    {
-                        "index": 0,
-                        "delta": {"role": "assistant", "content": f"{i}"},
-                        "finish_reason": None,
-                    }
-                ],
-            }
-            for i in range(times)
-        ]
-    )
+async def mock_openai_return_value(times=1):
+    for i in range(times):
+        yield {
+            "id": "chatcmpl-8F67ICEUxk7Xqjy2qdGv5gx5mj0Bm",
+            "object": "chat.completion.chunk",
+            "created": 1698609124,
+            "model": "gpt-3.5-turbo-0613",
+            "choices": [
+                {
+                    "index": 0,
+                    "delta": {"role": "assistant", "content": f"{i}"},
+                    "finish_reason": None,
+                }
+            ],
+        }
 
 
 def describe_openai_llm():
     def test_it_instantiates():
         OpenAI()
 
+    @pytest.mark.asyncio
     async def test_it_runs():
         def handle_log(event, data):
             pass
 
-        with patch("openai.ChatCompletion.create") as create:
+        with patch("openai.ChatCompletion.acreate") as create:
             create.return_value = mock_openai_return_value()
             assert await OpenAI().run("foo", log=handle_log) == "0"
 
+    @pytest.mark.asyncio
     async def test_it_passes_kwargs_and_parses_string_by_default():
         def handle_log(event, data):
             pass
 
-        with patch("openai.ChatCompletion.create") as create:
+        with patch("openai.ChatCompletion.acreate") as create:
             create.return_value = mock_openai_return_value()
             await OpenAI().run("foo", log=handle_log, foo="foo")
             create.assert_called_with(
@@ -59,11 +57,12 @@ def describe_openai_llm():
                 stream=True,
             )
 
+    @pytest.mark.asyncio
     async def test_it_accepts_alternate_models():
         def handle_log(event, data):
             pass
 
-        with patch("openai.ChatCompletion.create") as create:
+        with patch("openai.ChatCompletion.acreate") as create:
             create.return_value = mock_openai_return_value()
             await OpenAI(model="gpt-foo").run("foo", log=handle_log)
             create.assert_called_with(
@@ -72,7 +71,7 @@ def describe_openai_llm():
                 stream=True,
             )
 
-        with patch("openai.ChatCompletion.create") as create:
+        with patch("openai.ChatCompletion.acreate") as create:
             create.return_value = mock_openai_return_value()
             await OpenAI().run("foo", log=handle_log, model="gpt-bar")
             create.assert_called_with(
@@ -81,7 +80,7 @@ def describe_openai_llm():
                 stream=True,
             )
 
-        with patch("openai.ChatCompletion.create") as create:
+        with patch("openai.ChatCompletion.acreate") as create:
             create.return_value = mock_openai_return_value()
             await OpenAI(model="gpt-foo").run("foo", log=handle_log, model="gpt-bar")
             create.assert_called_with(
@@ -91,19 +90,21 @@ def describe_openai_llm():
             )
 
     def describe_logs():
+        @pytest.mark.asyncio
         async def test_it_does_not_call_start_if_encountering_an_error(mocker):
             handle_log = mocker.stub()
 
-            with patch("openai.ChatCompletion.create") as create:
+            with patch("openai.ChatCompletion.acreate") as create:
                 create.side_effect = Exception("wruh wroh")
                 with pytest.raises(Exception):
                     await OpenAI(model="gpt-foo").run("foo", log=handle_log)
                 assert handle_log.call_count == 0
 
+        @pytest.mark.asyncio
         async def test_it_calls_all_events(mocker):
             handle_log = mocker.stub()
 
-            with patch("openai.ChatCompletion.create") as create:
+            with patch("openai.ChatCompletion.acreate") as create:
                 create.return_value = mock_openai_return_value(3)
                 await OpenAI(model="gpt-foo").run("foo", log=handle_log)
 
@@ -113,10 +114,11 @@ def describe_openai_llm():
                 handle_log.assert_any_call("data", "2")
                 handle_log.assert_any_call("end", None)
 
+    @pytest.mark.asyncio
     async def test_it_returns_content_response(mocker):
         handle_log = mocker.stub()
 
-        with patch("openai.ChatCompletion.create") as create:
+        with patch("openai.ChatCompletion.acreate") as create:
             create.return_value = mock_openai_return_value(3)
             assert await OpenAI(model="gpt-foo").run("foo", log=handle_log) == "012"
 
