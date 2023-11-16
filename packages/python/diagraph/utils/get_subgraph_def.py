@@ -2,15 +2,15 @@ from __future__ import annotations
 from typing import Optional
 from ordered_set import OrderedSet
 
-from ..classes.graph import Graph, Key
+from ..classes.graph import Graph, K
 
 
 def get_subgraph_def(
     graph: Graph,
-    node_keys: list[Key],
+    node_keys: list[K],
     seen: Optional[set] = None,
-    subgraph: Optional[dict[Key, OrderedSet]] = None,
-) -> dict[Key, OrderedSet]:
+    subgraph: Optional[dict[K, OrderedSet]] = None,
+) -> dict[K, OrderedSet]:
     if subgraph is None:
         subgraph = {}
 

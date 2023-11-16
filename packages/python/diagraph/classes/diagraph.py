@@ -18,7 +18,7 @@ from ..utils.validate_node_ancestors import validate_node_ancestors
 
 from ..utils.build_graph import build_graph
 
-from .graph import Graph, Key
+from .graph import Graph
 from .types import Fn
 
 from .diagraph_node import DiagraphNode
@@ -46,19 +46,19 @@ class Diagraph:
 
     __graph__: Graph
 
-    terminal_nodes: tuple[DiagraphNode]
-    log_handler: Optional[Callable[[str, str, Key], None]]
-    error_handler: Optional[Callable[[str, str, Key], None]]
-    results: HistoricalBidict[Key, Any]
-    prompts: HistoricalBidict[Key, str]
-    fns: HistoricalBidict[Key, Fn]
+    terminal_nodes: tuple[DiagraphNode, ...]
+    log_handler: Optional[Callable[[str, str, Fn], None]]
+    error_handler: Optional[Callable[[str, str, Fn], None]]
+    results: HistoricalBidict[Fn, Any]
+    prompts: HistoricalBidict[Fn, str]
+    fns: HistoricalBidict[Fn, Fn]
     runs: list[Any]
     graph_mapping: bidict[Fn, str]
     llm: Optional[LLM]
 
     def __init__(
         self,
-        *terminal_nodes: Key,
+        *terminal_nodes: Fn,
         log=None,
         error=None,
         llm=None,
@@ -106,9 +106,9 @@ class Diagraph:
         for key in self.__graph__.get_nodes():
             self.fns[key] = self.graph_mapping.inverse[key]
 
-        self.terminal_nodes = [
+        self.terminal_nodes = tuple(
             DiagraphNode(self, get_fn_name(node)) for node in terminal_nodes
-        ]
+        )
         self.log_handler = log or default_log_fn
         self.error_handler = error or default_error_fn
 
@@ -187,9 +187,7 @@ class Diagraph:
             "nodes": {},
         }
         self.runs.append(run)
-        nodes = self[node_key]  # nodes is a diagraph node
-        if not isinstance(nodes, DiagraphNodeGroup):
-            nodes = (nodes,)
+        nodes = get_diagraph_node_group(self, node_key)
 
         run["starting_nodes"] = nodes
         run["dirty"] = True
@@ -273,7 +271,7 @@ class Diagraph:
             else:
                 return fn(*args, **kwargs)
 
-    def __setitem__(self, node_key: Key, fn: Fn):
+    def __setitem__(self, node_key: Fn, fn: Fn):
         """
         Add a function to the Diagraph.
 
@@ -294,3 +292,17 @@ class Diagraph:
     @staticmethod
     def set_error(error_fn: Callable):
         set_default_error(error_fn)
+
+
+def get_diagraph_node_group(
+    diagraph: Diagraph, node_key: int | Fn
+) -> DiagraphNodeGroup:
+    nodes = diagraph[node_key]
+    print(nodes)
+    if not isinstance(nodes, DiagraphNodeGroup):
+        return DiagraphNodeGroup(
+            diagraph,
+            0,
+            nodes.fn,
+        )
+    return nodes
