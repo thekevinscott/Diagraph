@@ -1,6 +1,6 @@
 from __future__ import annotations
 from typing import Optional, TypeVar
-from ordered_set import OrderedSet
+from ..classes.ordered_set import OrderedSet
 
 from ..classes.graph import Graph
 K = TypeVar("K")

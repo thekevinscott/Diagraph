@@ -1,7 +1,7 @@
 import inspect
 from typing import Callable, Generator
 from .depends import Depends
-from ordered_set import OrderedSet
+from ..classes.ordered_set import OrderedSet
 from ..classes.types import Fn as Fn
 
 
