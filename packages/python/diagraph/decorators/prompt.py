@@ -1,5 +1,8 @@
 import inspect
 import functools
+from typing import Any, Awaitable
+
+from ..classes.diagraph_node import DiagraphNode
 
 from ..llm.llm import LLM
 from ..llm.openai_llm import OpenAI
@@ -20,10 +23,14 @@ def set_default_llm(llm: LLM):
     default_llm = llm
 
 
-def prompt(_func=None, *, log=None, llm=None, error=None, return_type=None):
-    def decorator(func):
+def prompt(
+    _func=None, *, log=None, llm=None, error=None, return_type=None
+):  # -> Callable[..., _Wrapped[Callable[..., Any], Any, Callable[..., Any], Generator[Any | Literal[''] | None, Any, None]]] | _Wrapped[Callable[..., Any], Any, Callable[..., Any], Generator[Any | Literal[''] | None, Any, None]]:
+    def decorator(
+        func,
+    ):  # -> _Wrapped[Callable[..., Any], Any, Callable[..., Any], Generator[Any | Literal[''] | None, Any, None]]:
         @functools.wraps(func)
-        async def wrapper_fn(*args, **kwargs):
+        async def wrapper_fn(node: DiagraphNode, *args, **kwargs) -> Awaitable[Any]:
             global default_llm
             function_llm = getattr(wrapper_fn, "__function_llm__", None)
             diagraph_llm = getattr(wrapper_fn, "__diagraph_llm__", None)
@@ -46,10 +53,10 @@ def prompt(_func=None, *, log=None, llm=None, error=None, return_type=None):
                 generated_prompt = await func(*args, **kwargs)
             else:
                 generated_prompt = func(*args, **kwargs)
-            yield generated_prompt
+            node.prompt = generated_prompt
 
             try:
-                yield await llm.run(generated_prompt, log=_log)
+                return await llm.run(node.prompt, log=_log)
             except Exception as e:
                 # TODO: Should both error functions be called? Or should one supersede the other?
                 if error:

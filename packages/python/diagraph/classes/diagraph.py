@@ -266,17 +266,7 @@ class Diagraph:
         setattr(fn, "__diagraph_error__", self.error_handler)
         setattr(fn, "__diagraph_llm__", self.llm)
         if is_decorated(fn):
-            encountered_prompt = False
-            async for r in fn(*args, **kwargs):
-                if encountered_prompt is False:
-                    encountered_prompt = True
-                    if r is None:
-                        raise Exception(
-                            f"Prompt returned from function {node.fn.__name__} is None. This is an error, you must return a valid response for the LLM."
-                        )
-                    node.prompt = r
-                else:
-                    return r
+            return await fn(node, *args, **kwargs)
         else:
             if inspect.iscoroutinefunction(fn):
                 return await fn(*args, **kwargs)
