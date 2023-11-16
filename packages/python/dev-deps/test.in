@@ -2,3 +2,4 @@ pytest
 pytest-watcher
 pytest-cov
 pytest-mock
+pytest-asyncio
