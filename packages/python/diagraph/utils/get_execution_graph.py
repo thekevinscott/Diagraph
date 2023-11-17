@@ -1,5 +1,12 @@
 from __future__ import annotations
-from typing import Callable, Generator, TypeVar
+from typing import Generator, Mapping, TypeVar
+
+
+from .get_node_keys import get_node_keys
+
+from ..classes.types import Fn
+
+from ..classes.diagraph_node_group import DiagraphNodeGroup
 from ..classes.ordered_set import OrderedSet
 from .get_subgraph_def import get_subgraph_def
 
@@ -9,23 +16,40 @@ from ..classes.graph import Graph
 
 K = TypeVar("K")
 
-GetChildren = Callable[[K], list[K]]
-
-
 def ancestor_is_upstream_dependency(
     graph: Graph, potential_upstream_dependency: K, parent: K
 ) -> bool:
+    """
+    Checks if a potential upstream dependency is an ancestor of a given node.
+
+    Parameters:
+    - graph (Graph): The directed graph.
+    - potential_upstream_dependency (K): The potential upstream dependency node.
+    - parent (K): The target node.
+
+    Returns:
+    bool: True if the potential upstream dependency is an ancestor of the target node, False otherwise.
+    """
     for ancestor in graph.out_edges(potential_upstream_dependency):
-        if ancestor == parent:
-            return True
-        if ancestor_is_upstream_dependency(graph, ancestor, parent) is True:
+        if ancestor == parent or ancestor_is_upstream_dependency(graph, ancestor, parent) is True:
             return True
     return False
-
 
 def has_unexecuted_upstream_dependencies(
     graph: Graph, child: K, parent: K, seen: set[K]
 ) -> bool:
+    """
+    Checks if a node has unexecuted upstream dependencies with respect to a parent node.
+
+    Parameters:
+    - graph (Graph): The directed graph.
+    - child (K): The child node.
+    - parent (K): The parent node.
+    - seen (set[K]): A set of nodes that have been seen.
+
+    Returns:
+    bool: True if the child has unexecuted upstream dependencies, False otherwise.
+    """
     for ancestor in graph.out_edges(child):
         if (
             # parent != ancestor
@@ -35,18 +59,27 @@ def has_unexecuted_upstream_dependencies(
             return True
     return False
 
+def get_execution_graph(graph: Graph[Fn], _node_keys: list[Fn] | DiagraphNodeGroup) -> Generator[list[Fn], None, None]:
+    """
+    Generates a topological execution graph for a set of nodes in a directed graph.
 
-# TODO: modify node_keys to accept a DiagraphNodeGroup
-def get_execution_graph(graph: Graph, _node_keys: list[K]) -> Generator[list[K], None, None]:
-    subgraph_def: dict[K, OrderedSet[K]] = get_subgraph_def(graph, _node_keys)
-    subgraph: Graph[K] = Graph(subgraph_def)
+    Parameters:
+    - graph (Graph[Fn]): The directed graph.
+    - _node_keys (list[Fn] | DiagraphNodeGroup): Either a list of functions or a DiagraphNodeGroup.
+
+    Yields:
+    Generator[list[Fn], None, None]: A generator of lists representing the topological order of execution.
+    """
+    node_keys = get_node_keys(_node_keys)
+    subgraph_def: Mapping[Fn, OrderedSet[Fn]] = get_subgraph_def(graph, node_keys)
+    subgraph: Graph[Fn] = Graph(subgraph_def)
     nodes = subgraph.root_nodes
     yield nodes
 
     seen = set(nodes)
 
     while len(nodes):
-        out_edges: OrderedSet[K] = OrderedSet({})
+        out_edges: OrderedSet[Fn] = OrderedSet()
         for key in nodes:
             for child in subgraph.in_edges(key):
                 if child not in seen:
@@ -60,7 +93,6 @@ def get_execution_graph(graph: Graph, _node_keys: list[K]) -> Generator[list[K],
                         if ancestor not in seen:
                             valid = False
                             break
-                    # foo = has_unexecuted_upstream_dependencies(graph, child, key, seen)
                     if valid:
                         out_edges.add(child)
 

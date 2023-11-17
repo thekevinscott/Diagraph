@@ -1,19 +1,23 @@
+from __future__ import annotations
 import json
 import random
 import inspect
 import networkx as nx
 
-# from json import load
-from pkg_resources import resource_stream, get_distribution
+from importlib import resources
+from importlib.metadata import distribution
+
+diagraph_version = distribution('diagraph').metadata['version']
 
 
 def load_from_dist(url: str):
     return load_resource(f"./assets/dist/{url}")
-    # return load_resource(f"../../javascript/visualizer/dist/{url}")
 
 
 def load_resource(url: str, name="diagraph") -> str:
-    return resource_stream(name, url).read().decode("utf-8")
+    ref = resources.files(url).joinpath(name)
+    with ref.open('r') as f:
+        return f.read()
 
 
 def render_repr_html(diagraph):
@@ -67,7 +71,7 @@ def render_repr_html(diagraph):
         {
             "nodes": nodes,
             "graph": graph,
-            "version": get_distribution("diagraph").version,
+            "version": diagraph_version,
         }
     )
     random_number = random.randint(0, 100000000)

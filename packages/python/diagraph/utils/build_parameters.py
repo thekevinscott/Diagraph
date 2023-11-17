@@ -4,14 +4,27 @@ from typing import Any
 from ..classes.types import Fn
 from .depends import Depends
 
+from typing import TYPE_CHECKING
 
-def build_parameters(diagraph, fn: Fn, input_args: tuple) -> list[Any]:
+if TYPE_CHECKING:
+    from ..classes.diagraph import Diagraph
+
+def build_parameters(diagraph: Diagraph, fn: Fn, input_args: tuple) -> list[Any]:
+    """
+    Builds a list of parameters for a function based on its signature and provided arguments.
+
+    Parameters:
+    - diagraph (Diagraph): The directed graph representing the dependency structure.
+    - fn (Fn): The function for which to build parameters.
+    - input_args (Tuple): The input arguments provided when the function is called.
+
+    Returns:
+    list[Any]: The list of parameters for the function.
+    """
     args = []
     arg_index = 0
     encountered_star = False
     for parameter in inspect.signature(fn).parameters.values():
-        # Depends can be passed as arg: str = Depends(dep)
-        # Regular args can be passed as :str = 'foo'
         if parameter.default is not None and parameter.default is not inspect._empty:
             if isinstance(parameter.default, Depends):
                 dep: Fn = parameter.default.dependency

@@ -1,7 +1,9 @@
-from typing import Callable, Optional
+from typing import Optional
 import asyncio
 from unittest.mock import patch
 from ..decorators.prompt import prompt
+
+from .types import Fn
 
 from ..llm.llm import LLM
 import pytest
@@ -1018,7 +1020,7 @@ def describe_run():
                 "d2c": d2c_mock,
             }
 
-            nodes: dict[str, Callable] = {
+            nodes: dict[str, Fn] = {
                 "d0b": d0b,
                 "d1c": d1c,
                 "d2d": d2d,
@@ -1302,7 +1304,7 @@ def describe_run():
                 "d2c": d2c_mock,
             }
 
-            nodes: dict[str, Callable] = {
+            nodes: dict[str, Fn] = {
                 "d0b": d0b,
                 "d1c": d1c,
                 "d2d": d2d,

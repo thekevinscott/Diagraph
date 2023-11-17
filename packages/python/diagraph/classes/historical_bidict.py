@@ -1,3 +1,4 @@
+from __future__ import annotations
 from typing import Generic, TypeVar
 
 Key = TypeVar("Key")
@@ -19,21 +20,19 @@ class HistoricalBidict(Generic[Key, Value]):
     keys: dict[Key, list[Value]]
     values_to_keys: dict[Value, Key]
 
-    def __init__(self):
+    def __init__(self) -> None:
         self.keys = {}
         self.values_to_keys = {}
 
-    def __str__(self):
+    def __str__(self) -> str:
         return str(self.keys)
 
-    def __setitem__(self, key: Key, value: Value):
+    def __setitem__(self, key: Key, value: Value) -> None:
         self.keys[key] = self.keys.get(key, []) + [value]
         if is_not_hashable(value) is False:
-            #     self.values_to_keys[str(value)] = key
-            # else:
             self.values_to_keys[value] = key
 
-    def __getitem__(self, key: Key):
+    def __getitem__(self, key: Key) -> Value:
         if key not in self.keys:
             raise Exception(f"Key {key} not found in {self.keys}")
         if len(self.keys[key]) == 0:
@@ -41,13 +40,12 @@ class HistoricalBidict(Generic[Key, Value]):
 
         return self.keys[key][-1]
 
-    def inverse(self, value: Value):
+    def inverse(self, value: Value) -> Key:
         if is_not_hashable(value):
             raise Exception(
                 f"Value {value} is not hashable and cannot be used as an inverse key"
             )
-            # return self.values_to_keys[str(value)]
         return self.values_to_keys[value]
 
-    def historical(self, key: Key, index: int):
+    def historical(self, key: Key, index: int) -> Value:
         return self.keys[key][index]
