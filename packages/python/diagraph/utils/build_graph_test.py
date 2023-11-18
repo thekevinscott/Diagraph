@@ -19,8 +19,6 @@ def test_works_with_a_stub(mocker):
     def stub():
         return mock_instance()
 
-    print('stub', stub)
-    print(build_graph(stub))
     assert build_graph(stub) == {stub: set()}
 
 

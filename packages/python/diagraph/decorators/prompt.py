@@ -1,8 +1,7 @@
 import inspect
 import functools
-from typing import Any, Awaitable
+from typing import Any, Awaitable, Callable, Optional
 
-from ..classes.diagraph_node import DiagraphNode
 
 from ..llm.llm import LLM
 from ..llm.openai_llm import OpenAI
@@ -13,14 +12,22 @@ class UserHandledException(Exception):
     pass
 
 
-default_llm = OpenAI()
+__default_llm__: Optional[LLM] = None
+
 
 
 def set_default_llm(llm: LLM):
-    global default_llm
+    global __default_llm__
     if llm is None:
         raise Exception("You cannot pass a null LLM")
-    default_llm = llm
+    __default_llm__ = llm
+
+def get_default_llm() -> LLM:
+    global __default_llm__
+    if __default_llm__ is None:
+        print('set default llm', OpenAI)
+        __default_llm__ = OpenAI()
+    return __default_llm__
 
 
 def prompt(
@@ -30,8 +37,7 @@ def prompt(
         func,
     ):  # -> _Wrapped[Callable[..., Any], Any, Callable[..., Any], Generator[Any | Literal[''] | None, Any, None]]:
         @functools.wraps(func)
-        async def wrapper_fn(node: DiagraphNode, *args, **kwargs) -> Awaitable[Any]:
-            global default_llm
+        async def wrapper_fn(node: Callable, *args, **kwargs) -> Awaitable[Any]:
             function_llm = getattr(wrapper_fn, "__function_llm__", None)
             diagraph_llm = getattr(wrapper_fn, "__diagraph_llm__", None)
             if function_llm is not None:
@@ -39,7 +45,7 @@ def prompt(
             elif diagraph_llm is not None:
                 llm = diagraph_llm
             else:
-                llm = default_llm
+                llm = get_default_llm()
             diagraph_log = getattr(wrapper_fn, "__diagraph_log__", None)
             diagraph_error = getattr(wrapper_fn, "__diagraph_error__", None)
 
