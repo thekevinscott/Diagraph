@@ -1,10 +1,12 @@
 import pytest
+
+from ..llm.llm import LLM
 from ..classes.diagraph import Diagraph
 from ..utils.depends import Depends
 from .prompt import prompt
 
 
-class MockLLM:
+class MockLLM(LLM):
     times: int
     error: bool
 

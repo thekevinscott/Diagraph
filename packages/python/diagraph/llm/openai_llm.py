@@ -1,8 +1,8 @@
-from typing import Any, Optional
+from typing import Any, Awaitable, Optional
 from openai import AsyncOpenAI
 from openai.types.chat import ChatCompletionMessageParam
 
-from ..classes.types import LogHandler
+from ..classes.types import FunctionLogHandler
 from .llm import LLM
 
 
@@ -20,7 +20,7 @@ class OpenAI(LLM):
     __aclient__: Optional[AsyncOpenAI] = None
     kwargs: dict[Any, Any]
 
-    def __init__(self, **kwargs):
+    def __init__(self, **kwargs) -> None:
         self.kwargs = kwargs
 
     @property
@@ -32,7 +32,7 @@ class OpenAI(LLM):
 
         return aclient
 
-    async def run(self, prompt: str | list[ChatCompletionMessageParam], log: LogHandler, model=None, stream=None, **kwargs):
+    async def run(self, prompt: str | list[ChatCompletionMessageParam], log: FunctionLogHandler, model=None, stream=None, **kwargs) -> Awaitable[Any]:
         client = self.client
         model = model if model else self.kwargs.get("model", DEFAULT_MODEL)
         messages = cast_to_input(prompt)
