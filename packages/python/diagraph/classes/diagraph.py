@@ -271,8 +271,12 @@ class Diagraph:
 
         args = build_parameters(self, fn, input_args)
 
-        setattr(fn, "__diagraph_log__", self.log_handler)
-        setattr(fn, "__diagraph_error__", self.error_handler)
+        if self.log_handler:
+            log_handler = self.log_handler
+            setattr(fn, "__diagraph_log__", lambda event, chunk: log_handler(event, chunk, fn))
+        if self.error_handler:
+            error_handler = self.error_handler
+            setattr(fn, "__diagraph_error__", lambda e: error_handler(e, fn))
         setattr(fn, "__diagraph_llm__", self.llm)
         if is_decorated(fn):
             return await fn(node, *args, **kwargs)
