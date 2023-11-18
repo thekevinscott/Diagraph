@@ -1,17 +1,22 @@
 from __future__ import annotations
 from asyncio import run as asyncio_run
-from typing import Any
+from typing import Iterator
 from .diagraph_node import DiagraphNode
-from .types import Fn
+from .types import Fn, Result
 
+
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from .diagraph import Diagraph
 
 class DiagraphNodeGroup:
     """A layer of DiagraphNodes representing a set of related nodes in a Diagraph."""
 
-    diagraph: Any
+    diagraph: Diagraph
     nodes: tuple[DiagraphNode, ...]
 
-    def __init__(self, diagraph: Any, *node_keys: Fn | DiagraphNode):
+    def __init__(self, diagraph: Diagraph, *node_keys: Fn | DiagraphNode) -> None:
         """
         Initialize a DiagraphNodeGroup.
 
@@ -28,7 +33,7 @@ class DiagraphNodeGroup:
                 nodes.append(DiagraphNode(self.diagraph, node))
         self.nodes = tuple(nodes)
 
-    def __iter__(self):
+    def __iter__(self) -> Iterator[DiagraphNode]:
         """
         Create an iterator for the nodes in the layer.
 
@@ -37,7 +42,7 @@ class DiagraphNodeGroup:
         """
         return iter(self.nodes)
 
-    def __str__(self):
+    def __str__(self) -> str:
         """
         Get a string representation of the DiagraphNodeGroup.
 
@@ -46,7 +51,7 @@ class DiagraphNodeGroup:
         """
         return f"DiagraphNodeGroup({[str(n) for n in self.nodes]})"
 
-    def __getitem__(self, key: Fn | int):
+    def __getitem__(self, key: Fn | int) -> DiagraphNode:
         """
         Get a specific node or a subset of nodes from the layer.
 
@@ -64,7 +69,7 @@ class DiagraphNodeGroup:
                 return node
         raise Exception(f"No node for key {key}")
 
-    def __len__(self):
+    def __len__(self) -> int:
         """
         Get the number of nodes in the layer.
 
@@ -73,7 +78,7 @@ class DiagraphNodeGroup:
         """
         return len(self.nodes)
 
-    def __contains__(self, item: Fn):
+    def __contains__(self, item: Fn) -> bool:
         """
         Check if a specific node key is present in the layer.
 
@@ -88,7 +93,7 @@ class DiagraphNodeGroup:
                 return True
         return False
 
-    def run(self, *input_args, **kwargs):
+    def run(self, *input_args, **kwargs) -> Diagraph:
         """
         Run the Diagraph starting from the nodes in this layer.
 
@@ -103,7 +108,7 @@ class DiagraphNodeGroup:
         return self.diagraph
 
     @property
-    def result(self):
+    def result(self) -> Result | tuple[Result, ...]:
         """
         Get the results of the nodes in the layer.
 
@@ -118,7 +123,7 @@ class DiagraphNodeGroup:
         return tuple(results)
 
     @property
-    def prompt(self):
+    def prompt(self) -> str | tuple[str, ...]:
         """
         Get the prompts associated with the nodes in the layer.
 
@@ -133,7 +138,7 @@ class DiagraphNodeGroup:
         return tuple(prompts)
 
     @property
-    def tokens(self):
+    def tokens(self) -> int | tuple[int, ...]:
         """
         Get the number of tokens in the prompts associated with the nodes in the layer.
 
@@ -148,7 +153,7 @@ class DiagraphNodeGroup:
         return tuple(tokens)
 
     @result.setter
-    def result(self, values):
+    def result(self, values: tuple[Result, ...] | list[Result]) -> None:
         """
         Set the results for the nodes in the layer.
 

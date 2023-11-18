@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import inspect
 import functools
 from typing import Any, Awaitable, Callable, Optional
@@ -16,7 +18,7 @@ __default_llm__: Optional[LLM] = None
 
 
 
-def set_default_llm(llm: LLM):
+def set_default_llm(llm: LLM) -> None:
     global __default_llm__
     if llm is None:
         raise Exception("You cannot pass a null LLM")

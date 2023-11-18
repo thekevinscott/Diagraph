@@ -1,12 +1,32 @@
-from typing import Callable, Any
+from __future__ import annotations
+
+from diagraph.classes.types import Fn
 
 
 class Depends:
-    dependency: Callable[..., Any]
+    """
+    Dependency injection class.
 
-    def __init__(self, dependency: Callable[..., Any]):
+    Attributes:
+    - dependency (Fn): The dependency to be injected.
+    """
+    dependency: Fn
+
+    def __init__(self, dependency: Fn):
+        """
+        Initializes a Depends instance with a given dependency.
+
+        Parameters:
+        - dependency (Fn): The dependency to be injected.
+        """
         self.dependency = dependency
 
     def __repr__(self) -> str:
+        """
+        Returns a string representation of the Depends instance.
+
+        Returns:
+        str: A string representation of the Depends instance.
+        """
         attr = getattr(self.dependency, "__name__", type(self.dependency).__name__)
         return f"{self.__class__.__name__}({attr})"

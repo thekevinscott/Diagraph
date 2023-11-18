@@ -1,4 +1,8 @@
 import pytest
+
+from ..classes.diagraph import Diagraph
+
+from .depends import Depends
 from .get_execution_graph import get_execution_graph
 from ..classes.graph import Graph
 
@@ -197,7 +201,7 @@ def describe_execution_graph():
             ),
         ],
     )
-    def test_it_gets_execution_graph_for_a_single_node(
+    def test_it_gets_execution_graph_for_nodes(
         graph_def, starting_nodes, expectation
     ):
         execution_graph = list(get_execution_graph(Graph(graph_def), starting_nodes))
@@ -210,3 +214,18 @@ def describe_execution_graph():
             print(f"expectation: {expectation}")
             print(f"execution_graph: {execution_graph}")
             raise e
+
+
+    def test_it_gets_execution_graph_for_diagraph_node_group():
+        def a():
+            return 'a'
+        def b(a = Depends(a)):
+            return 'b'
+        def c(a = Depends(a)):
+            return 'c'
+        dg = Diagraph(b, c)
+        group = dg[0]
+
+        execution_graph = list(get_execution_graph(dg.__graph__, group))
+
+        assert execution_graph == [[a], [b, c]]

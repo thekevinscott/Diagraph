@@ -1,6 +1,8 @@
-from typing import Any, Callable, Optional
+from typing import Any, Optional
 from openai import AsyncOpenAI
 from openai.types.chat import ChatCompletionMessageParam
+
+from ..classes.types import LogHandler
 from .llm import LLM
 
 
@@ -12,8 +14,6 @@ def cast_to_input(prompt_str: str | list[ChatCompletionMessageParam]) -> list[Ch
 
 
 DEFAULT_MODEL = "gpt-3.5-turbo"
-
-Log = Callable[[str, str | None], None]
 
 
 class OpenAI(LLM):
@@ -32,7 +32,7 @@ class OpenAI(LLM):
 
         return aclient
 
-    async def run(self, prompt: str | list[ChatCompletionMessageParam], log: Log, model=None, stream=None, **kwargs):
+    async def run(self, prompt: str | list[ChatCompletionMessageParam], log: LogHandler, model=None, stream=None, **kwargs):
         client = self.client
         model = model if model else self.kwargs.get("model", DEFAULT_MODEL)
         messages = cast_to_input(prompt)
