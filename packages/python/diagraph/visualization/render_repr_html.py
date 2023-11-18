@@ -15,7 +15,7 @@ def load_from_dist(url: str):
 
 
 def load_resource(url: str, name="diagraph") -> str:
-    ref = resources.files(url).joinpath(name)
+    ref = resources.files(name).joinpath(url)
     with ref.open('r') as f:
         return f.read()
 
