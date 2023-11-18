@@ -1,16 +1,16 @@
 [project]
 name = "diagraph"
-version = "0.3.0.rc3"
+version = "0.3.0.rc8"
 # Notes
 authors = [{ name = "Kevin Scott", email = "kevin@diagraph.dev" }]
 readme = "README.md"
 requires-python = ">=3.10"
 dependencies = [
-  "nest-asyncio==1.5.8",
-  "pydantic==2.5.1",
+  "nest-asyncio",
+  "pydantic",
   "networkx",
   "bidict",
-  "openai==0.28",
+  "openai>=1.3.0",
   "tiktoken",
 ]
 description = "DAGs for LLM interactions"

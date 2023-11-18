@@ -1,9 +1,8 @@
 from __future__ import annotations
-from typing import Generic, TypeVar, overload
+from typing import Generic, Mapping, TypeVar
 import networkx as nx
 from .ordered_set import OrderedSet
 
-from ..utils.build_layer_map import build_layer_map
 
 K = TypeVar("K")
 
@@ -12,17 +11,13 @@ class Graph(Generic[K]):
     __G__: nx.DiGraph
     __key_to_int__: dict[K, int]
     graph_def: dict[K, list[K]]
-    depth_map_by_depth: dict[int, list[K]]
-    depth_map_by_key: dict[K, int]
 
-    def __init__(self, graph_def: dict[K, list[K] | OrderedSet[K]]):
+    def __init__(self, graph_def: Mapping[K, list[K] | OrderedSet[K]]):
         self.graph_def = {key: list(val) for key, val in graph_def.items()}
         self.__key_to_int__ = {}
         self.__G__ = nx.convert_node_labels_to_integers(
             nx.DiGraph(self.graph_def), label_attribute="ref"
         )
-
-        self.depth_map_by_depth, self.depth_map_by_key = build_layer_map(self.__G__)
 
         for int_representation in self.__G__.nodes():
             ref = self.__G__.nodes[int_representation]["ref"]
@@ -37,33 +32,7 @@ class Graph(Generic[K]):
     def get_node_for_int_key(self, key: int) -> K:
         return self.__G__.nodes[key]["ref"]
 
-    @overload
-    def __getitem__(self, key: int) -> list[K]:
-        ...
-
-    @overload
-    def __getitem__(self, key: K) -> K:
-        ...
-
-    # def __getitem__(self, key: K | int | slice):
-    #     if isinstance(key, slice):
-    #         if key.step is not None:
-    #             raise Exception("Slicing with a step is not supported")
-    #         start, stop = key.start, key.stop
-    #         if start is not None or stop is not None:
-    #             raise Exception("Slicing not implemented yet")
-    #         return Graph(
-    #             {
-    #                 **self.graph_def,
-    #             }
-    #         )
-    def __getitem__(self, key: K | int):
-        if isinstance(key, int):
-            if key < 0:
-                key = max(self.depth_map_by_depth.keys()) + 1 + key
-            nodes_at_depth: list[int] = self.depth_map_by_depth[key]
-            return [self.get_node_for_int_key(int_rep) for int_rep in nodes_at_depth]
-
+    def __getitem__(self, key: K):
         return key
 
     def __setitem__(self, old: K, new: K):
@@ -92,11 +61,7 @@ class Graph(Generic[K]):
         return [self.get_node_for_int_key(i) for i in int_keys]
 
     def _repr_html_(self) -> str:
-        # return '''<p>HI</p>'''
         return nx.draw(self.__G__)
 
     def __str__(self) -> str:
         return str(self.__G__)
-        # return nx.write_network_text(self.__G__)
-
-    # return render_repr_html(self.dg)

@@ -1,135 +1,99 @@
 from __future__ import annotations
 from asyncio import run as asyncio_run
-from typing import Any, Callable
 import tiktoken
 
-# To get the tokeniser corresponding to a specific model in the OpenAI API:
+
 from ..decorators.is_decorated import is_decorated
 from .graph import Graph
-from .types import Fn
+from .types import Fn, Result
 
+from typing import TYPE_CHECKING
 
-def is_function(key: Fn):
-    """
-    Check if a given key is a callable function.
-
-    Args:
-        key (Key): The key to check.
-
-    Returns:
-        bool: True if the key is a callable function, False otherwise.
-    """
-    return isinstance(key, Callable)
+if TYPE_CHECKING:
+    from .diagraph import Diagraph
 
 
 class DiagraphNode:
     """A node in a Diagraph representing a function or a value."""
 
-    diagraph: Any
+    diagraph: Diagraph
     __graph__: Graph
     key: Fn
 
-    def __init__(self, diagraph, key: Fn):
+    def __init__(self, diagraph: Diagraph, key: Fn) -> None:
         """
         Initialize a DiagraphNode.
 
         Args:
-            diagraph (Any): The Diagraph instance that contains this node.
+            diagraph (Diagraph): The Diagraph instance that contains this node.
             key (Key): The key associated with the node.
         """
         self.diagraph = diagraph
         self.__graph__ = diagraph.__graph__
         self.key = key
 
-    def __str__(self):
+    def __str__(self) -> str:
         """
         Get a string representation of the node.
 
         Returns:
             str: The string representation of the node.
         """
-        if is_function(self.key):
-            return self.key.__name__
-        return self.key
+        if isinstance(self.key, str):
+            return self.key
+
+        return self.key.__name__
 
     @property
-    def fn(self):
+    def fn(self) -> Fn:
         """
         Get the function associated with the node.
 
         Returns:
-            Callable: The function associated with the node.
+            Fn: The function associated with the node.
         """
         return self.diagraph.fns[self.key]
 
     @property
-    def ancestors(self):
+    def ancestors(self) -> list[DiagraphNode]:
         """
         Get the ancestor nodes of the current node.
 
         Returns:
             list[DiagraphNode]: A list of DiagraphNode instances representing the ancestor nodes.
         """
-        return [
-            DiagraphNode(self.diagraph, node)
-            for node in self.__graph__.out_edges(self.key)
-        ]
+        return self.diagraph.get_ancestors_of_node(self)
 
     @property
-    def children(self):
+    def children(self) -> list[DiagraphNode]:
         """
         Get the child nodes of the current node.
 
         Returns:
             list[DiagraphNode]: A list of DiagraphNode instances representing the child nodes.
         """
-        return [
-            DiagraphNode(self.diagraph, node)
-            for node in self.__graph__.in_edges(self.key)
-        ]
+        return self.diagraph.get_children_of_node(self)
 
-    @property
-    def depth(self):
-        """
-        Get the depth of the current node in the Diagraph.
-
-        Returns:
-            int: The depth of the node.
-        """
-        int_key = self.diagraph.__graph__.get_int_key_for_node(self.key)
-        # if self.key not in self.diagraph.__graph__.depth_map_by_key:
-        #     raise Exception(f"Key {self.key} not in depth map")
-        return self.diagraph.__graph__.depth_map_by_key[int_key]
-
-    # @result.setter
-    # def result(self, value):
-    #     self.traversal.results[self.__fn__] = value
-
-    def __repr__(self):
+    def __repr__(self) -> str:
         """
         Get a string representation of the node.
 
         Returns:
             str: The string representation of the node.
         """
-        # print("repr for diagraph nod")
         return str(self.key)
 
-    #     # return inspect.getsource(self.fn)
-
     @property
-    def __is_decorated__(self):
+    def __is_decorated__(self) -> bool:
         """
         Check if the function associated with the node is decorated with @prompt.
 
         Returns:
             bool: True if the function is decorated with @prompt, False otherwise.
         """
-        # print(self.fn, IS_DECORATED_KEY)
-        # print(getattr(self.fn, IS_DECORATED_KEY, False))
         return is_decorated(self.fn)
 
-    def run(self, *input_args, **kwargs):
+    def run(self, *input_args, **kwargs) -> Diagraph:
         """
         Run the Diagraph starting from the current node.
 
@@ -140,21 +104,24 @@ class DiagraphNode:
             None
         """
 
-        asyncio_run(self.diagraph.__run_from__(self.key, *input_args, **kwargs))
+        asyncio_run(self.diagraph.__run_from__(self, *input_args, **kwargs))
         return self.diagraph
 
     @property
-    def result(self):
+    def result(self) -> Result:
         """
         Get the result associated with the current node.
 
         Returns:
             Any: The result associated with the node.
         """
-        return self.diagraph.results[self.key]
+        try:
+            return self.diagraph.results[self.key]
+        except Exception:
+            return None
 
     @result.setter
-    def result(self, value):
+    def result(self, value: Result) -> None:
         """
         Set the result associated with the current node.
 
@@ -167,7 +134,33 @@ class DiagraphNode:
         self.diagraph.results[self.key] = value
 
     @property
-    def prompt(self):
+    def error(self) -> None | Exception:
+        """
+        Get the error associated with the current node.
+
+        Returns:
+            Exception | None: The error associated with the node.
+        """
+        try:
+            return self.diagraph.errors[self.key]
+        except Exception:
+            return None
+
+    @error.setter
+    def error(self, error: Exception) -> None:
+        """
+        Set the error associated with the current node.
+
+        Args:
+            error (Exception): The error to set as the result for the node.
+
+        Returns:
+            None
+        """
+        self.diagraph.errors[self.key] = error
+
+    @property
+    def prompt(self) -> str:
         """
         Get the prompt associated with the current node.
 
@@ -180,7 +173,7 @@ class DiagraphNode:
         return self.diagraph.prompts[self.key]
 
     @prompt.setter
-    def prompt(self, value):
+    def prompt(self, value: str) -> None:
         """
         Set the prompt associated with the current node.
 
@@ -196,7 +189,7 @@ class DiagraphNode:
         self.diagraph.prompts[self.key] = value
 
     @property
-    def tokens(self):
+    def tokens(self) -> int:
         """
         Get the number of tokens in the associated prompt.
 

@@ -16,4 +16,4 @@ def test_depends_defines_repr():
 
     d = Depends(foo)
 
-    assert str(d) == "Depends(foo)"
+    assert str(d) == "FnDependency(foo)"

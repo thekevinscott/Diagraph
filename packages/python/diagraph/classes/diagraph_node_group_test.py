@@ -6,7 +6,7 @@ from .diagraph_node_group import DiagraphNodeGroup
 
 def describe_diagraph_node_group():
     def test_it_instantiates():
-        DiagraphNodeGroup(Diagraph(), 0)
+        DiagraphNodeGroup(Diagraph())
 
     def test_it_iterates_through_nodes():
         def d0():

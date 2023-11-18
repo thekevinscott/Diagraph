@@ -31,27 +31,6 @@ def test_it_builds_connected_directed_graph():
 #         graph[1:2:2]
 
 
-def test_it_indexes_by_depth():
-    graph = Graph({"a": ["b"], "b": ["c"]})
-
-    assert graph[0] == ["c"]
-    assert graph[1] == ["b"]
-    assert graph[2] == ["a"]
-    assert graph[-3] == ["c"]
-    assert graph[-2] == ["b"]
-    assert graph[-1] == ["a"]
-
-
-def test_it_indexes_by_depth_with_a_diamond():
-    graph = Graph({"a": ["b", "c"], "b": ["d"], "c": ["d"]})
-
-    assert graph[0] == ["d"]
-    assert graph[1] == ["b", "c"]
-    assert graph[2] == ["a"]
-    assert graph[-3] == ["d"]
-    assert graph[-2] == ["b", "c"]
-    assert graph[-1] == ["a"]
-
 
 def test_it_can_update_nodes():
     graph = Graph({"a": ["b"], "b": ["c"]})

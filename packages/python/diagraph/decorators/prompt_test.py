@@ -1,10 +1,11 @@
-import pytest
+
+from ..llm.llm import LLM
 from ..classes.diagraph import Diagraph
 from ..utils.depends import Depends
 from .prompt import prompt
 
 
-class MockLLM:
+class MockLLM(LLM):
     times: int
     error: bool
 
@@ -182,131 +183,434 @@ def describe_logs():
 
 
 def describe_errors():
-    def test_it_handles_errors(mocker):
+    def test_it_saves_exception_on_the_node(mocker):
         handle_errors = mocker.stub()
-
-        @prompt(llm=MockLLM(error=True))
-        def fn():
-            return "test prompt"
-
-        Diagraph(fn, error=handle_errors).run()
-
-        assert handle_errors.call_count == 1
-        assert isinstance(handle_errors.call_args_list[0][0][0], Exception)
-        assert handle_errors.call_args_list[0][0][1] == fn
-        assert len(handle_errors.call_args_list[0][0]) == 2
-
-    def test_it_can_set_a_global_error_handler(mocker):
-        handle_errors = mocker.stub()
-
-        Diagraph.set_error(handle_errors)
-
-        @prompt(llm=MockLLM(error=True))
-        def fn():
-            return "test prompt"
-
-        Diagraph(fn).run()
-
-        assert handle_errors.call_count == 1
-        assert isinstance(handle_errors.call_args_list[0][0][0], Exception)
-        assert handle_errors.call_args_list[0][0][1] == fn
-        assert len(handle_errors.call_args_list[0][0]) == 2
-
-    def test_a_diagraph_error_handler_overrides_a_global_error_handler(mocker):
-        global_handle_errors = mocker.stub()
-        handle_errors = mocker.stub()
-
-        Diagraph.set_error(global_handle_errors)
-
-        @prompt(llm=MockLLM(error=True))
-        def fn():
-            return "test prompt"
-
-        Diagraph(fn, error=handle_errors).run()
-
-        assert handle_errors.call_count == 1
-        assert isinstance(handle_errors.call_args_list[0][0][0], Exception)
-        assert handle_errors.call_args_list[0][0][1] == fn
-        assert len(handle_errors.call_args_list[0][0]) == 2
-        assert global_handle_errors.call_count == 0
-
-    def test_it_handles_errors_at_a_function_level(mocker):
-        handle_errors = mocker.stub()
+        thrown_exception = Exception("test error")
+        handle_errors.side_effect = thrown_exception
 
         @prompt(llm=MockLLM(error=True), error=handle_errors)
-        def fn():
-            return "test prompt"
-
-        Diagraph(fn).run()
-
-        assert handle_errors.call_count == 1
-        assert isinstance(handle_errors.call_args_list[0][0][0], Exception)
-        assert len(handle_errors.call_args_list[0][0]) == 1
-
-    def test_it_handles_errors_at_a_function_level_and_overrides_global_error_fn(
-        mocker,
-    ):
-        global_handle_errors = mocker.stub()
-        handle_errors = mocker.stub()
-
-        Diagraph.set_error(global_handle_errors)
-
-        @prompt(llm=MockLLM(error=True), error=handle_errors)
-        def fn():
-            return "test prompt"
-
-        Diagraph(fn).run()
-
-        assert handle_errors.call_count == 1
-        assert isinstance(handle_errors.call_args_list[0][0][0], Exception)
-        assert len(handle_errors.call_args_list[0][0]) == 1
-        assert global_handle_errors.call_count == 0
-
-    def test_it_handles_errors_at_a_function_level_and_overrides_global_and_diagraph_error_fn(
-        mocker,
-    ):
-        global_handle_errors = mocker.stub()
-        diagraph_handle_errors = mocker.stub()
-        handle_errors = mocker.stub()
-
-        Diagraph.set_error(global_handle_errors)
-
-        @prompt(llm=MockLLM(error=True), error=handle_errors)
-        def fn():
-            return "test prompt"
-
-        Diagraph(fn, error=diagraph_handle_errors).run()
-
-        assert handle_errors.call_count == 1
-        assert isinstance(handle_errors.call_args_list[0][0][0], Exception)
-        assert len(handle_errors.call_args_list[0][0]) == 1
-        assert global_handle_errors.call_count == 0
-        assert diagraph_handle_errors.call_count == 0
-
-    def test_it_halts_execution_on_error_and_raises_without_handler():
-        @prompt(llm=MockLLM())
-        def fn():
-            return "fn"
-
-        @prompt(llm=MockLLM(error=True))
-        def bar(fn: str = Depends(fn)):
-            return "bar"
-
-        with pytest.raises(Exception):
-            assert Diagraph(bar).run().result == "fn"
-
-    def test_it_halts_execution_on_error_and_does_not_raise_without_handler(mocker):
-        handle_errors = mocker.stub()
-
-        @prompt(llm=MockLLM(times=3))
         def fn():
             return "prompt"
 
-        @prompt(llm=MockLLM(error=True))
-        def bar(fn: str = Depends(fn)):
-            return "bar"
-
-        diagraph = Diagraph(bar, error=handle_errors).run()
-        assert diagraph.result is None
-        assert diagraph[fn].result == "012"
+        dg = Diagraph(fn).run()
         assert handle_errors.call_count == 1
+        assert dg[fn].error == thrown_exception
+        assert dg[fn].result is None
+
+    def test_it_saves_subsequent_exceptions_on_the_node(mocker):
+        handle_errors = mocker.stub()
+        thrown_exception_one = Exception("one")
+        handle_errors.side_effect = thrown_exception_one
+
+        @prompt(llm=MockLLM(error=True), error=handle_errors)
+        def fn():
+            return "prompt"
+
+        dg = Diagraph(fn).run()
+        assert handle_errors.call_count == 1
+        assert dg[fn].error == thrown_exception_one
+        thrown_exception_two = Exception("two")
+        handle_errors.side_effect = thrown_exception_two
+        dg.run()
+        assert handle_errors.call_count == 2
+        assert dg[fn].error == thrown_exception_two
+        assert dg[fn].result is None
+
+    def test_it_saves_multiple_exceptions(mocker):
+        handle_errors_a = mocker.stub()
+        thrown_exception_a = Exception("a")
+        handle_errors_a.side_effect = thrown_exception_a
+
+        handle_errors_b = mocker.stub()
+        thrown_exception_b = Exception("b")
+        handle_errors_b.side_effect = thrown_exception_b
+
+        @prompt(llm=MockLLM(error=True), error=handle_errors_a)
+        def a():
+            return "prompt"
+
+        @prompt(llm=MockLLM(error=True), error=handle_errors_b)
+        def b():
+            return "prompt"
+
+        dg = Diagraph(a, b).run()
+        assert handle_errors_a.call_count == 1
+        assert handle_errors_b.call_count == 1
+        assert dg[a].error == thrown_exception_a
+        assert dg[b].error == thrown_exception_b
+
+    def test_it_does_not_run_dependent_function_of_errored_function(mocker):
+        handle_errors_a = mocker.stub()
+        thrown_exception_a = Exception("a")
+        handle_errors_a.side_effect = thrown_exception_a
+
+        @prompt(llm=MockLLM(error=True), error=handle_errors_a)
+        def a():
+            return "a"
+
+        mock_b = mocker.stub()
+        mock_b.return_value = "b"
+
+        @prompt(llm=MockLLM())
+        def b(a=Depends(a)):
+            return mock_b()
+
+        dg = Diagraph(b).run()
+        assert handle_errors_a.call_count == 1
+        assert dg[a].error == thrown_exception_a
+        assert mock_b.call_count == 0
+
+    def test_it_does_not_run_grand_dependent_function_of_errored_function(mocker):
+        handle_errors_a = mocker.stub()
+        thrown_exception_a = Exception("a")
+        handle_errors_a.side_effect = thrown_exception_a
+
+        @prompt(llm=MockLLM(error=True), error=handle_errors_a)
+        def a():
+            return "a"
+
+        mock_b = mocker.stub()
+        mock_b.return_value = "b"
+
+        @prompt(llm=MockLLM(error=True))
+        def b(a=Depends(a)):
+            return mock_b()
+
+        mock_c = mocker.stub()
+        mock_c.return_value = "c"
+
+        @prompt(llm=MockLLM())
+        def c(b=Depends(b)):
+            return mock_c()
+
+        dg = Diagraph(c).run()
+        assert handle_errors_a.call_count == 1
+        assert dg[a].error == thrown_exception_a
+        assert mock_b.call_count == 0
+        assert mock_c.call_count == 0
+
+    def test_it_does_not_run_dependent_function_of_multiple_errored_functions(mocker):
+        handle_errors_a = mocker.stub()
+        thrown_exception_a = Exception("a")
+        handle_errors_a.side_effect = thrown_exception_a
+
+        @prompt(llm=MockLLM(error=True), error=handle_errors_a)
+        def a():
+            return "a"
+
+        handle_errors_b = mocker.stub()
+        thrown_exception_b = Exception("b")
+        handle_errors_b.side_effect = thrown_exception_b
+
+        @prompt(llm=MockLLM(error=True), error=handle_errors_b)
+        def b():
+            return "b"
+
+        mock_c = mocker.stub()
+        mock_c.return_value = "c"
+
+        @prompt(llm=MockLLM())
+        def c(a=Depends(a), b=Depends(b)):
+            return mock_c()
+
+        dg = Diagraph(c).run()
+        assert handle_errors_a.call_count == 1
+        assert dg[a].error == thrown_exception_a
+        assert dg[b].error == thrown_exception_b
+        assert dg[c].error is None
+        assert mock_c.call_count == 0
+
+    def test_it_does_not_run_dependent_function_of_single_errored_functions(mocker):
+        handle_errors_a = mocker.stub()
+        thrown_exception_a = Exception("a")
+        handle_errors_a.side_effect = thrown_exception_a
+
+        @prompt(llm=MockLLM(error=True), error=handle_errors_a)
+        def a():
+            return "a"
+
+        @prompt(llm=MockLLM(times=3))
+        def b():
+            return "b"
+
+        mock_c = mocker.stub()
+        mock_c.return_value = "c"
+
+        @prompt(llm=MockLLM())
+        def c(a=Depends(a), b=Depends(b)):
+            return mock_c()
+
+        dg = Diagraph(c).run()
+        assert handle_errors_a.call_count == 1
+        assert dg[a].error == thrown_exception_a
+        assert dg[b].result == "012"
+        assert mock_c.call_count == 0
+
+    def test_it_does_run_dependent_function_of_non__errored_functions(mocker):
+        handle_errors_a = mocker.stub()
+        thrown_exception_a = Exception("a")
+        handle_errors_a.side_effect = thrown_exception_a
+
+        @prompt(llm=MockLLM(error=True), error=handle_errors_a)
+        def a1():
+            return "a1"
+
+        @prompt(llm=MockLLM(times=3))
+        def a0():
+            return "a0"
+
+        @prompt(llm=MockLLM(times=3))
+        def b0(a0=Depends(a0)):
+            return "a1"
+
+        mock_c = mocker.stub()
+        mock_c.return_value = "c"
+
+        @prompt(llm=MockLLM())
+        def c0(a1=Depends(a1), b0=Depends(b0)):
+            return mock_c()
+
+        dg = Diagraph(c0).run()
+        assert dg[a0].result == "012"
+        assert dg[b0].result == "012"
+        assert dg[a1].error == thrown_exception_a
+        assert mock_c.call_count == 0
+
+    def test_it_does_run_deep_dependent_function_of_non_errored_functions(mocker):
+        handle_errors_a = mocker.stub()
+        thrown_exception_a = Exception("a")
+        handle_errors_a.side_effect = thrown_exception_a
+
+        @prompt(llm=MockLLM(error=True), error=handle_errors_a)
+        def a1():
+            return "a1"
+
+        mock_b1 = mocker.stub()
+
+        @prompt(llm=MockLLM(times=3))
+        def b1(a1=Depends(a1)):
+            return mock_b1()
+
+        mock_c1 = mocker.stub()
+
+        @prompt(llm=MockLLM(times=3))
+        def c1(b1=Depends(b1)):
+            return mock_c1()
+
+        @prompt(llm=MockLLM(times=3))
+        def a0():
+            return "a0"
+
+        @prompt(llm=MockLLM(times=3))
+        def b0(a0=Depends(a0)):
+            return "a1"
+
+        @prompt(llm=MockLLM(times=3))
+        def c0(b0=Depends(b0)):
+            return "c1"
+
+        mock_d = mocker.stub()
+        mock_d.return_value = "d"
+
+        @prompt(llm=MockLLM())
+        def d0(c1=Depends(c1), c0=Depends(c0)):
+            return mock_d()
+
+        dg = Diagraph(d0).run()
+        assert dg[a0].result == "012"
+        assert dg[b0].result == "012"
+        assert dg[c0].result == "012"
+        assert dg[a1].error == thrown_exception_a
+        assert dg[b1].error is None
+        assert dg[c1].error is None
+        assert dg[b1].result is None
+        assert dg[c1].result is None
+        assert mock_b1.call_count == 0
+        assert mock_c1.call_count == 0
+        assert mock_d.call_count == 0
+
+    def test_it_does_run_deep_dependent_function_of_errored_functions_returning_result(mocker):
+        handle_errors_a = mocker.stub()
+        handle_errors_a.return_value = 'a1'
+
+        @prompt(llm=MockLLM(error=True), error=handle_errors_a)
+        def a1():
+            return "a1"
+
+        mock_b1 = mocker.stub()
+
+        @prompt(llm=MockLLM(times=3))
+        def b1(a1=Depends(a1)):
+            return mock_b1()
+
+        mock_c1 = mocker.stub()
+
+        @prompt(llm=MockLLM(times=3))
+        def c1(b1=Depends(b1)):
+            return mock_c1()
+
+        @prompt(llm=MockLLM(times=3))
+        def a0():
+            return "a0"
+
+        @prompt(llm=MockLLM(times=3))
+        def b0(a0=Depends(a0)):
+            return "a1"
+
+        @prompt(llm=MockLLM(times=3))
+        def c0(b0=Depends(b0)):
+            return "c1"
+
+        mock_d = mocker.stub()
+        mock_d.return_value = "d"
+
+        @prompt(llm=MockLLM())
+        def d0(c1=Depends(c1), c0=Depends(c0)):
+            return mock_d()
+
+        dg = Diagraph(d0).run()
+        assert dg[a1].error is None
+        assert dg[a1].result == 'a1'
+        assert mock_b1.call_count == 1
+        assert mock_c1.call_count == 1
+        assert mock_d.call_count == 1
+
+    def test_it_saves_subsequent_error_results_on_the_node(mocker):
+        handle_errors = mocker.stub()
+        handle_errors.return_value = "foo"
+
+        @prompt(llm=MockLLM(error=True), error=handle_errors)
+        def fn():
+            return "prompt"
+
+        dg = Diagraph(fn).run()
+        assert handle_errors.call_count == 1
+        assert dg[fn].error is None
+        assert dg[fn].result == "foo"
+        handle_errors.return_value = "bar"
+        dg.run()
+        assert handle_errors.call_count == 2
+        assert dg[fn].error is None
+        assert dg[fn].result == "bar"
+
+    def test_it_saves_exception_on_the_node_if_error_handler_is_defined_on_diagraph(
+        mocker,
+    ):
+        handle_errors = mocker.stub()
+        thrown_exception = Exception("test error")
+        handle_errors.side_effect = thrown_exception
+
+        @prompt(llm=MockLLM(error=True))
+        def fn():
+            return "prompt"
+
+        dg = Diagraph(fn, error=handle_errors).run()
+        assert handle_errors.call_count == 1
+        print(dg[fn].error)
+        assert dg[fn].error == thrown_exception
+        assert dg[fn].result is None
+
+    def test_it_saves_exception_on_the_node_if_error_handler_is_defined_globally(
+        mocker,
+    ):
+        handle_errors = mocker.stub()
+        thrown_exception = Exception("test error")
+        handle_errors.side_effect = thrown_exception
+
+        @prompt(llm=MockLLM(error=True))
+        def fn():
+            return "prompt"
+
+        Diagraph.set_error(handle_errors)
+        dg = Diagraph(fn).run()
+        assert handle_errors.call_count == 1
+        assert dg[fn].error == thrown_exception
+        assert dg[fn].result is None
+
+    def test_a_function_error_handler_takes_precedence_over_a_global_error_handler(
+        mocker,
+    ):
+        global_handle_errors = mocker.stub()
+        global_thrown_exception = Exception("global error")
+        global_handle_errors.side_effect = global_thrown_exception
+
+        function_handle_errors = mocker.stub()
+        function_thrown_exception = Exception("function error")
+        function_handle_errors.side_effect = function_thrown_exception
+
+        @prompt(llm=MockLLM(error=True), error=function_handle_errors)
+        def fn():
+            return "prompt"
+
+        Diagraph.set_error(global_handle_errors)
+        dg = Diagraph(fn).run()
+        assert global_handle_errors.call_count == 0
+        assert function_handle_errors.call_count == 1
+        assert dg[fn].error == function_thrown_exception
+
+    def test_a_function_error_handler_takes_precedence_over_a_diagraph_error_handler(
+        mocker,
+    ):
+        diagraph_handle_errors = mocker.stub()
+        diagraph_thrown_exception = Exception("diagraph error")
+        diagraph_handle_errors.side_effect = diagraph_thrown_exception
+
+        function_handle_errors = mocker.stub()
+        function_thrown_exception = Exception("function error")
+        function_handle_errors.side_effect = function_thrown_exception
+
+        @prompt(llm=MockLLM(error=True), error=function_handle_errors)
+        def fn():
+            return "prompt"
+
+        dg = Diagraph(fn, error=diagraph_handle_errors).run()
+        assert diagraph_handle_errors.call_count == 0
+        assert function_handle_errors.call_count == 1
+        assert dg[fn].error == function_thrown_exception
+
+    def test_a_function_error_handler_takes_precedence_over_a_diagraph_and_global_error_handler(
+        mocker,
+    ):
+        diagraph_handle_errors = mocker.stub()
+        diagraph_thrown_exception = Exception("diagraph error")
+        diagraph_handle_errors.side_effect = diagraph_thrown_exception
+
+        function_handle_errors = mocker.stub()
+        function_thrown_exception = Exception("function error")
+        function_handle_errors.side_effect = function_thrown_exception
+
+        @prompt(llm=MockLLM(error=True), error=function_handle_errors)
+        def fn():
+            return "prompt"
+
+        global_handle_errors = mocker.stub()
+        global_thrown_exception = Exception("global error")
+        global_handle_errors.side_effect = global_thrown_exception
+
+        Diagraph.set_error(global_handle_errors)
+        dg = Diagraph(fn, error=diagraph_handle_errors).run()
+        assert global_handle_errors.call_count == 0
+        assert diagraph_handle_errors.call_count == 0
+        assert function_handle_errors.call_count == 1
+        assert dg[fn].error == function_thrown_exception
+
+    def test_a_diagraph_error_handler_takes_precedence_over_a_global_error_handler(
+        mocker,
+    ):
+        function_handle_errors = mocker.stub()
+        function_thrown_exception = Exception("function error")
+        function_handle_errors.side_effect = function_thrown_exception
+
+        @prompt(llm=MockLLM(error=True), error=function_handle_errors)
+        def fn():
+            return "prompt"
+
+        global_handle_errors = mocker.stub()
+        global_thrown_exception = Exception("global error")
+        global_handle_errors.side_effect = global_thrown_exception
+
+        Diagraph.set_error(global_handle_errors)
+        dg = Diagraph(fn).run()
+        assert global_handle_errors.call_count == 0
+        assert function_handle_errors.call_count == 1
+        assert dg[fn].error == function_thrown_exception

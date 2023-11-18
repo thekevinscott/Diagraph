@@ -1,19 +1,34 @@
 from __future__ import annotations
 import inspect
 from typing import Any
+
 from ..classes.types import Fn
-from .depends import Depends
+from .depends import FnDependency
+
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from ..classes.diagraph import Diagraph
 
 
-def build_parameters(diagraph, fn: Fn, input_args: tuple) -> list[Any]:
+def build_parameters(diagraph: Diagraph, fn: Fn, input_args: tuple) -> list[Any]:
+    """
+    Builds a list of parameters for a function based on its signature and provided arguments.
+
+    Parameters:
+    - diagraph (Diagraph): The directed graph representing the dependency structure.
+    - fn (Fn): The function for which to build parameters.
+    - input_args (Tuple): The input arguments provided when the function is called.
+
+    Returns:
+    list[Any]: The list of parameters for the function.
+    """
     args = []
     arg_index = 0
     encountered_star = False
     for parameter in inspect.signature(fn).parameters.values():
-        # Depends can be passed as arg: str = Depends(dep)
-        # Regular args can be passed as :str = 'foo'
         if parameter.default is not None and parameter.default is not inspect._empty:
-            if isinstance(parameter.default, Depends):
+            if isinstance(parameter.default, FnDependency):
                 dep: Fn = parameter.default.dependency
                 try:
                     key_for_fn = diagraph.fns.inverse(dep)
@@ -21,8 +36,13 @@ def build_parameters(diagraph, fn: Fn, input_args: tuple) -> list[Any]:
                     raise Exception(
                         f"No function has been set for dep {dep}. Available functions: {diagraph.fns}"
                     )
+                if diagraph[key_for_fn].error is not None:
+                    raise Exception(f"Error found for {key_for_fn}")
                 try:
-                    args.append(diagraph.results[key_for_fn])
+                    result = diagraph[key_for_fn].result
+                    if result is None:
+                        raise Exception(f"Result is None for {key_for_fn}")
+                    args.append(diagraph[key_for_fn].result)
                 except Exception as e:
                     raise Exception(f"Failed to get result for {key_for_fn}: {e}")
             else:
