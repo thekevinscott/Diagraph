@@ -6,8 +6,9 @@ from ..classes.types import FunctionLogHandler
 from .llm import LLM
 
 
-
-def cast_to_input(prompt_str: str | list[ChatCompletionMessageParam]) -> list[ChatCompletionMessageParam]:
+def cast_to_input(
+    prompt_str: str | list[ChatCompletionMessageParam],
+) -> list[ChatCompletionMessageParam]:
     if isinstance(prompt_str, str):
         return [{"role": "user", "content": prompt_str}]
     return prompt_str
@@ -32,7 +33,14 @@ class OpenAI(LLM):
 
         return aclient
 
-    async def run(self, prompt: str | list[ChatCompletionMessageParam], log: FunctionLogHandler, model=None, stream=None, **kwargs) -> Awaitable[Any]:
+    async def run(
+        self,
+        prompt: str | list[ChatCompletionMessageParam],
+        log: FunctionLogHandler,
+        model=None,
+        stream=None,
+        **kwargs,
+    ) -> Awaitable[Any]:
         client = self.client
         model = model if model else self.kwargs.get("model", DEFAULT_MODEL)
         messages = cast_to_input(prompt)
@@ -41,14 +49,15 @@ class OpenAI(LLM):
         kwargs = {
             **self.kwargs,
             **kwargs,
-            'stream': True,
-            'model': model,
-            'messages': messages,
+            "stream": True,
+            "model": model,
+            "messages": messages,
         }
         started = False
-        async for resp in await client.chat.completions.create(
-            **kwargs
-        ):
+        print("client", client.chat.completions.create)
+        r = await client.chat.completions.create(**kwargs)
+        print("r", r)
+        async for resp in r:
             if started is False:
                 log("start", None)
                 started = True
