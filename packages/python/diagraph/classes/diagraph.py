@@ -50,7 +50,7 @@ class Diagraph:
 
     __graph__: Graph[Fn]
 
-    terminal_nodes: tuple[DiagraphNode, ...]
+    terminal_nodes: tuple[Callable, ...]
     log_handler: Optional[Callable[[str, str, Fn], None]]
     error_handler: Optional[Callable[[str, str, Fn], None]]
     results: HistoricalBidict[Fn, Any]

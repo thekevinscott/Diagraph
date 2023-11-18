@@ -1,6 +1,7 @@
 from typing import Callable, Optional
 import asyncio
 from unittest.mock import patch
+from ..decorators.prompt import prompt
 
 from ..llm.llm import LLM
 import pytest
@@ -11,7 +12,6 @@ from .diagraph_node_group import DiagraphNodeGroup
 from .diagraph import Diagraph
 from .diagraph_node import DiagraphNode
 from ..utils.depends import Depends
-from ..decorators.prompt import prompt
 
 
 def describe_instantiation():

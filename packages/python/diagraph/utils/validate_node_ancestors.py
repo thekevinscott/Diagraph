@@ -9,5 +9,4 @@ def validate_node_ancestor(node: DiagraphNode):
     
 
 def validate_node_ancestors(node_group: DiagraphNodeGroup):
-    print(node_group)
     [validate_node_ancestor(ancestor) for node in node_group for ancestor in node.ancestors]
