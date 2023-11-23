@@ -115,7 +115,10 @@ class DiagraphNode:
         Returns:
             Any: The result associated with the node.
         """
-        return self.diagraph.results[self.key]
+        try:
+            return self.diagraph.results[self.key]
+        except Exception:
+            return None
 
     @result.setter
     def result(self, value: Result) -> None:
@@ -129,6 +132,32 @@ class DiagraphNode:
             None
         """
         self.diagraph.results[self.key] = value
+
+    @property
+    def error(self) -> None | Exception:
+        """
+        Get the error associated with the current node.
+
+        Returns:
+            Exception | None: The error associated with the node.
+        """
+        try:
+            return self.diagraph.errors[self.key]
+        except Exception:
+            return None
+
+    @error.setter
+    def error(self, error: Exception) -> None:
+        """
+        Set the error associated with the current node.
+
+        Args:
+            error (Exception): The error to set as the result for the node.
+
+        Returns:
+            None
+        """
+        self.diagraph.errors[self.key] = error
 
     @property
     def prompt(self) -> str:

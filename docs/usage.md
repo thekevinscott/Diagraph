@@ -271,7 +271,7 @@ You can specify to rerun the function with:
 
 ```python
 def error_handler(e: Exception, rerun):
-  return rerun
+  return rerun()
 ```
 
 You can also supply additional arguments:
@@ -282,3 +282,13 @@ def error_handler(e: Exception, rerun_fn):
 ```
 
 A common pattern I use is to pass a numeric retry index, to allow for exiting after n failed attempts.
+
+When a function runs into an error that raises an exception, that node and all its descendants halt. Any unrelated nodes will continue processing.
+
+Exceptions can be read by examining the function's `error`:
+
+```
+dg[fn].error
+```
+
+If an error handler returns a valid value (does not raise an Exception) no error will be recorded, and instead the error handler's result is assigned to the node's `.result`.
