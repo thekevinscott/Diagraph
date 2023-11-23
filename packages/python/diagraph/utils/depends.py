@@ -1,15 +1,21 @@
 from __future__ import annotations
+from typing import Any
 
 from diagraph.classes.types import Fn
 
 
-class Depends:
+def Depends(dependency: Fn) -> Any:
+    return FnDependency(dependency)
+
+
+class FnDependency:
     """
     Dependency injection class.
 
     Attributes:
     - dependency (Fn): The dependency to be injected.
     """
+
     dependency: Fn
 
     def __init__(self, dependency: Fn):
