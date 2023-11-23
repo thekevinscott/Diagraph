@@ -4,7 +4,11 @@ from typing import Any
 from diagraph.classes.types import Fn
 
 
-class Depends(Any):
+def Depends(dependency: Fn) -> Any:
+    return FnDependency(dependency)
+
+
+class FnDependency:
     """
     Dependency injection class.
 

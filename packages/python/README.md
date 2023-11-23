@@ -10,7 +10,7 @@ Key features:
 - **Bring Your Own Code:** Use any LLM or set of tools you want. Diagraph operates on top of plain Python functions.
 - **Visualize The System:** Get a straightforward view of your graph with a built-in Jupyter visualization tool.
 - **Concurrency:** Interactions that can be run in parallel, _should_ be run in parallel. Get this behavior for free.
-- **Result coercion:** (_coming soon_) LLMs don't always respond how you need. Automatically coerce the results you need from the LLM's response.
+- **Result coercion:** (_under development_) LLMs don't always respond how you need. Automatically coerce the results you need from the LLM's response.
 
 ## Requirements
 

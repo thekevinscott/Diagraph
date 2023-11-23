@@ -1,8 +1,9 @@
 from __future__ import annotations
 import inspect
 from typing import Any
+
 from ..classes.types import Fn
-from .depends import Depends
+from .depends import FnDependency
 
 from typing import TYPE_CHECKING
 
@@ -27,7 +28,7 @@ def build_parameters(diagraph: Diagraph, fn: Fn, input_args: tuple) -> list[Any]
     encountered_star = False
     for parameter in inspect.signature(fn).parameters.values():
         if parameter.default is not None and parameter.default is not inspect._empty:
-            if isinstance(parameter.default, Depends):
+            if isinstance(parameter.default, FnDependency):
                 dep: Fn = parameter.default.dependency
                 try:
                     key_for_fn = diagraph.fns.inverse(dep)
