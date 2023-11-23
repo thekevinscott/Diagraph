@@ -1,4 +1,3 @@
-import pytest
 
 from ..llm.llm import LLM
 from ..classes.diagraph import Diagraph
