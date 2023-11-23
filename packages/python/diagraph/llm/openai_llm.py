@@ -54,9 +54,7 @@ class OpenAI(LLM):
             "messages": messages,
         }
         started = False
-        print("client", client.chat.completions.create)
         r = await client.chat.completions.create(**kwargs)
-        print("r", r)
         async for resp in r:
             if started is False:
                 log("start", None)
