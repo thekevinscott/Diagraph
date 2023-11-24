@@ -4,20 +4,17 @@
 #
 #    pip-compile --allow-unsafe --output-file=dev-deps/python3.11/lint.txt dev-deps/lint.in
 #
---extra-index-url https://pypi.ngc.nvidia.com
---trusted-host pypi.ngc.nvidia.com
-
 cfgv==3.4.0
     # via pre-commit
 distlib==0.3.7
     # via virtualenv
 filelock==3.13.1
     # via virtualenv
-identify==2.5.31
+identify==2.5.32
     # via pre-commit
 nodeenv==1.8.0
     # via pre-commit
-platformdirs==3.11.0
+platformdirs==4.0.0
     # via virtualenv
 pre-commit==3.5.0
     # via -r dev-deps/lint.in
@@ -25,9 +22,9 @@ pyyaml==6.0.1
     # via pre-commit
 ruff==0.1.6
     # via -r dev-deps/lint.in
-virtualenv==20.24.6
+virtualenv==20.24.7
     # via pre-commit
 
 # The following packages are considered to be unsafe in a requirements file:
-setuptools==68.2.2
+setuptools==69.0.2
     # via nodeenv

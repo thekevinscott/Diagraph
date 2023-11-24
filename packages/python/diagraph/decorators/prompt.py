@@ -4,7 +4,7 @@ import inspect
 import functools
 from typing import Any, Awaitable, Optional
 
-from ..classes.types import ErrorHandler, Fn, FunctionLogHandler, LogEventName
+from ..classes.types import FunctionErrorHandler, Fn, FunctionLogHandler, LogEventName
 
 
 from ..llm.llm import LLM
@@ -91,7 +91,7 @@ def prompt(
     *,
     log: Optional[FunctionLogHandler] = None,
     llm: Optional[LLM] = None,
-    error: Optional[ErrorHandler] = None,
+    error: Optional[FunctionErrorHandler] = None,
 ):  # -> Callable[..., _Wrapped[Callable[..., Any], Any, Callable[..., Any], Generator[Any | Literal[''] | None, Any, None]]] | _Wrapped[Callable[..., Any], Any, Callable[..., Any], Generator[Any | Literal[''] | None, Any, None]]:
     async def prompt_fn(
         wrapper_fn, decorated_fn: Fn, original_fn: Fn, *args, **kwargs
