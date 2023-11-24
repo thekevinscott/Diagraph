@@ -22,7 +22,7 @@ from ..decorators.prompt import UserHandledException, set_default_llm
 from ..utils.validate_node_ancestors import validate_node_ancestors
 
 from .graph import Graph
-from .types import ErrorHandler, Fn, LogHandler, Result
+from .types import ErrorHandler, Fn, FunctionErrorHandler, LogHandler, Result
 
 from .diagraph_node import DiagraphNode
 
@@ -30,18 +30,18 @@ from .historical_bidict import HistoricalBidict
 
 nest_asyncio.apply()
 
-global_log_fn = None
+global_log_fn: Optional[LogHandler] = None
 
 
-def set_global_log(log_fn):
+def set_global_log(log_fn: LogHandler) -> None:
     global global_log_fn
     global_log_fn = log_fn
 
 
-global_error_fn = None
+global_error_fn: Optional[ErrorHandler] = None
 
 
-def set_global_error(error_fn):
+def set_global_error(error_fn: ErrorHandler) -> None:
     global global_error_fn
     global_error_fn = error_fn
 
@@ -51,7 +51,7 @@ class Diagraph:
 
     __graph__: Graph[Fn]
 
-    terminal_nodes: tuple[Fn, ...]
+    terminal_nodes: tuple[DiagraphNode, ...]
     log_handler: Optional[LogHandler]
     error_handler: Optional[ErrorHandler]
     results: HistoricalBidict[Fn, Any]
@@ -113,9 +113,7 @@ class Diagraph:
         for key in self.__graph__.get_nodes():
             self.fns[key] = self.graph_mapping.inverse[key]
 
-        self.terminal_nodes = tuple(
-            DiagraphNode(self, get_fn_key(node)) for node in terminal_nodes
-        )
+        self.terminal_nodes = tuple(DiagraphNode(self, node) for node in terminal_nodes)
         self.log_handler = log or global_log_fn
         # self.error_handler = error or default_error_fn
         self.error_handler = error
@@ -282,13 +280,13 @@ class Diagraph:
             if "Failed to get result for " in str(e):
                 return
             fn = self.fns[node.key]
-            fn_error_handler: Optional[ErrorHandler] = getattr(
+            fn_error_handler: Optional[FunctionErrorHandler] = getattr(
                 fn, "__function_error__", None
             )
             for err_handler in [fn_error_handler, self.error_handler, global_error_fn]:
                 if err_handler:
                     try:
-                        result = err_handler(e)
+                        result = err_handler(e, lambda: None, fn)
                         node.result = result
                     except Exception as raised_exception:
                         node.error = raised_exception
