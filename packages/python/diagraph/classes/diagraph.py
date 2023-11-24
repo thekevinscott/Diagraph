@@ -1,47 +1,40 @@
 from __future__ import annotations
-import nest_asyncio
-import inspect
+
+import concurrent.futures
+
+# import inspect
 from datetime import datetime
-from typing import Any, Optional, overload
+from typing import Any, overload
+
 from bidict import bidict
 
+from ..decorators.is_decorated import is_decorated
+from ..decorators.prompt import UserHandledException, set_default_llm
+from ..llm.llm import LLM
 from ..utils.build_graph import build_graph
-
-from .ordered_set import OrderedSet
 from ..utils.build_parameters import build_parameters
 from ..utils.get_execution_graph import get_execution_graph
-from ..visualization.render_repr_html import render_repr_html
-from ..llm.llm import LLM
-from ..decorators.is_decorated import is_decorated
-from asyncio import run as asyncio_run, gather
-
-from .diagraph_node_group import DiagraphNodeGroup
-
-from ..decorators.prompt import UserHandledException, set_default_llm
-
 from ..utils.validate_node_ancestors import validate_node_ancestors
-
+from ..visualization.render_repr_html import render_repr_html
+from .diagraph_node import DiagraphNode
+from .diagraph_node_group import DiagraphNodeGroup
 from .graph import Graph
+from .historical_bidict import HistoricalBidict
+from .ordered_set import OrderedSet
 from .types import ErrorHandler, Fn, LogHandler, Result
 
-from .diagraph_node import DiagraphNode
-
-from .historical_bidict import HistoricalBidict
-
-nest_asyncio.apply()
-
-global_log_fn = None
+global_log_fn: LogHandler | None = None
 
 
-def set_global_log(log_fn):
+def set_global_log(log_fn: LogHandler) -> None:
     global global_log_fn
     global_log_fn = log_fn
 
 
-global_error_fn = None
+global_error_fn: ErrorHandler | None = None
 
 
-def set_global_error(error_fn):
+def set_global_error(error_fn: ErrorHandler) -> None:
     global global_error_fn
     global_error_fn = error_fn
 
@@ -51,16 +44,16 @@ class Diagraph:
 
     __graph__: Graph[Fn]
 
-    terminal_nodes: tuple[Fn, ...]
-    log_handler: Optional[LogHandler]
-    error_handler: Optional[ErrorHandler]
+    terminal_nodes: tuple[DiagraphNode, ...]
+    log_handler: LogHandler | None
+    error_handler: ErrorHandler | None
     results: HistoricalBidict[Fn, Any]
     errors: HistoricalBidict[Fn, Exception]
     prompts: HistoricalBidict[Fn, str]
     fns: HistoricalBidict[Fn, Fn]
     runs: list[Any]
     graph_mapping: bidict[Fn, str]
-    llm: Optional[LLM]
+    llm: LLM | None
 
     def __init__(
         self,
@@ -75,8 +68,8 @@ class Diagraph:
 
         Args:
             terminal_nodes: The terminal nodes of the graph.
-            log (Optional[LogHandler]): A logging function for capturing log messages.
-            error (Optional[ErrorHandler]): An error handling function.
+            log (LogHandler | None): A logging function for capturing log messages.
+            error (ErrorHandler | None): An error handling function.
             use_string_keys (bool): Whether to use string keys for functions in the graph.
         """
         graph_def: dict[Fn, OrderedSet[Fn]] = build_graph(*terminal_nodes)
@@ -113,25 +106,13 @@ class Diagraph:
         for key in self.__graph__.get_nodes():
             self.fns[key] = self.graph_mapping.inverse[key]
 
-        self.terminal_nodes = tuple(
-            DiagraphNode(self, get_fn_key(node)) for node in terminal_nodes
-        )
+        self.terminal_nodes = tuple(DiagraphNode(self, node) for node in terminal_nodes)
         self.log_handler = log or global_log_fn
         # self.error_handler = error or default_error_fn
         self.error_handler = error
 
     def _repr_html_(self) -> str:
-        html = render_repr_html(self)
-        return html
-        # return repr_
-        # graph_repr = self.__graph__._repr_html_()
-        # if graph_repr is not None:
-        #     return graph_repr
-
-        # return 'Empty Diagraph'
-
-    # def __str__(self) -> str:
-    #     return str(self.__graph__)
+        return render_repr_html(self)
 
     def get_children_of_node(self, node: DiagraphNode | Fn) -> list[DiagraphNode]:
         key = node.key if isinstance(node, DiagraphNode) else node
@@ -161,7 +142,7 @@ class Diagraph:
         """
         if isinstance(key, int):
             execution_graph = list(
-                get_execution_graph(self.__graph__, self.__graph__.root_nodes)
+                get_execution_graph(self.__graph__, self.__graph__.root_nodes),
             )
 
             if key < 0:
@@ -184,11 +165,11 @@ class Diagraph:
 
         root_nodes: list[Fn] = self.__graph__.root_nodes
         group = DiagraphNodeGroup(self, *root_nodes)
-        asyncio_run(self.__run_from__(group, *input_args, **kwargs))
+        self.__run_from__(group, *input_args, **kwargs)
         return self
 
-    async def __run_from__(
-        self, group: DiagraphNodeGroup | DiagraphNode, *input_args, **kwargs
+    def __run_from__(
+        self, group: DiagraphNodeGroup | DiagraphNode, *input_args, **kwargs,
     ) -> Diagraph:
         """
         Run the Diagraph from a specific node.
@@ -219,12 +200,15 @@ class Diagraph:
         ## TODO: Remove this try
         try:
             for keys in execution_graph:
-                await gather(
-                    *[
-                        self.__execute_node__(self[key], *input_args, **kwargs)
-                        for key in keys
-                    ]
-                )
+                with concurrent.futures.ThreadPoolExecutor(max_workers=5) as executor:
+                    executor.map(
+                        lambda key: self.__execute_node__(
+                            self[key], *input_args, **kwargs,
+                        ),
+                        keys,
+                    )
+                # for key in keys:
+                #     self.__execute_node__(self[key], *input_args, **kwargs)
             run["complete"] = True
 
         except UserHandledException:
@@ -249,11 +233,10 @@ class Diagraph:
             if len(results) == 1:
                 return results[0]
             return tuple(results)
-        else:
-            return None
+        return None
 
     @property
-    def error(self) -> Exception | tuple[Exception, ...] | None:
+    def error(self) -> Exception | tuple[Exception | None, ...] | None:
         """
         Get the errors of the terminal nodes.
 
@@ -269,12 +252,11 @@ class Diagraph:
             if len(errors) == 1:
                 return errors[0]
             return tuple(errors)
-        else:
-            return None
+        return None
 
-    async def __execute_node__(self, node: DiagraphNode, *input_args, **kwargs) -> None:
+    def __execute_node__(self, node: DiagraphNode, *input_args, **kwargs) -> None:
         try:
-            node.result = await self.__run_node__(node, *input_args, **kwargs)
+            node.result = self.__run_node__(node, *input_args, **kwargs)
         except Exception as e:
             # TODO: Make this a custom error
             if "Error found for " in str(e):
@@ -282,13 +264,11 @@ class Diagraph:
             if "Failed to get result for " in str(e):
                 return
             fn = self.fns[node.key]
-            fn_error_handler: Optional[ErrorHandler] = getattr(
-                fn, "__function_error__", None
-            )
+            fn_error_handler = getattr(fn, "__function_error__", None)
             for err_handler in [fn_error_handler, self.error_handler, global_error_fn]:
                 if err_handler:
                     try:
-                        result = err_handler(e)
+                        result = err_handler(e, lambda: None, fn)
                         node.result = result
                     except Exception as raised_exception:
                         node.error = raised_exception
@@ -296,7 +276,7 @@ class Diagraph:
             # if no error functions are defined, save the error
             node.error = e
 
-    async def __run_node__(self, node: DiagraphNode, *input_args, **kwargs) -> Result:
+    def __run_node__(self, node: DiagraphNode, *input_args, **kwargs) -> Result:
         """
         Execute a single node in the Diagraph.
 
@@ -317,22 +297,19 @@ class Diagraph:
 
         if self.log_handler:
             log_handler = self.log_handler
-            setattr(
-                fn,
-                "__diagraph_log__",
-                lambda event, chunk: log_handler(event, chunk, fn),
-            )
+            fn.__diagraph_log__ = lambda event, chunk: log_handler(event, chunk, fn)
         # if self.error_handler:
         #     error_handler = self.error_handler
         #     setattr(fn, "__diagraph_error__", lambda e: error_handler(e, fn))
-        setattr(fn, "__diagraph_llm__", self.llm)
+        fn.__diagraph_llm__ = self.llm
         if is_decorated(fn):
-            return await fn(node, *args, **kwargs)
-        else:
-            if inspect.iscoroutinefunction(fn):
-                return await fn(*args, **kwargs)
-            else:
-                return fn(*args, **kwargs)
+            return fn(node, *args, **kwargs)
+
+        # if inspect.iscoroutinefunction(fn):
+        #     return await fn(*args, **kwargs)
+        # else:
+        #     return fn(*args, **kwargs)
+        return fn(*args, **kwargs)
 
     def __setitem__(self, node_key: Fn, fn: Fn) -> None:
         """

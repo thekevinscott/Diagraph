@@ -1,7 +1,7 @@
 from __future__ import annotations
 
-from ..classes.types import Fn
 from ..classes.diagraph_node_group import DiagraphNodeGroup
+from ..classes.types import Fn
 
 
 def get_node_keys(node_keys: list[Fn] | DiagraphNodeGroup) -> list[Fn]:

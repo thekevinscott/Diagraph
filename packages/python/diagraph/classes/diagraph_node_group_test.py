@@ -1,6 +1,5 @@
-from .diagraph import Diagraph
-
 from ..utils.depends import Depends
+from .diagraph import Diagraph
 from .diagraph_node_group import DiagraphNodeGroup
 
 

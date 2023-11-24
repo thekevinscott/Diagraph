@@ -1,19 +1,15 @@
-from typing import Optional
-import asyncio
 from unittest.mock import patch
-from ..decorators.prompt import prompt
 
-from .types import Fn
-
-from ..llm.llm import LLM
 import pytest
+
+from ..decorators.prompt import prompt
+from ..llm.llm import LLM
 from ..llm.openai_llm import OpenAI
-
-
-from .diagraph_node_group import DiagraphNodeGroup
+from ..utils.depends import Depends
 from .diagraph import Diagraph
 from .diagraph_node import DiagraphNode
-from ..utils.depends import Depends
+from .diagraph_node_group import DiagraphNodeGroup
+from .types import Fn
 
 
 def describe_instantiation():
@@ -52,9 +48,12 @@ def describe_indexing():
 
         diagraph = Diagraph(baz)
 
-        assert isinstance(diagraph[0], DiagraphNodeGroup) and diagraph[0][0].fn == foo
-        assert isinstance(diagraph[2], DiagraphNodeGroup) and diagraph[2][0].fn == baz
-        assert isinstance(diagraph[-1], DiagraphNodeGroup) and diagraph[-1][0].fn == baz
+        assert isinstance(diagraph[0], DiagraphNodeGroup)
+        assert diagraph[0][0].fn == foo
+        assert isinstance(diagraph[2], DiagraphNodeGroup)
+        assert diagraph[2][0].fn == baz
+        assert isinstance(diagraph[-1], DiagraphNodeGroup)
+        assert diagraph[-1][0].fn == baz
 
     def test_it_gets_back_a_tuple_for_parallels():
         def l0():
@@ -73,7 +72,8 @@ def describe_indexing():
 
         def check_tuple(key):
             nodes = diagraph[key]
-            assert isinstance(nodes, DiagraphNodeGroup) and len(nodes) == 2
+            assert isinstance(nodes, DiagraphNodeGroup)
+            assert len(nodes) == 2
             return set([n.fn for n in nodes])
 
         assert check_tuple(1) == {l1_l, l1_r}
@@ -485,162 +485,114 @@ def describe_run():
         d1_mock.assert_called_with(d0_mock.return_value)
         d2_mock.assert_called_with(d1_mock.return_value)
 
-    def test_it_runs_functions_concurrently():
-        futures: dict[str, Optional[asyncio.Future]] = {}
+    def describe_concurrency():
+        @patch("time.sleep", return_value=None)
+        def test_it_runs_functions_concurrently(patched_time_sleep):
+            import time
 
-        async def get_future(key: str) -> asyncio.Future:
-            future = futures.get(key)
-            tries = 0
-            while future is None:
-                await asyncio.sleep(0.01)
-                future = futures.get(key)
-                tries += 1
-                if tries > 5:
-                    raise Exception()
-            return future
+            def a():
+                time.sleep(999)
+                return "a"
 
-        async def a():
-            futures["a"] = asyncio.Future()
-            await futures["a"]
-            return "a"
+            def b():
+                time.sleep(2)
+                return "b"
 
-        async def b():
-            futures["b"] = asyncio.Future()
-            await futures["b"]
-            futuresa = await get_future("a")
-            futuresa.set_result("")
-            return "b"
+            def c():
+                return "c"
 
-        async def c():
-            futuresb = await get_future("b")
-            futuresb.set_result("")
-            return "c"
+            assert Diagraph(a, b, c).run().result == ("a", "b", "c")
+            assert patched_time_sleep.call_count == 2
 
-        assert Diagraph(a, b, c).run().result == ("a", "b", "c")
+        @patch("time.sleep", return_value=None)
+        def test_it_runs_prompt_functions_concurrently(patched_time_sleep):
+            import time
 
-    def test_it_runs_prompt_functions_concurrently():
-        futures: dict[str, Optional[asyncio.Future]] = {}
+            class MockLLM(LLM):
+                times: int
+                error: bool
 
-        async def get_future(key: str) -> asyncio.Future:
-            future = futures.get(key)
-            tries = 0
-            while future is None:
-                await asyncio.sleep(0.01)
-                future = futures.get(key)
-                tries += 1
-                if tries > 5:
-                    raise Exception()
-            return future
+                def __init__(self, times=0, error=False, **kwargs):
+                    self.times = times
+                    self.kwargs = kwargs
+                    self.error = error
 
-        class MockLLM(LLM):
-            times: int
-            error: bool
+                def run(self, prompt, log, model=None, stream=None, **kwargs):
+                    response = ""
+                    kwargs = {
+                        **self.kwargs,
+                        **kwargs,
+                        "model": model,
+                    }
+                    response = ""
+                    if self.error:
+                        raise Exception("test error")
+                    log("start", None)
 
-            def __init__(self, times=0, error=False, **kwargs):
-                self.times = times
-                self.kwargs = kwargs
-                self.error = error
+                    for i in range(self.times):
+                        i = f"{i}"
+                        response += i
+                        log("data", i)
+                    log("end", None)
+                    return response
 
-            async def run(self, prompt, log, model=None, stream=None, **kwargs):
-                response = ""
-                kwargs = {
-                    **self.kwargs,
-                    **kwargs,
-                    "model": model,
-                }
-                response = ""
-                if self.error:
-                    raise Exception("test error")
-                log("start", None)
+            @prompt
+            def a():
+                time.sleep(1)
+                return "a"
 
-                for i in range(self.times):
-                    i = f"{i}"
-                    response += i
-                    log("data", i)
-                log("end", None)
-                return response
+            @prompt
+            def b():
+                return "b"
 
-        @prompt
-        async def a():
-            futures["a"] = asyncio.Future()
-            await futures["a"]
-            return "a"
+            assert Diagraph(a, b, llm=MockLLM(times=3)).run().result == ("012", "012")
 
-        @prompt
-        async def b():
-            futuresa = await get_future("a")
-            futuresa.set_result("")
-            return "b"
+        @patch("time.sleep", return_value=None)
+        def test_it_runs_prompt_with_argument_functions_concurrently(
+            patched_time_sleep,
+        ):
+            import time
 
-        assert Diagraph(a, b, llm=MockLLM(times=3)).run().result == ("012", "012")
+            class MockLLM(LLM):
+                times: int
+                error: bool
 
-    def test_it_runs_prompt_with_argument_functions_concurrently():
-        futures: dict[str, Optional[asyncio.Future]] = {}
+                def __init__(self, times=0, error=False, **kwargs):
+                    self.times = times
+                    self.kwargs = kwargs
+                    self.error = error
 
-        async def get_future(key: str) -> asyncio.Future:
-            future = futures.get(key)
-            tries = 0
-            while future is None:
-                await asyncio.sleep(0.01)
-                future = futures.get(key)
-                tries += 1
-                if tries > 5:
-                    raise Exception()
-            return future
+                def run(self, prompt, log, model=None, stream=None, **kwargs):
+                    response = ""
+                    kwargs = {
+                        **self.kwargs,
+                        **kwargs,
+                        "model": model,
+                    }
+                    response = ""
+                    if self.error:
+                        raise Exception("test error")
+                    log("start", None)
 
-        class MockLLM(LLM):
-            times: int
-            error: bool
-            future: Optional[asyncio.Future] = None
-            other_future: Optional[asyncio.Future] = None
+                    for i in range(self.times):
+                        i = f"{i}"
+                        response += i
+                        log("data", i)
+                    log("end", None)
+                    return response
 
-            def __init__(self, times=0, error=False, **kwargs):
-                self.times = times
-                self.kwargs = kwargs
-                self.error = error
+            mock_llm_a = MockLLM(times=2)
 
-            async def run(self, prompt, log, model=None, stream=None, **kwargs):
-                response = ""
-                kwargs = {
-                    **self.kwargs,
-                    **kwargs,
-                    "model": model,
-                }
-                response = ""
-                if self.error:
-                    raise Exception("test error")
-                log("start", None)
+            @prompt(log=None, llm=mock_llm_a)
+            def a():
+                time.sleep(999)
+                return "a"
 
-                for i in range(self.times):
-                    i = f"{i}"
-                    response += i
-                    if self.future is not None:
-                        await self.future
-                    log("data", i)
-                log("end", None)
-                if self.other_future is not None:
-                    self.other_future.set_result("")
-                return response
+            @prompt(log=None, llm=mock_llm_a)
+            def b():
+                return "b"
 
-        futures = {}
-        mock_llm_a = MockLLM(times=2)
-        mock_llm_b = MockLLM(times=2)
-
-        @prompt(log=None, llm=mock_llm_a)
-        async def a():
-            futures["a"] = asyncio.Future()
-            await futures["a"]
-            return "a"
-
-        @prompt(log=None, llm=mock_llm_b)
-        async def b():
-            mock_llm_a.future = asyncio.Future()
-            mock_llm_b.other_future = mock_llm_a.future
-            futurea = await get_future("a")
-            futurea.set_result("")
-            return "b"
-
-        assert Diagraph(a, b).run().result == ("01", "01")
+            assert Diagraph(a, b).run().result == ("01", "01")
 
     def test_it_calls_functions_in_order():
         def l0():
@@ -672,7 +624,7 @@ def describe_run():
 
     def describe_a_complicated_graph():
         @pytest.mark.parametrize(
-            "terminal_nodes,assertions",
+            ("terminal_nodes", "assertions"),
             [
                 (
                     "d3a",
@@ -1039,7 +991,7 @@ def describe_run():
                     assert mocks[key].call_count == expectation
                 except Exception as e:
                     print(
-                        f'for key "{key}": expected call count {expectation}, got {mocks[key].call_count}'
+                        f'for key "{key}": expected call count {expectation}, got {mocks[key].call_count}',
                     )
                     raise e
 
@@ -1054,12 +1006,12 @@ def describe_run():
                     assert mocks[key].call_count == expectation
                 except Exception as e:
                     print(
-                        f'for key "{key}": expected call count {expectation}, got {mocks[key].call_count}'
+                        f'for key "{key}": expected call count {expectation}, got {mocks[key].call_count}',
                     )
                     raise e
 
         @pytest.mark.parametrize(
-            "starting_nodes,assertions",
+            ("starting_nodes", "assertions"),
             [
                 (
                     "d0a",
@@ -1229,7 +1181,9 @@ def describe_run():
             ],
         )
         def test_it_runs_the_whole_graph_with_cached_data(
-            mocker, starting_nodes, assertions
+            mocker,
+            starting_nodes,
+            assertions,
         ):
             d0a_mock = mocker.Mock(id="d0")
             d0a_mock.return_value = "d0"
@@ -1323,7 +1277,7 @@ def describe_run():
                     assert mocks[key].call_count == expectation
                 except Exception as e:
                     print(
-                        f'for key "{key}": expected call count {expectation}, got {mocks[key].call_count}'
+                        f'for key "{key}": expected call count {expectation}, got {mocks[key].call_count}',
                     )
                     raise e
 
@@ -1338,10 +1292,9 @@ def describe_run():
                 expectation = 1
                 try:
                     assert mocks[key].call_count == expectation
-                    expectation
                 except Exception as e:
                     print(
-                        f'for key "{key}": expected call count {expectation}, got {mocks[key].call_count}'
+                        f'for key "{key}": expected call count {expectation}, got {mocks[key].call_count}',
                     )
                     raise e
 
@@ -1354,7 +1307,7 @@ def describe_run():
                     assert mocks[key].call_count == expectation
                 except Exception as e:
                     print(
-                        f'for key "{key}": expected call count {expectation}, got {mocks[key].call_count}'
+                        f'for key "{key}": expected call count {expectation}, got {mocks[key].call_count}',
                     )
                     raise e
 
@@ -1690,7 +1643,7 @@ def describe_inputs():
         # with pytest.raises(Exception):
         dg = Diagraph(d1).run("foo", "bar", "baz")
         assert dg.result is None
-        assert 'Found arguments defined after * args' in str(dg[d1].error)
+        assert "Found arguments defined after * args" in str(dg[d1].error)
 
         def d2(foo, *args):
             args = "|".join(args)
@@ -1714,7 +1667,7 @@ def describe_inputs():
 
     def describe_real_world_example():
         def test_it_raises_if_returning_non_from_a_prompt():
-            async def fake_run(self, string, stream=None, **kwargs):
+            def fake_run(self, string, stream=None, **kwargs):
                 return string + "_"
 
             with patch.object(
@@ -1729,10 +1682,10 @@ def describe_inputs():
 
                 dg = Diagraph(fn).run()
                 assert dg.result is None
-                assert 'unsupported operand type(s) for +' in str(dg[fn].error)
+                assert "unsupported operand type(s) for +" in str(dg[fn].error)
 
         def test_it_does_a_real_world_example_with_prompt_fn():
-            async def fake_run(self, string, stream=None, **kwargs):
+            def fake_run(self, string, stream=None, **kwargs):
                 return string + "_"
 
             with patch.object(
@@ -1780,17 +1733,24 @@ def describe_inputs():
 
 def describe_running_from_an_index():
     def test_it_throws_if_running_from_an_index_not_yet_run(mocker):
-        l0 = mocker.stub()
-        l0.return_value = "l0"
-        l1 = mocker.stub()
-        l1.return_value = "l1"
-        l2 = mocker.stub()
-        l2.return_value = "l2"
-        l1.__parameters__ = {"l0": Depends(l0)}
-        l2.__parameters__ = {"l1": Depends(l1)}
+        def l0():
+            return "l0"
 
-        with pytest.raises(Exception):
-            diagraph = Diagraph(l2)
+        def l1(l0=Depends(l0)):
+            return "l1"
+
+        def l2(l1=Depends(l1)):
+            return "l2"
+
+        # some_mock=mocker.create_autospec(some)
+        # some_mock(1)
+
+        diagraph = Diagraph(l2)
+
+        with pytest.raises(
+            Exception,
+            match="An ancestor is missing a result, run the traversal first",
+        ):
             diagraph[l1].run("foobar")
 
     def test_it_runs_from_the_first_function_if_specified(mocker):
@@ -1854,7 +1814,7 @@ def describe_running_from_an_index():
                 "bar_foo_d0-d1a",
                 "foo_foo_d0-d1b",
                 "d2_bar",
-            ]
+            ],
         )
 
     def test_it_runs_from_the_first_index_if_provided(mocker):
@@ -1955,7 +1915,7 @@ def describe_replay():
                     d1b,
                     "d2",
                     input,
-                ]
+                ],
             )
 
         diagraph = Diagraph(d2).run("foo")
@@ -1970,7 +1930,7 @@ def describe_replay():
                 "foo_foo_d0-d1b",
                 "d2",
                 "bar",
-            ]
+            ],
         )
 
     def test_it_modifies_prompt_and_can_replay():
@@ -2044,7 +2004,7 @@ def describe_replay():
 
 def describe_prompt():
     def test_it_calls_a_prompt():
-        async def fake_run(self, string, stream=None, **kwargs):
+        def fake_run(self, string, stream=None, **kwargs):
             return string + "_"
 
         with patch.object(
@@ -2068,11 +2028,14 @@ def describe_prompt():
 
         input = "foo"
         diagraph = Diagraph(d0).run(input)
-        with pytest.raises(Exception):
+        with pytest.raises(
+            Exception,
+            match="This function has not been decorated with @prompt",
+        ):
             diagraph[d0].prompt
 
     def test_it_calls_a_prompt_on_layer():
-        async def fake_run(self, string, stream=None, **kwargs):
+        def fake_run(self, string, stream=None, **kwargs):
             return string + "_"
 
         with patch.object(
@@ -2101,7 +2064,7 @@ def describe_prompt():
             assert diagraph[1].result == (f"d1a:{input}__", f"d1b:{input}__")
 
     def test_it_calls_a_prompt_on_single_layer():
-        async def fake_run(self, string, stream=None, **kwargs):
+        def fake_run(self, string, stream=None, **kwargs):
             return string + "_"
 
         with patch.object(
@@ -2124,7 +2087,7 @@ def describe_prompt():
             assert diagraph[0].result == (f"{input}_", f"{input}_")
 
     def test_it_stores_non_string_responses_from_prompts():
-        async def fake_run(self, input, stream=None, **kwargs):
+        def fake_run(self, input, stream=None, **kwargs):
             return "foobar"
 
         with patch.object(
@@ -2167,7 +2130,13 @@ def describe_prompt():
                 return mock_class
 
             diagraph = Diagraph(
-                fn_int, fn_float, fn_list, fn_tuple, fn_set, fn_class, fn_class_instance
+                fn_int,
+                fn_float,
+                fn_list,
+                fn_tuple,
+                fn_set,
+                fn_class,
+                fn_class_instance,
             ).run()
             assert diagraph[fn_int].prompt == 1
             assert diagraph[fn_float].prompt == 1.5
@@ -2180,7 +2149,7 @@ def describe_prompt():
 
 def describe_tokens():
     def test_it_calls_tokens():
-        async def fake_run(self, string, stream=None, **kwargs):
+        def fake_run(self, string, stream=None, **kwargs):
             return string + "_"
 
         with patch.object(
@@ -2199,7 +2168,7 @@ def describe_tokens():
 
 
 def test_it_calls_tokens_on_layer():
-    async def fake_run(self, string, stream=None, **kwargs):
+    def fake_run(self, string, stream=None, **kwargs):
         return string + "_"
 
     with patch.object(
@@ -2227,7 +2196,7 @@ def test_it_calls_tokens_on_layer():
 
 
 def test_it_calls_tokens_on_single_layer():
-    async def fake_run(self, string, stream=None, **kwargs):
+    def fake_run(self, string, stream=None, **kwargs):
         return string + "_"
 
     with patch.object(
@@ -2259,7 +2228,7 @@ def describe_llm():
             self.kwargs = kwargs
             self.error = error
 
-        async def run(self, prompt, log, model=None, stream=None, **kwargs):
+        def run(self, prompt, log, model=None, stream=None, **kwargs):
             response = ""
             kwargs = {
                 **self.kwargs,

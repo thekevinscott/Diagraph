@@ -1,14 +1,14 @@
 from __future__ import annotations
-from asyncio import run as asyncio_run
-from typing import Iterator
+
+from collections.abc import Iterator
+from typing import TYPE_CHECKING
+
 from .diagraph_node import DiagraphNode
 from .types import Fn, Result
 
-
-from typing import TYPE_CHECKING
-
 if TYPE_CHECKING:
     from .diagraph import Diagraph
+
 
 class DiagraphNodeGroup:
     """A layer of DiagraphNodes representing a set of related nodes in a Diagraph."""
@@ -104,7 +104,7 @@ class DiagraphNodeGroup:
             None
         """
 
-        asyncio_run(self.diagraph.__run_from__(self, *input_args, **kwargs))
+        self.diagraph.__run_from__(self, *input_args, **kwargs)
         return self.diagraph
 
     @property
@@ -115,9 +115,7 @@ class DiagraphNodeGroup:
         Returns:
             Any or tuple[Any]: The result of the nodes, either as a single value or a tuple of values.
         """
-        results = []
-        for node in self.nodes:
-            results.append(self.diagraph.results[node.key])
+        results = [self.diagraph.results[node.key] for node in self.nodes]
         if len(results) == 1:
             return results[0]
         return tuple(results)
@@ -130,9 +128,7 @@ class DiagraphNodeGroup:
         Returns:
             str or tuple[str]: The prompt of the nodes, either as a single string or a tuple of strings.
         """
-        prompts = []
-        for node in self.nodes:
-            prompts.append(node.prompt)
+        prompts = [node.prompt for node in self.nodes]
         if len(prompts) == 1:
             return prompts[0]
         return tuple(prompts)
@@ -145,9 +141,7 @@ class DiagraphNodeGroup:
         Returns:
             int or tuple[int]: The number of tokens for each node's prompt.
         """
-        tokens = []
-        for node in self.nodes:
-            tokens.append(node.tokens)
+        tokens = [node.tokens for node in self.nodes]
         if len(tokens) == 1:
             return tokens[0]
         return tuple(tokens)
@@ -166,13 +160,13 @@ class DiagraphNodeGroup:
         if isinstance(values, str):
             if len(self.nodes) != 1:
                 raise Exception(
-                    f"You provided a string as a value but the layer has {len(self.nodes)} nodes. Setting a string value is only supported for a single node. Instead, provide a tuple of values matching of length {len(self.nodes)}"
+                    f"You provided a string as a value but the layer has {len(self.nodes)} nodes. Setting a string value is only supported for a single node. Instead, provide a tuple of values matching of length {len(self.nodes)}",
                 )
             self.diagraph.results[self.nodes[0].key] = values
         else:
             if len(self.nodes) != len(values):
                 raise Exception(
-                    f"Number of results ({len(values)}) does not match number of nodes ({len(self.nodes)})"
+                    f"Number of results ({len(values)}) does not match number of nodes ({len(self.nodes)})",
                 )
 
             for node, value in zip(self.nodes, values):

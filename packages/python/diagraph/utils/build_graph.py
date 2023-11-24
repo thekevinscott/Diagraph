@@ -1,9 +1,11 @@
 from __future__ import annotations
+
 import inspect
-from typing import Generator
-from .depends import FnDependency
+from collections.abc import Generator
+
 from ..classes.ordered_set import OrderedSet
 from ..classes.types import Fn
+from .depends import FnDependency
 
 
 def get_dependencies(node: Fn) -> Generator[Fn, None, None]:
@@ -17,7 +19,6 @@ def get_dependencies(node: Fn) -> Generator[Fn, None, None]:
     Generator[Fn, None, None]: A generator of functions representing the dependencies.
     """
     for val in inspect.signature(node).parameters.values():
-        print(val.default)
         if isinstance(val.default, FnDependency):
             yield val.default.dependency
 

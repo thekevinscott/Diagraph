@@ -1,5 +1,8 @@
-from typing import Any, Awaitable, Optional
+from collections.abc import Awaitable
+from typing import Any
+
 from openai import AsyncOpenAI
+from openai import OpenAI as SyncOpenAI
 from openai.types.chat import ChatCompletionMessageParam
 
 from ..classes.types import FunctionLogHandler
@@ -18,14 +21,15 @@ DEFAULT_MODEL = "gpt-3.5-turbo"
 
 
 class OpenAI(LLM):
-    __aclient__: Optional[AsyncOpenAI] = None
+    __aclient__: AsyncOpenAI | None = None
+    __client__: SyncOpenAI | None = None
     kwargs: dict[Any, Any]
 
     def __init__(self, **kwargs) -> None:
         self.kwargs = kwargs
 
     @property
-    def client(self) -> AsyncOpenAI:
+    def aclient(self) -> AsyncOpenAI:
         aclient = self.__aclient__
         if aclient is None:
             aclient = AsyncOpenAI()
@@ -33,12 +37,20 @@ class OpenAI(LLM):
 
         return aclient
 
-    async def run(
+    @property
+    def client(self) -> SyncOpenAI:
+        client = self.__client__
+        if client is None:
+            client = SyncOpenAI()
+            self.__client__ = client
+
+        return client
+
+    def run(
         self,
         prompt: str | list[ChatCompletionMessageParam],
         log: FunctionLogHandler,
         model=None,
-        stream=None,
         **kwargs,
     ) -> Awaitable[Any]:
         client = self.client
@@ -46,6 +58,42 @@ class OpenAI(LLM):
         messages = cast_to_input(prompt)
 
         response = ""
+        del kwargs["stream"]
+        kwargs = {
+            **self.kwargs,
+            **kwargs,
+            "stream": True,
+            "model": model,
+            "messages": messages,
+        }
+        started = False
+        for resp in client.chat.completions.create(**kwargs):
+            if started is False:
+                log("start", None)
+                started = True
+            choices = resp.choices
+            choice = choices[0]
+            delta = choice.delta
+            content = delta.content
+            if content:
+                response += content
+                log("data", content)
+        log("end", None)
+        return response
+
+    async def arun(
+        self,
+        prompt: str | list[ChatCompletionMessageParam],
+        log: FunctionLogHandler,
+        model=None,
+        **kwargs,
+    ) -> Awaitable[Any]:
+        client = self.aclient
+        model = model if model else self.kwargs.get("model", DEFAULT_MODEL)
+        messages = cast_to_input(prompt)
+
+        response = ""
+        del kwargs["stream"]
         kwargs = {
             **self.kwargs,
             **kwargs,
