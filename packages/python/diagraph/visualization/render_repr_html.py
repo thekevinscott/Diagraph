@@ -8,16 +8,16 @@ from importlib.metadata import distribution
 
 import networkx as nx
 
-diagraph_version = distribution('diagraph').metadata['version']
+diagraph_version = distribution("diagraph").metadata["version"]
 
 
 def load_from_dist(url: str):
     return load_resource(f"./assets/dist/{url}")
 
 
-def load_resource(url: str, name="diagraph") -> str:
-    ref = resources.files(url).joinpath(name)
-    with ref.open('r') as f:
+def load_resource(resource_filepath: str, pkg="diagraph") -> str:
+    ref = resources.files(pkg).joinpath(resource_filepath)
+    with ref.open("r") as f:
         return f.read()
 
 

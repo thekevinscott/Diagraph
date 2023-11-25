@@ -1,6 +1,6 @@
 [project]
 name = "diagraph"
-version = "0.3.0.rc11"
+version = "0.3.0.rc12"
 # Notes
 authors = [{ name = "Kevin Scott", email = "kevin@diagraph.dev" }]
 readme = "README.md"
