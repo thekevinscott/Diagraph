@@ -1,23 +1,22 @@
 from __future__ import annotations
-from typing import Generator, Mapping, TypeVar
 
-
-from .get_node_keys import get_node_keys
-
-from ..classes.types import Fn
+from collections.abc import Generator, Mapping
+from typing import TypeVar
 
 from ..classes.diagraph_node_group import DiagraphNodeGroup
-from ..classes.ordered_set import OrderedSet
-from .get_subgraph_def import get_subgraph_def
 
 # from packages.python.diagraph.classes.diagraph_node import DiagraphNode
 # from ..classes.diagraph import Diagraph
 from ..classes.graph import Graph
+from ..classes.ordered_set import OrderedSet
+from ..classes.types import Fn
+from .get_node_keys import get_node_keys
+from .get_subgraph_def import get_subgraph_def
 
 K = TypeVar("K")
 
 def ancestor_is_upstream_dependency(
-    graph: Graph, potential_upstream_dependency: K, parent: K
+    graph: Graph, potential_upstream_dependency: K, parent: K,
 ) -> bool:
     """
     Checks if a potential upstream dependency is an ancestor of a given node.
@@ -36,7 +35,7 @@ def ancestor_is_upstream_dependency(
     return False
 
 def has_unexecuted_upstream_dependencies(
-    graph: Graph, child: K, parent: K, seen: set[K]
+    graph: Graph, child: K, parent: K, seen: set[K],
 ) -> bool:
     """
     Checks if a node has unexecuted upstream dependencies with respect to a parent node.

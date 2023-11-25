@@ -1,11 +1,12 @@
 import pytest
-from .get_subgraph_def import get_subgraph_def
+
 from ..classes.graph import Graph
+from .get_subgraph_def import get_subgraph_def
 
 
 def describe_get_subgraph_def():
     @pytest.mark.parametrize(
-        "graph_def,starting_nodes,expectation",
+        ("graph_def", "starting_nodes", "expectation"),
         [
             # slice
             ({"b": ["a"]}, ["a"], {"b": ["a"], "a": []}),

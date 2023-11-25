@@ -1,7 +1,8 @@
-from .depends import Depends
 import pytest
-from .build_parameters import build_parameters
+
 from ..classes.diagraph import Diagraph
+from .build_parameters import build_parameters
+from .depends import Depends
 
 
 def describe_build_parameters():
@@ -17,7 +18,10 @@ def describe_build_parameters():
             return "foo"
 
         diagraph = Diagraph(foo)
-        with pytest.raises(Exception):
+        with pytest.raises(
+            Exception,
+            match='No argument provided for "input" in function foo.',
+        ):
             build_parameters(diagraph, foo, ())
 
     def test_it_raises_when_function_demands_unsupplied_second_input():
@@ -25,7 +29,10 @@ def describe_build_parameters():
             return "foo"
 
         diagraph = Diagraph(foo)
-        with pytest.raises(Exception):
+        with pytest.raises(
+            Exception,
+            match='No argument provided for "bar" in function foo',
+        ):
             build_parameters(diagraph, foo, ("foo",))
 
     def test_it_builds_a_string_arg():
@@ -153,7 +160,7 @@ def describe_build_parameters():
             return "foo"
 
         diagraph = Diagraph(foo)
-        with pytest.raises(Exception):
+        with pytest.raises(Exception, match="Found arguments defined after "):
             build_parameters(
                 diagraph,
                 foo,

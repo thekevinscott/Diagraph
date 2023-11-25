@@ -1,11 +1,12 @@
 from __future__ import annotations
+
+import inspect
 import json
 import random
-import inspect
-import networkx as nx
-
 from importlib import resources
 from importlib.metadata import distribution
+
+import networkx as nx
 
 diagraph_version = distribution('diagraph').metadata['version']
 
@@ -72,7 +73,7 @@ def render_repr_html(diagraph):
             "nodes": nodes,
             "graph": graph,
             "version": diagraph_version,
-        }
+        },
     )
     random_number = random.randint(0, 100000000)
     root_id = f"root-{random_number}"

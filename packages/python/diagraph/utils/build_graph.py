@@ -1,9 +1,11 @@
 from __future__ import annotations
+
 import inspect
-from typing import Generator
-from .depends import FnDependency
+from collections.abc import Generator
+
 from ..classes.ordered_set import OrderedSet
 from ..classes.types import Fn
+from .depends import FnDependency
 
 
 def get_dependencies(node: Fn) -> Generator[Fn, None, None]:

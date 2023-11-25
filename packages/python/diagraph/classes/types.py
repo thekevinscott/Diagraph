@@ -1,6 +1,7 @@
 from __future__ import annotations
 
-from typing import Callable, Any, Literal
+from collections.abc import Callable
+from typing import Any, Literal
 
 Fn = Callable[..., Any]
 

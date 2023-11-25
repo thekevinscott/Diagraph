@@ -1,8 +1,7 @@
 import pytest
 
-
-from .depends import Depends
 from ..classes.diagraph import Diagraph
+from .depends import Depends
 from .validate_node_ancestors import validate_node_ancestors
 
 
@@ -22,7 +21,9 @@ def describe_validate_node_ancestors():
             return "d1"
 
         nodes = Diagraph(d1)[1]
-        with pytest.raises(Exception):
+        with pytest.raises(
+            Exception, match="An ancestor is missing a result, run the traversal first",
+        ):
             validate_node_ancestors(nodes)
 
     def test_it_validates_a_single_filled_ancestor():
@@ -63,7 +64,9 @@ def describe_validate_node_ancestors():
         diagraph = Diagraph(d2)
         diagraph[d1].result = "foo"
         layer = diagraph[1]
-        with pytest.raises(Exception):
+        with pytest.raises(
+            Exception, match="An ancestor is missing a result, run the traversal first",
+        ):
             validate_node_ancestors(layer)
         diagraph[d0].result = "foo"
 
@@ -82,7 +85,9 @@ def describe_validate_node_ancestors():
         diagraph = Diagraph(d2)
         diagraph[d0].result = "foo"
         layer = diagraph[2]
-        with pytest.raises(Exception):
+        with pytest.raises(
+            Exception, match="An ancestor is missing a result, run the traversal first",
+        ):
             validate_node_ancestors(layer)
         diagraph[d1].result = "foo"
         validate_node_ancestors(layer)

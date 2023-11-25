@@ -1,11 +1,10 @@
 from __future__ import annotations
+
 import inspect
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 from ..classes.types import Fn
 from .depends import FnDependency
-
-from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
     from ..classes.diagraph import Diagraph
@@ -34,7 +33,7 @@ def build_parameters(diagraph: Diagraph, fn: Fn, input_args: tuple) -> list[Any]
                     key_for_fn = diagraph.fns.inverse(dep)
                 except Exception:
                     raise Exception(
-                        f"No function has been set for dep {dep}. Available functions: {diagraph.fns}"
+                        f"No function has been set for dep {dep}. Available functions: {diagraph.fns}",
                     )
                 if diagraph[key_for_fn].error is not None:
                     raise Exception(f"Error found for {key_for_fn}")
@@ -54,11 +53,11 @@ def build_parameters(diagraph: Diagraph, fn: Fn, input_args: tuple) -> list[Any]
         elif not str(parameter).startswith("*"):
             if encountered_star:
                 raise Exception(
-                    "Found arguments defined after * args. Ensure *args and **kwargs come at the end of the function parameter definitions."
+                    "Found arguments defined after * args. Ensure *args and **kwargs come at the end of the function parameter definitions.",
                 )
             if arg_index > len(input_args) - 1:
                 raise Exception(
-                    f'No argument provided for "{parameter.name}" in function {fn.__name__}. This indicates you forgot to call ".run()" with sufficient arguments.'
+                    f'No argument provided for "{parameter.name}" in function {fn.__name__}. This indicates you forgot to call ".run()" with sufficient arguments.',
                 )
             args.append(input_args[arg_index])
             arg_index += 1
@@ -66,6 +65,5 @@ def build_parameters(diagraph: Diagraph, fn: Fn, input_args: tuple) -> list[Any]
             encountered_star = True
 
             if arg_index < len(input_args):
-                for arg in input_args[arg_index:]:
-                    args.append(arg)
+                args += input_args[arg_index:]
     return args

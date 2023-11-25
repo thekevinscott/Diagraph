@@ -1,10 +1,9 @@
 import pytest
 
 from ..classes.diagraph import Diagraph
-
+from ..classes.graph import Graph
 from .depends import Depends
 from .get_execution_graph import get_execution_graph
-from ..classes.graph import Graph
 
 complicated_graph_def = {
     "d0b": [],
@@ -22,7 +21,7 @@ complicated_graph_def = {
 
 def describe_execution_graph():
     @pytest.mark.parametrize(
-        "graph_def,starting_nodes,expectation",
+        ("graph_def", "starting_nodes", "expectation"),
         [
             # single node
             ({"a": []}, ["a"], [["a"]]),
@@ -201,9 +200,7 @@ def describe_execution_graph():
             ),
         ],
     )
-    def test_it_gets_execution_graph_for_nodes(
-        graph_def, starting_nodes, expectation
-    ):
+    def test_it_gets_execution_graph_for_nodes(graph_def, starting_nodes, expectation):
         execution_graph = list(get_execution_graph(Graph(graph_def), starting_nodes))
 
         try:
@@ -215,14 +212,16 @@ def describe_execution_graph():
             print(f"execution_graph: {execution_graph}")
             raise e
 
-
     def test_it_gets_execution_graph_for_diagraph_node_group():
         def a():
-            return 'a'
-        def b(a = Depends(a)):
-            return 'b'
-        def c(a = Depends(a)):
-            return 'c'
+            return "a"
+
+        def b(a=Depends(a)):
+            return "b"
+
+        def c(a=Depends(a)):
+            return "c"
+
         dg = Diagraph(b, c)
         group = dg[0]
 

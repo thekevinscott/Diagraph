@@ -1,4 +1,5 @@
 from __future__ import annotations
+
 from typing import Any
 
 from diagraph.classes.types import Fn
