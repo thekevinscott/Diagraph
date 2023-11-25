@@ -1,6 +1,7 @@
 from __future__ import annotations
-import nest_asyncio
-import inspect
+import concurrent.futures
+
+# import inspect
 from datetime import datetime
 from typing import Any, Optional, overload
 from bidict import bidict
@@ -13,7 +14,6 @@ from ..utils.get_execution_graph import get_execution_graph
 from ..visualization.render_repr_html import render_repr_html
 from ..llm.llm import LLM
 from ..decorators.is_decorated import is_decorated
-from asyncio import run as asyncio_run, gather
 
 from .diagraph_node_group import DiagraphNodeGroup
 
@@ -27,8 +27,6 @@ from .types import ErrorHandler, Fn, FunctionErrorHandler, LogHandler, Result
 from .diagraph_node import DiagraphNode
 
 from .historical_bidict import HistoricalBidict
-
-nest_asyncio.apply()
 
 global_log_fn: Optional[LogHandler] = None
 
@@ -182,10 +180,10 @@ class Diagraph:
 
         root_nodes: list[Fn] = self.__graph__.root_nodes
         group = DiagraphNodeGroup(self, *root_nodes)
-        asyncio_run(self.__run_from__(group, *input_args, **kwargs))
+        self.__run_from__(group, *input_args, **kwargs)
         return self
 
-    async def __run_from__(
+    def __run_from__(
         self, group: DiagraphNodeGroup | DiagraphNode, *input_args, **kwargs
     ) -> Diagraph:
         """
@@ -217,12 +215,15 @@ class Diagraph:
         ## TODO: Remove this try
         try:
             for keys in execution_graph:
-                await gather(
-                    *[
-                        self.__execute_node__(self[key], *input_args, **kwargs)
-                        for key in keys
-                    ]
-                )
+                with concurrent.futures.ThreadPoolExecutor(max_workers=5) as executor:
+                    executor.map(
+                        lambda key: self.__execute_node__(
+                            self[key], *input_args, **kwargs
+                        ),
+                        keys,
+                    )
+                # for key in keys:
+                #     self.__execute_node__(self[key], *input_args, **kwargs)
             run["complete"] = True
 
         except UserHandledException:
@@ -270,9 +271,9 @@ class Diagraph:
         else:
             return None
 
-    async def __execute_node__(self, node: DiagraphNode, *input_args, **kwargs) -> None:
+    def __execute_node__(self, node: DiagraphNode, *input_args, **kwargs) -> None:
         try:
-            node.result = await self.__run_node__(node, *input_args, **kwargs)
+            node.result = self.__run_node__(node, *input_args, **kwargs)
         except Exception as e:
             # TODO: Make this a custom error
             if "Error found for " in str(e):
@@ -294,7 +295,7 @@ class Diagraph:
             # if no error functions are defined, save the error
             node.error = e
 
-    async def __run_node__(self, node: DiagraphNode, *input_args, **kwargs) -> Result:
+    def __run_node__(self, node: DiagraphNode, *input_args, **kwargs) -> Result:
         """
         Execute a single node in the Diagraph.
 
@@ -325,12 +326,13 @@ class Diagraph:
         #     setattr(fn, "__diagraph_error__", lambda e: error_handler(e, fn))
         setattr(fn, "__diagraph_llm__", self.llm)
         if is_decorated(fn):
-            return await fn(node, *args, **kwargs)
+            return fn(node, *args, **kwargs)
         else:
-            if inspect.iscoroutinefunction(fn):
-                return await fn(*args, **kwargs)
-            else:
-                return fn(*args, **kwargs)
+            # if inspect.iscoroutinefunction(fn):
+            #     return await fn(*args, **kwargs)
+            # else:
+            #     return fn(*args, **kwargs)
+            return fn(*args, **kwargs)
 
     def __setitem__(self, node_key: Fn, fn: Fn) -> None:
         """

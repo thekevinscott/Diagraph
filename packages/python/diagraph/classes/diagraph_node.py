@@ -1,5 +1,4 @@
 from __future__ import annotations
-from asyncio import run as asyncio_run
 import tiktoken
 
 
@@ -104,7 +103,7 @@ class DiagraphNode:
             None
         """
 
-        asyncio_run(self.diagraph.__run_from__(self, *input_args, **kwargs))
+        self.diagraph.__run_from__(self, *input_args, **kwargs)
         return self.diagraph
 
     @property
