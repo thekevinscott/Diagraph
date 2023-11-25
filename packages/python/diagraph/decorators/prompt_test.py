@@ -507,7 +507,6 @@ def describe_errors():
 
         dg = Diagraph(fn, error=handle_errors).run()
         assert handle_errors.call_count == 1
-        print(dg[fn].error)
         assert dg[fn].error == thrown_exception
         assert dg[fn].result is None
 

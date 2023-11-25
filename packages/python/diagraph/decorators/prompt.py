@@ -105,7 +105,6 @@ def prompt(
         # )
 
         def _log(event: LogEventName, chunk: Optional[str]) -> None:
-            print("log!", log, diagraph_log)
             if log:
                 log(event, chunk)
             elif diagraph_log:

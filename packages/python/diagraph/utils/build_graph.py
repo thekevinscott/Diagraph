@@ -17,7 +17,6 @@ def get_dependencies(node: Fn) -> Generator[Fn, None, None]:
     Generator[Fn, None, None]: A generator of functions representing the dependencies.
     """
     for val in inspect.signature(node).parameters.values():
-        print(val.default)
         if isinstance(val.default, FnDependency):
             yield val.default.dependency
 
