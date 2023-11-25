@@ -1,6 +1,6 @@
 [project]
 name = "diagraph"
-version = "0.3.0.rc9"
+version = "0.3.0.rc10"
 # Notes
 authors = [{ name = "Kevin Scott", email = "kevin@diagraph.dev" }]
 readme = "README.md"
@@ -40,3 +40,62 @@ build-backend = "setuptools.build_meta"
 [tool.pytest.ini_options]
 minversion = "6.0"
 testpaths = ["diagraph/**/*_test.py"]
+
+
+[tool.ruff]
+preview = true
+# https://beta.ruff.rs/docs/rules/
+extend-select = [
+  # "A",
+  # "ARG",
+  # "B",
+  # "BLE",
+  # "COM",
+  # "E",
+  # "F",
+  # "FA",
+  # "FIX",
+  # "FLY",
+  # "FURB",
+  # "G",
+  # "I",
+  # "ICN",
+  # "ISC",
+  # "INP",
+  # "PERF",
+  # "PGH",
+  # "PIE",
+  # "PT",
+  # "PTH",
+  # "RET",
+  # "RSE",
+  # "RUF",
+  # "SLOT",
+  "T20",
+  # "TD",
+  # "TID",
+  # "UP",
+  # "W",
+  # "YTT",
+]
+ignore = []
+
+fixable = ["ALL"]
+unfixable = []
+
+[tool.ruff.lint.per-file-ignores]
+"**/*_test.py" = ["T201"]
+
+
+[tool.ruff.format]
+# Like Black, use double quotes for strings.
+quote-style = "double"
+
+# Like Black, indent with spaces, rather than tabs.
+indent-style = "space"
+
+# Like Black, respect magic trailing commas.
+skip-magic-trailing-comma = false
+
+# Like Black, automatically detect the appropriate line ending.
+line-ending = "auto"

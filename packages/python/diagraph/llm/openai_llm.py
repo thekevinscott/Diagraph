@@ -37,7 +37,6 @@ class OpenAI(LLM):
 
     @property
     def client(self) -> SyncOpenAI:
-        print("SyncOpenAI", SyncOpenAI)
         client = self.__client__
         if client is None:
             client = SyncOpenAI()
@@ -54,7 +53,6 @@ class OpenAI(LLM):
         **kwargs,
     ) -> Awaitable[Any]:
         client = self.client
-        print("client", client)
         model = model if model else self.kwargs.get("model", DEFAULT_MODEL)
         messages = cast_to_input(prompt)
 
