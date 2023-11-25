@@ -1,4 +1,3 @@
-import pytest
 from ..classes.diagraph import Diagraph
 from ..llm.llm import LLM
 from ..utils.depends import Depends
@@ -713,5 +712,5 @@ def describe_errors():
 
         dg = Diagraph(fn).run()
         function_handle_errors.assert_any_call(0)
-        assert dg.result == None
+        assert dg.result is None
         assert str(dg[fn].error) == "stop"

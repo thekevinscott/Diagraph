@@ -286,7 +286,7 @@ class Diagraph:
 
             def rerun(**kwargs: dict[Any, Any]):
                 self.__execute_node__(
-                    node, input_args, input_kwargs, rerun_kwargs=kwargs
+                    node, input_args, input_kwargs, rerun_kwargs=kwargs,
                 )
                 # TODO: Refactor or remove this
                 return node.result
@@ -310,7 +310,7 @@ class Diagraph:
             node.error = e
 
     def __run_node__(
-        self, node: DiagraphNode, input_args: tuple[Any], kwargs: None | dict[Any, Any]
+        self, node: DiagraphNode, input_args: tuple[Any], kwargs: None | dict[Any, Any],
     ) -> Result:
         """
         Execute a single node in the Diagraph.
