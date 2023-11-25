@@ -1,5 +1,18 @@
 import pytest
-from unittest.mock import AsyncMock, patch
+from unittest.mock import Mock, patch
+
+
+def make_completion(_content: str):
+    class Delta:
+        content = _content
+
+    class Choice:
+        delta = Delta()
+
+    class ChatCompletion:
+        choices = [Choice]
+
+    return ChatCompletion()
 
 
 class FakeGenerator:
@@ -12,23 +25,16 @@ class FakeGenerator:
         if self.times <= current_i:
             raise StopAsyncIteration  # raise at end of iteration
 
-        class Delta:
-            content = f"{current_i}"
-
-        class Choice:
-            delta = Delta()
-
-        class ChatCompletion:
-            choices = [Choice]
+        completion = make_completion(f"{current_i}")
 
         self.current_i += 1
-        return ChatCompletion()
+        return completion
 
     def __aiter__(self):
         return self
 
 
-class Completions:
+class ACompletions:
     def __init__(self, times=1):
         self.times = times
 
@@ -36,14 +42,35 @@ class Completions:
         return FakeGenerator(self.times)
 
 
+def iterable(times=0):
+    for i in range(times):
+        yield make_completion(f"{i}")
+
+
+class Completions:
+    def __init__(self, times=1):
+        self.times = times
+
+    def create(self, **kwargs):
+        return iterable(self.times)
+
+
 class Chat:
-    def __init__(self, times=1):
-        self.completions = Completions(times=times)
+    def __init__(self, times=1, is_async=False):
+        if is_async is True:
+            self.completions = ACompletions(times=times)
+        else:
+            self.completions = Completions(times=times)
 
 
-class MockAsyncOpenAI:
+class MockASyncOpenAI:
     def __init__(self, times=1):
-        self.chat = Chat(times=times)
+        self.chat = Chat(times=times, is_async=True)
+
+
+class MockSyncOpenAI:
+    def __init__(self, times=1):
+        self.chat = Chat(times=times, is_async=False)
 
 
 def handle_log(_event, _data):
@@ -53,13 +80,13 @@ def handle_log(_event, _data):
 def describe_openai_llm():
     def describe_cast_to_input():
         def test_it_casts_to_parsed_input():
-            with patch("diagraph.llm.openai_llm.AsyncOpenAI", MockAsyncOpenAI):
+            with patch("diagraph.llm.openai_llm.SyncOpenAI", MockSyncOpenAI):
                 from .openai_llm import cast_to_input
 
                 assert cast_to_input("foo") == [{"role": "user", "content": "foo"}]
 
         def test_it_returns_if_not_a_string():
-            with patch("diagraph.llm.openai_llm.AsyncOpenAI", MockAsyncOpenAI):
+            with patch("diagraph.llm.openai_llm.SyncOpenAI", MockSyncOpenAI):
                 from .openai_llm import cast_to_input
 
                 input = [{"role": "user", "content": "foo"}]
@@ -70,21 +97,19 @@ def describe_openai_llm():
 
         OpenAI()
 
-    @pytest.mark.asyncio
-    async def test_it_runs():
-        with patch("diagraph.llm.openai_llm.AsyncOpenAI", MockAsyncOpenAI):
+    def test_it_runs_foo():
+        with patch("diagraph.llm.openai_llm.SyncOpenAI", MockSyncOpenAI):
             from .openai_llm import OpenAI
 
-            assert await OpenAI().run("foo", log=handle_log) == "0"
+            assert OpenAI().run("foo", log=handle_log) == "0"
 
-    @pytest.mark.asyncio
-    async def test_it_passes_kwargs_and_parses_string_by_default():
-        with patch("diagraph.llm.openai_llm.AsyncOpenAI") as mocked_async_openai:
-            fake_create = AsyncMock(return_value=FakeGenerator(1))
-            mocked_async_openai.return_value.chat.completions.create = fake_create
+    def test_it_passes_kwargs_and_parses_string_by_default():
+        with patch("diagraph.llm.openai_llm.SyncOpenAI") as mocked_sync_openai:
+            fake_create = Mock(return_value=iterable(1))
+            mocked_sync_openai.return_value.chat.completions.create = fake_create
             from .openai_llm import OpenAI, DEFAULT_MODEL
 
-            await OpenAI().run("foo", log=handle_log, foo="foo")
+            OpenAI().run("foo", log=handle_log, foo="foo")
             fake_create.assert_called_with(
                 messages=[{"role": "user", "content": "foo"}],
                 model=DEFAULT_MODEL,
@@ -92,38 +117,37 @@ def describe_openai_llm():
                 stream=True,
             )
 
-    @pytest.mark.asyncio
-    async def test_it_accepts_alternate_models():
-        with patch("diagraph.llm.openai_llm.AsyncOpenAI") as mocked_async_openai:
-            fake_create = AsyncMock(return_value=FakeGenerator(1))
-            mocked_async_openai.return_value.chat.completions.create = fake_create
+    def test_it_accepts_alternate_models():
+        with patch("diagraph.llm.openai_llm.SyncOpenAI") as mocked_sync_openai:
+            fake_create = Mock(return_value=iterable(1))
+            mocked_sync_openai.return_value.chat.completions.create = fake_create
             from .openai_llm import OpenAI
 
-            await OpenAI(model="gpt-foo").run("foo", log=handle_log)
+            OpenAI(model="gpt-foo").run("foo", log=handle_log)
             fake_create.assert_called_with(
                 messages=[{"role": "user", "content": "foo"}],
                 model="gpt-foo",
                 stream=True,
             )
 
-        with patch("diagraph.llm.openai_llm.AsyncOpenAI") as mocked_async_openai:
-            fake_create = AsyncMock(return_value=FakeGenerator(1))
-            mocked_async_openai.return_value.chat.completions.create = fake_create
+        with patch("diagraph.llm.openai_llm.SyncOpenAI") as mocked_sync_openai:
+            fake_create = Mock(return_value=iterable(1))
+            mocked_sync_openai.return_value.chat.completions.create = fake_create
             from .openai_llm import OpenAI
 
-            await OpenAI().run("foo", log=handle_log, model="gpt-bar")
+            OpenAI().run("foo", log=handle_log, model="gpt-bar")
             fake_create.assert_called_with(
                 messages=[{"role": "user", "content": "foo"}],
                 model="gpt-bar",
                 stream=True,
             )
 
-        with patch("diagraph.llm.openai_llm.AsyncOpenAI") as mocked_async_openai:
-            fake_create = AsyncMock(return_value=FakeGenerator(1))
-            mocked_async_openai.return_value.chat.completions.create = fake_create
+        with patch("diagraph.llm.openai_llm.SyncOpenAI") as mocked_sync_openai:
+            fake_create = Mock(return_value=iterable(3))
+            mocked_sync_openai.return_value.chat.completions.create = fake_create
             from .openai_llm import OpenAI
 
-            await OpenAI(model="gpt-foo").run("foo", log=handle_log, model="gpt-bar")
+            OpenAI(model="gpt-foo").run("foo", log=handle_log, model="gpt-bar")
             fake_create.assert_called_with(
                 messages=[{"role": "user", "content": "foo"}],
                 model="gpt-bar",
@@ -131,30 +155,28 @@ def describe_openai_llm():
             )
 
     def describe_logs():
-        @pytest.mark.asyncio
-        async def test_it_does_not_call_start_if_encountering_an_error(mocker):
+        def test_it_does_not_call_start_if_encountering_an_error(mocker):
             handle_log = mocker.stub()
 
-            with patch("diagraph.llm.openai_llm.AsyncOpenAI") as mocked_async_openai:
-                fake_create = AsyncMock(return_value=FakeGenerator(1))
-                mocked_async_openai.return_value.chat.completions.create = fake_create
+            with patch("diagraph.llm.openai_llm.SyncOpenAI") as mocked_sync_openai:
+                fake_create = Mock(return_value=iterable(1))
+                mocked_sync_openai.return_value.chat.completions.create = fake_create
                 from .openai_llm import OpenAI
 
                 fake_create.side_effect = Exception("wruh wroh")
                 with pytest.raises(Exception):
-                    await OpenAI(model="gpt-foo").run("foo", log=handle_log)
+                    OpenAI(model="gpt-foo").run("foo", log=handle_log)
                 assert handle_log.call_count == 0
 
-    @pytest.mark.asyncio
-    async def test_it_calls_all_events(mocker):
+    def test_it_calls_all_events(mocker):
         handle_log = mocker.stub()
 
-        with patch("diagraph.llm.openai_llm.AsyncOpenAI") as mocked_async_openai:
-            fake_create = AsyncMock(return_value=FakeGenerator(3))
-            mocked_async_openai.return_value.chat.completions.create = fake_create
+        with patch("diagraph.llm.openai_llm.SyncOpenAI") as mocked_sync_openai:
+            fake_create = Mock(return_value=iterable(3))
+            mocked_sync_openai.return_value.chat.completions.create = fake_create
             from .openai_llm import OpenAI
 
-            await OpenAI(model="gpt-foo").run("foo", log=handle_log)
+            OpenAI(model="gpt-foo").run("foo", log=handle_log)
 
             handle_log.assert_any_call("start", None)
             handle_log.assert_any_call("data", "0")
@@ -162,16 +184,15 @@ def describe_openai_llm():
             handle_log.assert_any_call("data", "2")
             handle_log.assert_any_call("end", None)
 
-    @pytest.mark.asyncio
-    async def test_it_returns_content_response(mocker):
+    def test_it_returns_content_response(mocker):
         handle_log = mocker.stub()
 
-        with patch("diagraph.llm.openai_llm.AsyncOpenAI") as mocked_async_openai:
-            fake_create = AsyncMock(return_value=FakeGenerator(3))
-            mocked_async_openai.return_value.chat.completions.create = fake_create
+        with patch("diagraph.llm.openai_llm.SyncOpenAI") as mocked_sync_openai:
+            fake_create = Mock(return_value=iterable(3))
+            mocked_sync_openai.return_value.chat.completions.create = fake_create
             from .openai_llm import OpenAI
 
-            assert await OpenAI(model="gpt-foo").run("foo", log=handle_log) == "012"
+            assert OpenAI(model="gpt-foo").run("foo", log=handle_log) == "012"
 
 
 # # except openai.error.Timeout as e:

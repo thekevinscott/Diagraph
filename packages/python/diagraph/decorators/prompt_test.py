@@ -1,4 +1,3 @@
-
 from ..llm.llm import LLM
 from ..classes.diagraph import Diagraph
 from ..utils.depends import Depends
@@ -14,7 +13,7 @@ class MockLLM(LLM):
         self.kwargs = kwargs
         self.error = error
 
-    async def run(self, prompt, log, model=None, stream=None, **kwargs):
+    def run(self, prompt, log, model=None, stream=None, **kwargs):
         response = ""
         kwargs = {
             **self.kwargs,
@@ -429,9 +428,11 @@ def describe_errors():
         assert mock_c1.call_count == 0
         assert mock_d.call_count == 0
 
-    def test_it_does_run_deep_dependent_function_of_errored_functions_returning_result(mocker):
+    def test_it_does_run_deep_dependent_function_of_errored_functions_returning_result(
+        mocker,
+    ):
         handle_errors_a = mocker.stub()
-        handle_errors_a.return_value = 'a1'
+        handle_errors_a.return_value = "a1"
 
         @prompt(llm=MockLLM(error=True), error=handle_errors_a)
         def a1():
@@ -470,7 +471,7 @@ def describe_errors():
 
         dg = Diagraph(d0).run()
         assert dg[a1].error is None
-        assert dg[a1].result == 'a1'
+        assert dg[a1].result == "a1"
         assert mock_b1.call_count == 1
         assert mock_c1.call_count == 1
         assert mock_d.call_count == 1

@@ -1,6 +1,5 @@
 pip-tools
 twine
-pytest-asyncio
 pytest
 pytest-watcher
 pytest-cov

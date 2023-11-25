@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import inspect
 import functools
 from typing import Any, Awaitable, Optional
 
@@ -55,11 +54,12 @@ def get_llm(wrapper_fn) -> LLM:
     return get_default_llm()
 
 
-async def generate_prompt(func, *args, **kwargs) -> Any:
-    if inspect.iscoroutinefunction(func):
-        return await func(*args, **kwargs)
-    else:
-        return func(*args, **kwargs)
+def generate_prompt(func, *args, **kwargs) -> Any:
+    # if inspect.iscoroutinefunction(func):
+    #     return await func(*args, **kwargs)
+    # else:
+    #     return func(*args, **kwargs)
+    return func(*args, **kwargs)
 
 
 def decorate(prompt_fn, _func=None, **kwargs):
@@ -67,8 +67,8 @@ def decorate(prompt_fn, _func=None, **kwargs):
         func: Fn,
     ):  # -> _Wrapped[Callable[..., Any], Any, Callable[..., Any], Generator[Any | Literal[''] | None, Any, None]]:
         @functools.wraps(func)
-        async def wrapper_fn(*args, **kwargs) -> Awaitable[Any]:
-            return await prompt_fn(wrapper_fn, func, *args, **kwargs)
+        def wrapper_fn(*args, **kwargs) -> Awaitable[Any]:
+            return prompt_fn(wrapper_fn, func, *args, **kwargs)
 
         setattr(wrapper_fn, IS_DECORATED_KEY, True)
         setattr(wrapper_fn, "__fn__", func)
@@ -93,7 +93,7 @@ def prompt(
     llm: Optional[LLM] = None,
     error: Optional[FunctionErrorHandler] = None,
 ):  # -> Callable[..., _Wrapped[Callable[..., Any], Any, Callable[..., Any], Generator[Any | Literal[''] | None, Any, None]]] | _Wrapped[Callable[..., Any], Any, Callable[..., Any], Generator[Any | Literal[''] | None, Any, None]]:
-    async def prompt_fn(
+    def prompt_fn(
         wrapper_fn, decorated_fn: Fn, original_fn: Fn, *args, **kwargs
     ) -> Awaitable[Any]:
         llm = get_llm(wrapper_fn)
@@ -104,15 +104,16 @@ def prompt(
         #     wrapper_fn, "__diagraph_error__", None
         # )
 
-        def _log(event: LogEventName, chunk: str) -> None:
+        def _log(event: LogEventName, chunk: Optional[str]) -> None:
+            print("log!", log, diagraph_log)
             if log:
                 log(event, chunk)
             elif diagraph_log:
                 diagraph_log(event, chunk)
 
-        original_fn.prompt = await generate_prompt(decorated_fn, *args, **kwargs)
+        original_fn.prompt = generate_prompt(decorated_fn, *args, **kwargs)
 
-        return await llm.run(original_fn.prompt, log=_log)
+        return llm.run(original_fn.prompt, log=_log)
         # try:
         #     return await llm.run(original_fn.prompt, log=_log)
         # except Exception as e:
