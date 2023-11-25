@@ -1,5 +1,6 @@
-import pytest
 from unittest.mock import Mock, patch
+
+import pytest
 
 
 def make_completion(_content: str):
@@ -107,7 +108,7 @@ def describe_openai_llm():
         with patch("diagraph.llm.openai_llm.SyncOpenAI") as mocked_sync_openai:
             fake_create = Mock(return_value=iterable(1))
             mocked_sync_openai.return_value.chat.completions.create = fake_create
-            from .openai_llm import OpenAI, DEFAULT_MODEL
+            from .openai_llm import DEFAULT_MODEL, OpenAI
 
             OpenAI().run("foo", log=handle_log, foo="foo")
             fake_create.assert_called_with(
@@ -164,7 +165,7 @@ def describe_openai_llm():
                 from .openai_llm import OpenAI
 
                 fake_create.side_effect = Exception("wruh wroh")
-                with pytest.raises(Exception):
+                with pytest.raises(Exception, match="wruh wroh"):
                     OpenAI(model="gpt-foo").run("foo", log=handle_log)
                 assert handle_log.call_count == 0
 

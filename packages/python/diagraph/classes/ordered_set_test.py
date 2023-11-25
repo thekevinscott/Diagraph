@@ -1,4 +1,4 @@
-from typing import Any
+
 from .ordered_set import OrderedSet
 
 
@@ -12,8 +12,7 @@ def describe_ordered_set():
         o.add(2)
         o.add(3)
 
-        assert list(o) == [1,2,3]
-
+        assert list(o) == [1, 2, 3]
 
     def test_it_does_not_add_duplicates():
         o = OrderedSet()
@@ -22,7 +21,6 @@ def describe_ordered_set():
         o.add(1)
 
         assert list(o) == [1]
-
 
     def test_it_can_pop():
         o = OrderedSet()
@@ -40,8 +38,6 @@ def describe_ordered_set():
         o.add(2)
         o.add(3)
 
-        lst: list[Any] = []
-        for i in o:
-            lst.append(i)
+        lst = [i for i in o]
 
-        assert lst == [1,2,3]
+        assert lst == [1, 2, 3]

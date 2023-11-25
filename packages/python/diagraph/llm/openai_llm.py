@@ -1,7 +1,9 @@
-from typing import Any, Awaitable, Optional
-from openai import AsyncOpenAI, OpenAI as SyncOpenAI
-from openai.types.chat import ChatCompletionMessageParam
+from collections.abc import Awaitable
+from typing import Any
 
+from openai import AsyncOpenAI
+from openai import OpenAI as SyncOpenAI
+from openai.types.chat import ChatCompletionMessageParam
 
 from ..classes.types import FunctionLogHandler
 from .llm import LLM
@@ -19,8 +21,8 @@ DEFAULT_MODEL = "gpt-3.5-turbo"
 
 
 class OpenAI(LLM):
-    __aclient__: Optional[AsyncOpenAI] = None
-    __client__: Optional[SyncOpenAI] = None
+    __aclient__: AsyncOpenAI | None = None
+    __client__: SyncOpenAI | None = None
     kwargs: dict[Any, Any]
 
     def __init__(self, **kwargs) -> None:
@@ -49,7 +51,6 @@ class OpenAI(LLM):
         prompt: str | list[ChatCompletionMessageParam],
         log: FunctionLogHandler,
         model=None,
-        stream=None,
         **kwargs,
     ) -> Awaitable[Any]:
         client = self.client
@@ -57,6 +58,7 @@ class OpenAI(LLM):
         messages = cast_to_input(prompt)
 
         response = ""
+        del kwargs["stream"]
         kwargs = {
             **self.kwargs,
             **kwargs,
@@ -84,7 +86,6 @@ class OpenAI(LLM):
         prompt: str | list[ChatCompletionMessageParam],
         log: FunctionLogHandler,
         model=None,
-        stream=None,
         **kwargs,
     ) -> Awaitable[Any]:
         client = self.aclient
@@ -92,6 +93,7 @@ class OpenAI(LLM):
         messages = cast_to_input(prompt)
 
         response = ""
+        del kwargs["stream"]
         kwargs = {
             **self.kwargs,
             **kwargs,

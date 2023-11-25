@@ -1,16 +1,18 @@
 from __future__ import annotations
-from typing import Optional, TypeVar
-from ..classes.ordered_set import OrderedSet
+
+from typing import TypeVar
 
 from ..classes.graph import Graph
+from ..classes.ordered_set import OrderedSet
+
 K = TypeVar("K")
 
 
 def get_subgraph_def(
     graph: Graph[K],
     node_keys: list[K],
-    seen: Optional[set] = None,
-    subgraph: Optional[dict[K, OrderedSet[K]]] = None,
+    seen: set | None = None,
+    subgraph: dict[K, OrderedSet[K]] | None = None,
 ) -> dict[K, OrderedSet[K]]:
     """
     Recursively generates a subgraph definition for a given set of nodes and their ancestors.

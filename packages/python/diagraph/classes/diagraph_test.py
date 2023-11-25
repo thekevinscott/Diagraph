@@ -1,17 +1,15 @@
 from unittest.mock import patch
-from ..decorators.prompt import prompt
 
-from .types import Fn
-
-from ..llm.llm import LLM
 import pytest
+
+from ..decorators.prompt import prompt
+from ..llm.llm import LLM
 from ..llm.openai_llm import OpenAI
-
-
-from .diagraph_node_group import DiagraphNodeGroup
+from ..utils.depends import Depends
 from .diagraph import Diagraph
 from .diagraph_node import DiagraphNode
-from ..utils.depends import Depends
+from .diagraph_node_group import DiagraphNodeGroup
+from .types import Fn
 
 
 def describe_instantiation():
@@ -50,9 +48,12 @@ def describe_indexing():
 
         diagraph = Diagraph(baz)
 
-        assert isinstance(diagraph[0], DiagraphNodeGroup) and diagraph[0][0].fn == foo
-        assert isinstance(diagraph[2], DiagraphNodeGroup) and diagraph[2][0].fn == baz
-        assert isinstance(diagraph[-1], DiagraphNodeGroup) and diagraph[-1][0].fn == baz
+        assert isinstance(diagraph[0], DiagraphNodeGroup)
+        assert diagraph[0][0].fn == foo
+        assert isinstance(diagraph[2], DiagraphNodeGroup)
+        assert diagraph[2][0].fn == baz
+        assert isinstance(diagraph[-1], DiagraphNodeGroup)
+        assert diagraph[-1][0].fn == baz
 
     def test_it_gets_back_a_tuple_for_parallels():
         def l0():
@@ -71,7 +72,8 @@ def describe_indexing():
 
         def check_tuple(key):
             nodes = diagraph[key]
-            assert isinstance(nodes, DiagraphNodeGroup) and len(nodes) == 2
+            assert isinstance(nodes, DiagraphNodeGroup)
+            assert len(nodes) == 2
             return set([n.fn for n in nodes])
 
         assert check_tuple(1) == {l1_l, l1_r}
@@ -622,7 +624,7 @@ def describe_run():
 
     def describe_a_complicated_graph():
         @pytest.mark.parametrize(
-            "terminal_nodes,assertions",
+            ("terminal_nodes", "assertions"),
             [
                 (
                     "d3a",
@@ -989,7 +991,7 @@ def describe_run():
                     assert mocks[key].call_count == expectation
                 except Exception as e:
                     print(
-                        f'for key "{key}": expected call count {expectation}, got {mocks[key].call_count}'
+                        f'for key "{key}": expected call count {expectation}, got {mocks[key].call_count}',
                     )
                     raise e
 
@@ -1004,12 +1006,12 @@ def describe_run():
                     assert mocks[key].call_count == expectation
                 except Exception as e:
                     print(
-                        f'for key "{key}": expected call count {expectation}, got {mocks[key].call_count}'
+                        f'for key "{key}": expected call count {expectation}, got {mocks[key].call_count}',
                     )
                     raise e
 
         @pytest.mark.parametrize(
-            "starting_nodes,assertions",
+            ("starting_nodes", "assertions"),
             [
                 (
                     "d0a",
@@ -1179,7 +1181,9 @@ def describe_run():
             ],
         )
         def test_it_runs_the_whole_graph_with_cached_data(
-            mocker, starting_nodes, assertions
+            mocker,
+            starting_nodes,
+            assertions,
         ):
             d0a_mock = mocker.Mock(id="d0")
             d0a_mock.return_value = "d0"
@@ -1273,7 +1277,7 @@ def describe_run():
                     assert mocks[key].call_count == expectation
                 except Exception as e:
                     print(
-                        f'for key "{key}": expected call count {expectation}, got {mocks[key].call_count}'
+                        f'for key "{key}": expected call count {expectation}, got {mocks[key].call_count}',
                     )
                     raise e
 
@@ -1288,10 +1292,9 @@ def describe_run():
                 expectation = 1
                 try:
                     assert mocks[key].call_count == expectation
-                    expectation
                 except Exception as e:
                     print(
-                        f'for key "{key}": expected call count {expectation}, got {mocks[key].call_count}'
+                        f'for key "{key}": expected call count {expectation}, got {mocks[key].call_count}',
                     )
                     raise e
 
@@ -1304,7 +1307,7 @@ def describe_run():
                     assert mocks[key].call_count == expectation
                 except Exception as e:
                     print(
-                        f'for key "{key}": expected call count {expectation}, got {mocks[key].call_count}'
+                        f'for key "{key}": expected call count {expectation}, got {mocks[key].call_count}',
                     )
                     raise e
 
@@ -1730,17 +1733,24 @@ def describe_inputs():
 
 def describe_running_from_an_index():
     def test_it_throws_if_running_from_an_index_not_yet_run(mocker):
-        l0 = mocker.stub()
-        l0.return_value = "l0"
-        l1 = mocker.stub()
-        l1.return_value = "l1"
-        l2 = mocker.stub()
-        l2.return_value = "l2"
-        l1.__parameters__ = {"l0": Depends(l0)}
-        l2.__parameters__ = {"l1": Depends(l1)}
+        def l0():
+            return "l0"
 
-        with pytest.raises(Exception):
-            diagraph = Diagraph(l2)
+        def l1(l0=Depends(l0)):
+            return "l1"
+
+        def l2(l1=Depends(l1)):
+            return "l2"
+
+        # some_mock=mocker.create_autospec(some)
+        # some_mock(1)
+
+        diagraph = Diagraph(l2)
+
+        with pytest.raises(
+            Exception,
+            match="An ancestor is missing a result, run the traversal first",
+        ):
             diagraph[l1].run("foobar")
 
     def test_it_runs_from_the_first_function_if_specified(mocker):
@@ -1804,7 +1814,7 @@ def describe_running_from_an_index():
                 "bar_foo_d0-d1a",
                 "foo_foo_d0-d1b",
                 "d2_bar",
-            ]
+            ],
         )
 
     def test_it_runs_from_the_first_index_if_provided(mocker):
@@ -1905,7 +1915,7 @@ def describe_replay():
                     d1b,
                     "d2",
                     input,
-                ]
+                ],
             )
 
         diagraph = Diagraph(d2).run("foo")
@@ -1920,7 +1930,7 @@ def describe_replay():
                 "foo_foo_d0-d1b",
                 "d2",
                 "bar",
-            ]
+            ],
         )
 
     def test_it_modifies_prompt_and_can_replay():
@@ -2018,7 +2028,10 @@ def describe_prompt():
 
         input = "foo"
         diagraph = Diagraph(d0).run(input)
-        with pytest.raises(Exception):
+        with pytest.raises(
+            Exception,
+            match="This function has not been decorated with @prompt",
+        ):
             diagraph[d0].prompt
 
     def test_it_calls_a_prompt_on_layer():
@@ -2117,7 +2130,13 @@ def describe_prompt():
                 return mock_class
 
             diagraph = Diagraph(
-                fn_int, fn_float, fn_list, fn_tuple, fn_set, fn_class, fn_class_instance
+                fn_int,
+                fn_float,
+                fn_list,
+                fn_tuple,
+                fn_set,
+                fn_class,
+                fn_class_instance,
             ).run()
             assert diagraph[fn_int].prompt == 1
             assert diagraph[fn_float].prompt == 1.5

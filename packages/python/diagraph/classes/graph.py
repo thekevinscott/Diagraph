@@ -1,8 +1,11 @@
 from __future__ import annotations
-from typing import Generic, Mapping, TypeVar
-import networkx as nx
-from .ordered_set import OrderedSet
 
+from collections.abc import Mapping
+from typing import Generic, TypeVar
+
+import networkx as nx
+
+from .ordered_set import OrderedSet
 
 K = TypeVar("K")
 
@@ -16,7 +19,7 @@ class Graph(Generic[K]):
         self.graph_def = {key: list(val) for key, val in graph_def.items()}
         self.__key_to_int__ = {}
         self.__G__ = nx.convert_node_labels_to_integers(
-            nx.DiGraph(self.graph_def), label_attribute="ref"
+            nx.DiGraph(self.graph_def), label_attribute="ref",
         )
 
         for int_representation in self.__G__.nodes():

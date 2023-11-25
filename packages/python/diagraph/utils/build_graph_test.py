@@ -1,5 +1,5 @@
-from .depends import Depends
 from .build_graph import build_graph, get_dependencies
+from .depends import Depends
 
 
 def test_returns_an_empty_graph():

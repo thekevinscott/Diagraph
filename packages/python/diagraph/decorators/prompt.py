@@ -1,11 +1,10 @@
 from __future__ import annotations
 
 import functools
-from typing import Any, Awaitable, Optional
+from collections.abc import Awaitable
+from typing import Any
 
-from ..classes.types import FunctionErrorHandler, Fn, FunctionLogHandler, LogEventName
-
-
+from ..classes.types import Fn, FunctionErrorHandler, FunctionLogHandler, LogEventName
 from ..llm.llm import LLM
 from ..llm.openai_llm import OpenAI
 from .is_decorated import IS_DECORATED_KEY
@@ -17,7 +16,7 @@ class UserHandledException(Exception):
         self.raised_exception = raised_exception
 
 
-__default_llm__: Optional[LLM] = None
+__default_llm__: LLM | None = None
 
 
 def set_default_llm(llm: LLM) -> None:
@@ -71,7 +70,7 @@ def decorate(prompt_fn, _func=None, **kwargs):
             return prompt_fn(wrapper_fn, func, *args, **kwargs)
 
         setattr(wrapper_fn, IS_DECORATED_KEY, True)
-        setattr(wrapper_fn, "__fn__", func)
+        wrapper_fn.__fn__ = func
         for key, value in kwargs.items():
             setattr(wrapper_fn, key, value)
         return wrapper_fn
@@ -79,32 +78,29 @@ def decorate(prompt_fn, _func=None, **kwargs):
     if _func is None:
         # Being called with arguments
         return decorator
-    else:
-        setattr(_func, IS_DECORATED_KEY, True)
-        _decorator = decorator(_func)
-        setattr(_decorator, "__fn__", _func)
-        return _decorator
+    setattr(_func, IS_DECORATED_KEY, True)
+    _decorator = decorator(_func)
+    _decorator.__fn__ = _func
+    return _decorator
 
 
 def prompt(
     _func=None,
     *,
-    log: Optional[FunctionLogHandler] = None,
-    llm: Optional[LLM] = None,
-    error: Optional[FunctionErrorHandler] = None,
+    log: FunctionLogHandler | None = None,
+    llm: LLM | None = None,
+    error: FunctionErrorHandler | None = None,
 ):  # -> Callable[..., _Wrapped[Callable[..., Any], Any, Callable[..., Any], Generator[Any | Literal[''] | None, Any, None]]] | _Wrapped[Callable[..., Any], Any, Callable[..., Any], Generator[Any | Literal[''] | None, Any, None]]:
     def prompt_fn(
-        wrapper_fn, decorated_fn: Fn, original_fn: Fn, *args, **kwargs
+        wrapper_fn, decorated_fn: Fn, original_fn: Fn, *args, **kwargs,
     ) -> Awaitable[Any]:
         llm = get_llm(wrapper_fn)
-        diagraph_log: Optional[FunctionLogHandler] = getattr(
-            wrapper_fn, "__diagraph_log__", None
-        )
+        diagraph_log = getattr(wrapper_fn, "__diagraph_log__", None)
         # diagraph_error: Optional[ErrorHandler] = getattr(
         #     wrapper_fn, "__diagraph_error__", None
         # )
 
-        def _log(event: LogEventName, chunk: Optional[str]) -> None:
+        def _log(event: LogEventName, chunk: str | None) -> None:
             if log:
                 log(event, chunk)
             elif diagraph_log:

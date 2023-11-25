@@ -1,5 +1,5 @@
-from ..llm.llm import LLM
 from ..classes.diagraph import Diagraph
+from ..llm.llm import LLM
 from ..utils.depends import Depends
 from .prompt import prompt
 

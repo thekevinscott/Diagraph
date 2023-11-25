@@ -1,4 +1,5 @@
 from __future__ import annotations
+
 from typing import Generic, TypeVar
 
 Key = TypeVar("Key")
@@ -6,7 +7,7 @@ Value = TypeVar("Value")
 
 
 def is_not_hashable(value):
-    if isinstance(value, (list, dict, set)):
+    if isinstance(value, (list | dict | set)):
         return True
 
     if isinstance(value, tuple):
@@ -28,7 +29,7 @@ class HistoricalBidict(Generic[Key, Value]):
         return str(self.keys)
 
     def __setitem__(self, key: Key, value: Value) -> None:
-        self.keys[key] = self.keys.get(key, []) + [value]
+        self.keys[key] = [*self.keys.get(key, []), value]
         if is_not_hashable(value) is False:
             self.values_to_keys[value] = key
 
@@ -43,7 +44,7 @@ class HistoricalBidict(Generic[Key, Value]):
     def inverse(self, value: Value) -> Key:
         if is_not_hashable(value):
             raise Exception(
-                f"Value {value} is not hashable and cannot be used as an inverse key"
+                f"Value {value} is not hashable and cannot be used as an inverse key",
             )
         return self.values_to_keys[value]
 

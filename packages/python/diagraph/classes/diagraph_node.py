@@ -1,12 +1,12 @@
 from __future__ import annotations
-import tiktoken
 
+from typing import TYPE_CHECKING
+
+import tiktoken
 
 from ..decorators.is_decorated import is_decorated
 from .graph import Graph
 from .types import Fn, Result
-
-from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
     from .diagraph import Diagraph
