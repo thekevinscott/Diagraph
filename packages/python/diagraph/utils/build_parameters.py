@@ -34,7 +34,7 @@ def build_parameters(diagraph: Diagraph, fn: Fn, input_args: tuple) -> list[Any]
                 except Exception:
                     raise Exception(
                         f"No function has been set for dep {dep}. Available functions: {diagraph.fns}",
-                    )
+                    ) from None
                 if diagraph[key_for_fn].error is not None:
                     raise Exception(f"Error found for {key_for_fn}")
                 try:
@@ -43,7 +43,9 @@ def build_parameters(diagraph: Diagraph, fn: Fn, input_args: tuple) -> list[Any]
                         raise Exception(f"Result is None for {key_for_fn}")
                     args.append(diagraph[key_for_fn].result)
                 except Exception as e:
-                    raise Exception(f"Failed to get result for {key_for_fn}: {e}")
+                    raise Exception(
+                        f"Failed to get result for {key_for_fn}: {e}",
+                    ) from None
             else:
                 if arg_index > len(input_args) - 1:
                     args.append(parameter.default)
@@ -53,11 +55,21 @@ def build_parameters(diagraph: Diagraph, fn: Fn, input_args: tuple) -> list[Any]
         elif not str(parameter).startswith("*"):
             if encountered_star:
                 raise Exception(
-                    "Found arguments defined after * args. Ensure *args and **kwargs come at the end of the function parameter definitions.",
+                    " ".join(
+                        [
+                            "Found arguments defined after * args.",
+                            "Ensure *args and **kwargs come at the end of the function parameter definitions.",
+                        ],
+                    ),
                 )
             if arg_index > len(input_args) - 1:
                 raise Exception(
-                    f'No argument provided for "{parameter.name}" in function {fn.__name__}. This indicates you forgot to call ".run()" with sufficient arguments.',
+                    " ".join(
+                        [
+                            f'No argument provided for "{parameter.name}" in function {fn.__name__}.',
+                            'This indicates you forgot to call ".run()" with sufficient arguments.',
+                        ],
+                    ),
                 )
             args.append(input_args[arg_index])
             arg_index += 1

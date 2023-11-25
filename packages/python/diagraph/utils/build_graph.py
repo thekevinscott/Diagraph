@@ -31,7 +31,8 @@ def build_graph(*_nodes: Fn) -> dict[Fn, OrderedSet[Fn]]:
     - *_nodes (Fn): Variable-length argument list of functions to include in the graph.
 
     Returns:
-    dict[Fn, OrderedSet[Fn]]: A dictionary representing the dependency graph, where keys are functions and values are their dependencies.
+    dict[Fn, OrderedSet[Fn]]: A dictionary representing the dependency graph,
+    where keys are functions and values are their dependencies.
     """
     graph: dict[Fn, OrderedSet[Fn]] = {}
     seen = set()

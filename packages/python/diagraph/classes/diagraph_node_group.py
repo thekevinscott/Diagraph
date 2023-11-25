@@ -160,7 +160,13 @@ class DiagraphNodeGroup:
         if isinstance(values, str):
             if len(self.nodes) != 1:
                 raise Exception(
-                    f"You provided a string as a value but the layer has {len(self.nodes)} nodes. Setting a string value is only supported for a single node. Instead, provide a tuple of values matching of length {len(self.nodes)}",
+                    " ".join(
+                        [
+                            f"You provided a string as a value but the layer has {len(self.nodes)} nodes.",
+                            "Setting a string value is only supported for a single node."
+                            f"Instead, provide a tuple of values matching of length {len(self.nodes)}",
+                        ],
+                    ),
                 )
             self.diagraph.results[self.nodes[0].key] = values
         else:
@@ -169,5 +175,5 @@ class DiagraphNodeGroup:
                     f"Number of results ({len(values)}) does not match number of nodes ({len(self.nodes)})",
                 )
 
-            for node, value in zip(self.nodes, values):
+            for node, value in zip(self.nodes, values, strict=True):
                 self.diagraph.results[node.key] = value

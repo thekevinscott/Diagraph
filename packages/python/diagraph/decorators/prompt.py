@@ -90,15 +90,16 @@ def prompt(
     log: FunctionLogHandler | None = None,
     llm: LLM | None = None,
     error: FunctionErrorHandler | None = None,
-):  # -> Callable[..., _Wrapped[Callable[..., Any], Any, Callable[..., Any], Generator[Any | Literal[''] | None, Any, None]]] | _Wrapped[Callable[..., Any], Any, Callable[..., Any], Generator[Any | Literal[''] | None, Any, None]]:
+):
     def prompt_fn(
-        wrapper_fn, decorated_fn: Fn, original_fn: Fn, *args, **kwargs,
+        wrapper_fn,
+        decorated_fn: Fn,
+        original_fn: Fn,
+        *args,
+        **kwargs,
     ) -> Awaitable[Any]:
         llm = get_llm(wrapper_fn)
         diagraph_log = getattr(wrapper_fn, "__diagraph_log__", None)
-        # diagraph_error: Optional[ErrorHandler] = getattr(
-        #     wrapper_fn, "__diagraph_error__", None
-        # )
 
         def _log(event: LogEventName, chunk: str | None) -> None:
             if log:
@@ -109,17 +110,5 @@ def prompt(
         original_fn.prompt = generate_prompt(decorated_fn, *args, **kwargs)
 
         return llm.run(original_fn.prompt, log=_log)
-        # try:
-        #     return await llm.run(original_fn.prompt, log=_log)
-        # except Exception as e:
-        #     # TODO: Should both error functions be called? Or should one supersede the other?
-        #     for err_handler in [error, diagraph_error]:
-        #         if err_handler:
-        #             try:
-        #                 result = err_handler(e)
-        #                 return result
-        #             except Exception as raised_exception:
-        #                 raise UserHandledException(e, raised_exception)
-        #     raise e
 
     return decorate(prompt_fn, _func, __function_llm__=llm, __function_error__=error)

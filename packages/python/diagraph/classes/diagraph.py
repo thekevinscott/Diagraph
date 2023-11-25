@@ -9,7 +9,7 @@ from typing import Any, overload
 from bidict import bidict
 
 from ..decorators.is_decorated import is_decorated
-from ..decorators.prompt import UserHandledException, set_default_llm
+from ..decorators.prompt import set_default_llm
 from ..llm.llm import LLM
 from ..utils.build_graph import build_graph
 from ..utils.build_parameters import build_parameters
@@ -40,7 +40,8 @@ def set_global_error(error_fn: ErrorHandler) -> None:
 
 
 class Diagraph:
-    """A directed acyclic graph (Diagraph) for managing and executing a graph of functions."""
+    """A directed acyclic graph (Diagraph) for managing
+    and executing a graph of functions."""
 
     __graph__: Graph[Fn]
 
@@ -70,7 +71,8 @@ class Diagraph:
             terminal_nodes: The terminal nodes of the graph.
             log (LogHandler | None): A logging function for capturing log messages.
             error (ErrorHandler | None): An error handling function.
-            use_string_keys (bool): Whether to use string keys for functions in the graph.
+            use_string_keys (bool): Whether to use string keys
+                                    for functions in the graph.
         """
         graph_def: dict[Fn, OrderedSet[Fn]] = build_graph(*terminal_nodes)
         graph_mapping: dict[Fn, str | Fn] = dict()
@@ -138,7 +140,8 @@ class Diagraph:
             key (Fn | int): A function or depth key.
 
         Returns:
-            DiagraphNode or tuple[DiagraphNode]: The DiagraphNode or DiagraphNodeGroup associated with the key.
+            DiagraphNode or tuple[DiagraphNode]: The DiagraphNode or
+            DiagraphNodeGroup associated with the key.
         """
         if isinstance(key, int):
             execution_graph = list(
@@ -184,10 +187,10 @@ class Diagraph:
         Returns:
             Diagraph: The Diagraph instance.
         """
-        node_group = get_diagraph_node_group(self, group)
+        starting_node_group = get_diagraph_node_group(self, group)
         run = {
             "start": datetime.now(),
-            "node_group": node_group,
+            "node_group": starting_node_group,
             "input": input_args,
             "kwargs": kwargs,
             "nodes": {},
@@ -195,29 +198,22 @@ class Diagraph:
         }
         self.runs.append(run)
 
-        run["starting_nodes"] = node_group
-        validate_node_ancestors(node_group)
+        run["starting_nodes"] = starting_node_group
+        validate_node_ancestors(starting_node_group)
         run["dirty"] = False
 
-        execution_graph = get_execution_graph(self.__graph__, node_group)
-        ## TODO: Remove this try
-        try:
-            for keys in execution_graph:
-                with concurrent.futures.ThreadPoolExecutor(max_workers=5) as executor:
-                    executor.map(
-                        lambda key: self.__execute_node__(
-                            self[key],
-                            input_args,
-                            kwargs,
-                        ),
-                        keys,
-                    )
-                # for key in keys:
-                #     self.__execute_node__(self[key], *input_args, **kwargs)
-            run["complete"] = True
-
-        except UserHandledException:
-            pass
+        for node_layer in get_execution_graph(self.__graph__, starting_node_group):
+            with concurrent.futures.ThreadPoolExecutor(max_workers=5) as executor:
+                executor.map(
+                    lambda node_key: self.__execute_node__(
+                        self[node_key],
+                        input_args,
+                        kwargs,
+                        rerun_kwargs={},
+                    ),
+                    node_layer,
+                )
+        run["complete"] = True
 
         return self
 
@@ -246,7 +242,8 @@ class Diagraph:
         Get the errors of the terminal nodes.
 
         Returns:
-            Exception or tuple[Exception]: The errors of the terminal nodes, either as a single value or a tuple of values.
+            Exception or tuple[Exception]: The errors of the terminal nodes,
+            either as a single value or a tuple of values.
         """
         errors = []
         latest_run = self.runs[-1]
@@ -262,9 +259,9 @@ class Diagraph:
     def __execute_node__(
         self,
         node: DiagraphNode,
-        input_args: tuple[Any],
+        input_args: tuple[Any, ...],
         input_kwargs: dict[Any, Any],
-        rerun_kwargs: dict[Any, Any] = {},
+        rerun_kwargs: None | dict[Any, Any],
     ) -> None:
         # if (
         #     input_kwargs is not None
@@ -286,7 +283,10 @@ class Diagraph:
 
             def rerun(**kwargs: dict[Any, Any]):
                 self.__execute_node__(
-                    node, input_args, input_kwargs, rerun_kwargs=kwargs,
+                    node,
+                    input_args,
+                    input_kwargs,
+                    rerun_kwargs=kwargs,
                 )
                 # TODO: Refactor or remove this
                 return node.result
@@ -301,7 +301,7 @@ class Diagraph:
                     if accepts_fn:
                         err_handler_args.append(fn)
                     try:
-                        result = err_handler(*err_handler_args, **rerun_kwargs)
+                        result = err_handler(*err_handler_args, **(rerun_kwargs or {}))
                         node.result = result
                     except Exception as raised_exception:
                         node.error = raised_exception
@@ -310,7 +310,10 @@ class Diagraph:
             node.error = e
 
     def __run_node__(
-        self, node: DiagraphNode, input_args: tuple[Any], kwargs: None | dict[Any, Any],
+        self,
+        node: DiagraphNode,
+        input_args: tuple[Any],
+        kwargs: None | dict[Any, Any],
     ) -> Result:
         """
         Execute a single node in the Diagraph.

@@ -43,15 +43,16 @@ testpaths = ["diagraph/**/*_test.py"]
 
 
 [tool.ruff]
+line-length = 120
 preview = true
 # https://beta.ruff.rs/docs/rules/
 extend-select = [
   "A",
   "ARG",
-  # "B",
-  # "BLE",
+  "B",
+  "BLE",
   "COM",
-  # "E",
+  "E",
   "F",
   "FA",
   "FIX",
@@ -78,7 +79,7 @@ extend-select = [
   "W",
   "YTT",
 ]
-ignore = ["TD002", "TD003", "TID252", "FIX002"]
+ignore = ["TD002", "TD003", "TID252", "FIX002", "BLE001", "FLY002"]
 
 fixable = ["ALL"]
 unfixable = []
