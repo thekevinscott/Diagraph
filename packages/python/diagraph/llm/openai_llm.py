@@ -58,7 +58,8 @@ class OpenAI(LLM):
         messages = cast_to_input(prompt)
 
         response = ""
-        del kwargs["stream"]
+        if "stream" in kwargs:
+            del kwargs["stream"]
         kwargs = {
             **self.kwargs,
             **kwargs,
@@ -93,7 +94,8 @@ class OpenAI(LLM):
         messages = cast_to_input(prompt)
 
         response = ""
-        del kwargs["stream"]
+        if "stream" in kwargs:
+            del kwargs["stream"]
         kwargs = {
             **self.kwargs,
             **kwargs,

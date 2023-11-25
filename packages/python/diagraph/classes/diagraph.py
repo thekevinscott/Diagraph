@@ -169,7 +169,10 @@ class Diagraph:
         return self
 
     def __run_from__(
-        self, group: DiagraphNodeGroup | DiagraphNode, *input_args, **kwargs,
+        self,
+        group: DiagraphNodeGroup | DiagraphNode,
+        *input_args,
+        **kwargs,
     ) -> Diagraph:
         """
         Run the Diagraph from a specific node.
@@ -203,7 +206,9 @@ class Diagraph:
                 with concurrent.futures.ThreadPoolExecutor(max_workers=5) as executor:
                     executor.map(
                         lambda key: self.__execute_node__(
-                            self[key], *input_args, **kwargs,
+                            self[key],
+                            input_args,
+                            kwargs,
                         ),
                         keys,
                     )
@@ -254,9 +259,22 @@ class Diagraph:
             return tuple(errors)
         return None
 
-    def __execute_node__(self, node: DiagraphNode, *input_args, **kwargs) -> None:
+    def __execute_node__(
+        self,
+        node: DiagraphNode,
+        input_args: tuple[Any],
+        input_kwargs: dict[Any, Any],
+        rerun_kwargs: dict[Any, Any] = {},
+    ) -> None:
+        # if (
+        #     input_kwargs is not None
+        #     and "times" in input_kwargs
+        #     and input_kwargs.get("times") == 5
+        # ):
+        #     raise Exception("STOP IT NOT")
         try:
-            node.result = self.__run_node__(node, *input_args, **kwargs)
+            # print("incoming", input_args, input_kwargs)
+            node.result = self.__run_node__(node, input_args, input_kwargs)
         except Exception as e:
             # TODO: Make this a custom error
             if "Error found for " in str(e):
@@ -265,10 +283,25 @@ class Diagraph:
                 return
             fn = self.fns[node.key]
             fn_error_handler = getattr(fn, "__function_error__", None)
-            for err_handler in [fn_error_handler, self.error_handler, global_error_fn]:
+
+            def rerun(**kwargs: dict[Any, Any]):
+                self.__execute_node__(
+                    node, input_args, input_kwargs, rerun_kwargs=kwargs,
+                )
+                # TODO: Refactor or remove this
+                return node.result
+
+            for err_handler, accepts_fn in [
+                (fn_error_handler, False),
+                (self.error_handler, True),
+                (global_error_fn, True),
+            ]:
                 if err_handler:
+                    err_handler_args = [e, rerun]
+                    if accepts_fn:
+                        err_handler_args.append(fn)
                     try:
-                        result = err_handler(e, lambda: None, fn)
+                        result = err_handler(*err_handler_args, **rerun_kwargs)
                         node.result = result
                     except Exception as raised_exception:
                         node.error = raised_exception
@@ -276,13 +309,11 @@ class Diagraph:
             # if no error functions are defined, save the error
             node.error = e
 
-    def __run_node__(self, node: DiagraphNode, *input_args, **kwargs) -> Result:
+    def __run_node__(
+        self, node: DiagraphNode, input_args: tuple[Any], kwargs: None | dict[Any, Any],
+    ) -> Result:
         """
         Execute a single node in the Diagraph.
-
-        Args:
-            node (Fn): The function node to execute.
-            *input_args: Input arguments to be passed to the node.
 
         Returns:
             Any: The result of executing the node.
