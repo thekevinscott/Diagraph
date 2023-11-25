@@ -292,3 +292,19 @@ dg[fn].error
 ```
 
 If an error handler returns a valid value (does not raise an Exception) no error will be recorded, and instead the error handler's result is assigned to the node's `.result`.
+
+# Visualizations
+
+Larger graphs can be complicated to visualize. If you're in a Jupyter notebook, Diagraph provides a handy visualization tool for inspecting your graphs.
+
+Simply return a diagraph to view it:
+
+![Visualize a diagraph](https://github.com/thekevinscott/Diagraph/raw/main/assets/visualizations/view.png)
+
+You can open a node to view its function, prompt, and result:
+
+![An expanded node](https://github.com/thekevinscott/Diagraph/raw/main/assets/visualizations/expanded.png)
+
+# Roadmap
+
+I've started a [Roadmap](roadmap.md) document to discuss upcoming features I'm considering for Diagraph. Feedback is welcome.
