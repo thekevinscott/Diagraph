@@ -1,3 +1,4 @@
+import pytest
 from ..classes.diagraph import Diagraph
 from ..llm.llm import LLM
 from ..utils.depends import Depends
@@ -6,9 +7,10 @@ from .prompt import prompt
 
 class MockLLM(LLM):
     times: int
-    error: bool
+    error: bool | int
+    error_times = 0
 
-    def __init__(self, times=0, error=False, **kwargs):
+    def __init__(self, times=0, error: bool | int = False, **kwargs):
         self.times = times
         self.kwargs = kwargs
         self.error = error
@@ -21,8 +23,13 @@ class MockLLM(LLM):
             "model": model,
         }
         response = ""
-        if self.error:
+        if self.error is True:
             raise Exception("test error")
+        if isinstance(self.error, int) and self.error_times < self.error:
+            error_times = self.error_times
+            self.error_times += 1
+            print(f"test error: {error_times}")
+            raise Exception(f"test error: {error_times}")
         log("start", None)
 
         for i in range(self.times):
@@ -614,3 +621,97 @@ def describe_errors():
         assert global_handle_errors.call_count == 0
         assert function_handle_errors.call_count == 1
         assert dg[fn].error == function_thrown_exception
+
+    def test_it_reruns_a_function_that_simulates_a_network_failure(
+        mocker,
+    ):
+        """Simulate that an LLM fails on a network call, and we need to
+        repeat it without any modifications so we call rerun again."""
+        function_handle_errors = mocker.stub()
+
+        def handle_errors(e, rerun):
+            function_handle_errors()
+            return rerun()
+
+        @prompt(llm=MockLLM(times=3, error=1), error=handle_errors)
+        def fn():
+            return "prompt"
+
+        dg = Diagraph(fn).run()
+        assert function_handle_errors.call_count == 1
+        assert dg.result == "012"
+
+    def test_it_reruns_a_function_defined_on_diagraph_that_simulates_a_network_failure(
+        mocker,
+    ):
+        """Simulate that an LLM fails on a network call, and we need to
+        repeat it without any modifications so we call rerun again."""
+        function_handle_errors = mocker.stub()
+
+        def handle_errors(e, rerun, fn):
+            function_handle_errors()
+            return rerun()
+
+        @prompt(llm=MockLLM(times=3, error=1))
+        def fn():
+            return "prompt"
+
+        dg = Diagraph(fn, error=handle_errors).run()
+        assert function_handle_errors.call_count == 1
+        assert dg.result == "012"
+
+    def test_it_reruns_a_function_multiple_times(
+        mocker,
+    ):
+        function_handle_errors = mocker.stub()
+
+        def handle_errors(e, rerun):
+            function_handle_errors()
+            return rerun()
+
+        @prompt(llm=MockLLM(times=3, error=3), error=handle_errors)
+        def fn():
+            return "prompt"
+
+        dg = Diagraph(fn).run()
+        assert function_handle_errors.call_count == 3
+        assert dg.result == "012"
+
+    def test_it_reruns_a_function_with_kwargs(
+        mocker,
+    ):
+        function_handle_errors = mocker.stub()
+
+        def handle_errors(e, rerun, times=0):
+            function_handle_errors(times)
+            return rerun(times=times + 1)
+
+        @prompt(llm=MockLLM(times=3, error=3), error=handle_errors)
+        def fn():
+            return "prompt"
+
+        dg = Diagraph(fn).run()
+        function_handle_errors.assert_any_call(0)
+        function_handle_errors.assert_any_call(1)
+        function_handle_errors.assert_any_call(2)
+        assert dg.result == "012"
+
+    def test_it_reruns_a_function_with_kwargs_and_can_raise(
+        mocker,
+    ):
+        function_handle_errors = mocker.stub()
+
+        def handle_errors(e, rerun, times=0):
+            if times > 0:
+                raise Exception("stop")
+            function_handle_errors(times)
+            return rerun(times=times + 1)
+
+        @prompt(llm=MockLLM(times=3, error=3), error=handle_errors)
+        def fn():
+            return "prompt"
+
+        dg = Diagraph(fn).run()
+        function_handle_errors.assert_any_call(0)
+        assert dg.result == None
+        assert str(dg[fn].error) == "stop"

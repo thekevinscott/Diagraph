@@ -13,4 +13,5 @@ Rerunner = Callable[..., None]
 LogHandler = Callable[[str, str, Fn], None]
 FunctionLogHandler = Callable[[LogEventName, str | None], None]
 ErrorHandler = Callable[[Exception, Rerunner, Fn], None]
+# Todo: Support arbitrary args and kwargs.
 FunctionErrorHandler = Callable[[Exception, Rerunner], None]
