@@ -24,15 +24,17 @@ class OpenAI(LLM):
     __aclient__: AsyncOpenAI | None = None
     __client__: SyncOpenAI | None = None
     kwargs: dict[Any, Any]
+    api_key: None | str
 
-    def __init__(self, **kwargs) -> None:
+    def __init__(self, api_key=None, **kwargs) -> None:
+        self.api_key = api_key
         self.kwargs = kwargs
 
     @property
     def aclient(self) -> AsyncOpenAI:
         aclient = self.__aclient__
         if aclient is None:
-            aclient = AsyncOpenAI()
+            aclient = AsyncOpenAI(api_key=self.api_key)
             self.__aclient__ = aclient
 
         return aclient
@@ -41,7 +43,7 @@ class OpenAI(LLM):
     def client(self) -> SyncOpenAI:
         client = self.__client__
         if client is None:
-            client = SyncOpenAI()
+            client = SyncOpenAI(api_key=self.api_key)
             self.__client__ = client
 
         return client

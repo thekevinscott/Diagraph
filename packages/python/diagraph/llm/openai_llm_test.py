@@ -65,12 +65,12 @@ class Chat:
 
 
 class MockASyncOpenAI:
-    def __init__(self, times=1):
+    def __init__(self, api_key=None, times=1):
         self.chat = Chat(times=times, is_async=True)
 
 
 class MockSyncOpenAI:
-    def __init__(self, times=1):
+    def __init__(self, api_key=None, times=1):
         self.chat = Chat(times=times, is_async=False)
 
 
