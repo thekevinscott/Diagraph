@@ -39,6 +39,9 @@ def set_global_error(error_fn: ErrorHandler) -> None:
     global_error_fn = error_fn
 
 
+MAX_WORKERS = 5
+
+
 class Diagraph:
     """A directed acyclic graph (Diagraph) for managing
     and executing a graph of functions."""
@@ -55,6 +58,7 @@ class Diagraph:
     runs: list[Any]
     graph_mapping: bidict[Fn, str]
     llm: LLM | None
+    max_workers: int = MAX_WORKERS
 
     def __init__(
         self,
@@ -63,6 +67,7 @@ class Diagraph:
         error=None,
         llm=None,
         use_string_keys=False,
+        max_workers=MAX_WORKERS,
     ) -> None:
         """
         Initialize a Diagraph.
@@ -74,6 +79,7 @@ class Diagraph:
             use_string_keys (bool): Whether to use string keys
                                     for functions in the graph.
         """
+        self.max_workers = max_workers
         graph_def: dict[Fn, OrderedSet[Fn]] = build_graph(*terminal_nodes)
         graph_mapping: dict[Fn, str | Fn] = dict()
         graph_def_keys: list[Fn] = list(graph_def.keys())
@@ -214,7 +220,9 @@ class Diagraph:
         run["dirty"] = False
 
         for node_layer in get_execution_graph(self.__graph__, starting_node_group):
-            with concurrent.futures.ThreadPoolExecutor(max_workers=5) as executor:
+            with concurrent.futures.ThreadPoolExecutor(
+                max_workers=self.max_workers,
+            ) as executor:
                 executor.map(
                     lambda node_key: self.__execute_node__(
                         self[node_key],
