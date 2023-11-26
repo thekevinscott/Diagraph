@@ -2028,11 +2028,13 @@ def describe_prompt():
 
         input = "foo"
         diagraph = Diagraph(d0).run(input)
+        prompt = None
         with pytest.raises(
             Exception,
             match="This function has not been decorated with @prompt",
         ):
-            diagraph[d0].prompt
+            prompt = diagraph[d0].prompt
+        assert prompt is None
 
     def test_it_calls_a_prompt_on_layer():
         def fake_run(self, string, stream=None, **kwargs):
