@@ -1,6 +1,6 @@
 [project]
 name = "diagraph"
-version = "0.3.1"
+version = "0.3.3"
 # Notes
 authors = [{ name = "Kevin Scott", email = "kevin@diagraph.dev" }]
 readme = "README.md"
@@ -89,6 +89,7 @@ unfixable = []
   "ARG002",
   "A002",
   "A001",
+  "PT012",
 ]
 
 

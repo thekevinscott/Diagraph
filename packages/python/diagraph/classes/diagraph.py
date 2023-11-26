@@ -39,6 +39,9 @@ def set_global_error(error_fn: ErrorHandler) -> None:
     global_error_fn = error_fn
 
 
+MAX_WORKERS = 5
+
+
 class Diagraph:
     """A directed acyclic graph (Diagraph) for managing
     and executing a graph of functions."""
@@ -55,6 +58,7 @@ class Diagraph:
     runs: list[Any]
     graph_mapping: bidict[Fn, str]
     llm: LLM | None
+    max_workers: int = MAX_WORKERS
 
     def __init__(
         self,
@@ -63,6 +67,7 @@ class Diagraph:
         error=None,
         llm=None,
         use_string_keys=False,
+        max_workers=MAX_WORKERS,
     ) -> None:
         """
         Initialize a Diagraph.
@@ -74,6 +79,7 @@ class Diagraph:
             use_string_keys (bool): Whether to use string keys
                                     for functions in the graph.
         """
+        self.max_workers = max_workers
         graph_def: dict[Fn, OrderedSet[Fn]] = build_graph(*terminal_nodes)
         graph_mapping: dict[Fn, str | Fn] = dict()
         graph_def_keys: list[Fn] = list(graph_def.keys())
@@ -169,6 +175,17 @@ class Diagraph:
         root_nodes: list[Fn] = self.__graph__.root_nodes
         group = DiagraphNodeGroup(self, *root_nodes)
         self.__run_from__(group, *input_args, **kwargs)
+        errors_encountered = self.error
+        if errors_encountered is not None:
+            if isinstance(errors_encountered, Exception):
+                raise Exception(
+                    f"Errors encountered. Call .error to see errors. {errors_encountered}",
+                )
+            errors_encountered = [e for e in errors_encountered if e is not None]
+            if len(errors_encountered) > 0:
+                raise Exception(
+                    f"Errors encountered. Call .error to see errors. {errors_encountered}",
+                )
         return self
 
     def __run_from__(
@@ -203,7 +220,9 @@ class Diagraph:
         run["dirty"] = False
 
         for node_layer in get_execution_graph(self.__graph__, starting_node_group):
-            with concurrent.futures.ThreadPoolExecutor(max_workers=5) as executor:
+            with concurrent.futures.ThreadPoolExecutor(
+                max_workers=self.max_workers,
+            ) as executor:
                 executor.map(
                     lambda node_key: self.__execute_node__(
                         self[node_key],
@@ -249,12 +268,18 @@ class Diagraph:
         latest_run = self.runs[-1]
         if latest_run is None:
             raise Exception("Diagraph has not been run yet")
-        if latest_run.get("complete"):
-            errors = [node.error for node in self.terminal_nodes]
-            if len(errors) == 1:
-                return errors[0]
-            return tuple(errors)
-        return None
+
+        errors = [node.error for node in self.nodes]
+        if len(errors) == 0:
+            return None
+        if len(errors) == 1:
+            return errors[0]
+        return tuple(errors)
+        # return None
+
+    @property
+    def nodes(self):
+        return [DiagraphNode(self, node) for node in self.__graph__.nodes]
 
     def __execute_node__(
         self,
@@ -312,8 +337,8 @@ class Diagraph:
     def __run_node__(
         self,
         node: DiagraphNode,
-        input_args: tuple[Any],
-        kwargs: None | dict[Any, Any],
+        input_args: tuple[Any, ...],
+        kwargs: dict[Any, Any],
     ) -> Result:
         """
         Execute a single node in the Diagraph.

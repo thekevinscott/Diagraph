@@ -1640,10 +1640,12 @@ def describe_inputs():
             args = "|".join(args)
             return f"d1:{args}"
 
-        # with pytest.raises(Exception):
-        dg = Diagraph(d1).run("foo", "bar", "baz")
-        assert dg.result is None
-        assert "Found arguments defined after * args" in str(dg[d1].error)
+        with pytest.raises(
+            Exception, match="Errors encountered. Call .error to see errors.",
+        ):
+            dg = Diagraph(d1).run("foo", "bar", "baz")
+            assert dg.result is None
+            assert "Found arguments defined after * args" in str(dg[d1].error)
 
         def d2(foo, *args):
             args = "|".join(args)
@@ -1680,9 +1682,12 @@ def describe_inputs():
                 def fn():
                     return None
 
-                dg = Diagraph(fn).run()
-                assert dg.result is None
-                assert "unsupported operand type(s) for +" in str(dg[fn].error)
+                with pytest.raises(
+                    Exception, match="Errors encountered. Call .error to see errors.",
+                ):
+                    dg = Diagraph(fn).run()
+                    assert dg.result is None
+                    assert "unsupported operand type(s) for +" in str(dg[fn].error)
 
         def test_it_does_a_real_world_example_with_prompt_fn():
             def fake_run(self, string, stream=None, **kwargs):

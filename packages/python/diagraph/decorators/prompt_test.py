@@ -1,3 +1,5 @@
+import pytest
+
 from ..classes.diagraph import Diagraph
 from ..llm.llm import LLM
 from ..utils.depends import Depends
@@ -197,10 +199,11 @@ def describe_errors():
         def fn():
             return "prompt"
 
-        dg = Diagraph(fn).run()
-        assert handle_errors.call_count == 1
-        assert dg[fn].error == thrown_exception
-        assert dg[fn].result is None
+        with pytest.raises(Exception, match="Errors encountered"):
+            dg = Diagraph(fn).run()
+            assert handle_errors.call_count == 1
+            assert dg[fn].error == thrown_exception
+            assert dg[fn].result is None
 
     def test_it_saves_subsequent_exceptions_on_the_node(mocker):
         handle_errors = mocker.stub()
@@ -211,15 +214,19 @@ def describe_errors():
         def fn():
             return "prompt"
 
-        dg = Diagraph(fn).run()
-        assert handle_errors.call_count == 1
-        assert dg[fn].error == thrown_exception_one
+        dg = Diagraph(fn)
+        with pytest.raises(Exception, match="Errors encountered"):
+            dg.run()
+            assert handle_errors.call_count == 1
+            assert dg[fn].error == thrown_exception_one
+
         thrown_exception_two = Exception("two")
         handle_errors.side_effect = thrown_exception_two
-        dg.run()
-        assert handle_errors.call_count == 2
-        assert dg[fn].error == thrown_exception_two
-        assert dg[fn].result is None
+        with pytest.raises(Exception, match="Errors encountered"):
+            dg.run()
+            assert handle_errors.call_count == 2
+            assert dg[fn].error == thrown_exception_two
+            assert dg[fn].result is None
 
     def test_it_saves_multiple_exceptions(mocker):
         handle_errors_a = mocker.stub()
@@ -238,11 +245,12 @@ def describe_errors():
         def b():
             return "prompt"
 
-        dg = Diagraph(a, b).run()
-        assert handle_errors_a.call_count == 1
-        assert handle_errors_b.call_count == 1
-        assert dg[a].error == thrown_exception_a
-        assert dg[b].error == thrown_exception_b
+        with pytest.raises(Exception, match="Errors encountered"):
+            dg = Diagraph(a, b).run()
+            assert handle_errors_a.call_count == 1
+            assert handle_errors_b.call_count == 1
+            assert dg[a].error == thrown_exception_a
+            assert dg[b].error == thrown_exception_b
 
     def test_it_does_not_run_dependent_function_of_errored_function(mocker):
         handle_errors_a = mocker.stub()
@@ -260,10 +268,11 @@ def describe_errors():
         def b(a=Depends(a)):
             return mock_b()
 
-        dg = Diagraph(b).run()
-        assert handle_errors_a.call_count == 1
-        assert dg[a].error == thrown_exception_a
-        assert mock_b.call_count == 0
+        with pytest.raises(Exception, match="Errors encountered"):
+            dg = Diagraph(b).run()
+            assert handle_errors_a.call_count == 1
+            assert dg[a].error == thrown_exception_a
+            assert mock_b.call_count == 0
 
     def test_it_does_not_run_grand_dependent_function_of_errored_function(mocker):
         handle_errors_a = mocker.stub()
@@ -288,11 +297,12 @@ def describe_errors():
         def c(b=Depends(b)):
             return mock_c()
 
-        dg = Diagraph(c).run()
-        assert handle_errors_a.call_count == 1
-        assert dg[a].error == thrown_exception_a
-        assert mock_b.call_count == 0
-        assert mock_c.call_count == 0
+        with pytest.raises(Exception, match="Errors encountered"):
+            dg = Diagraph(c).run()
+            assert handle_errors_a.call_count == 1
+            assert dg[a].error == thrown_exception_a
+            assert mock_b.call_count == 0
+            assert mock_c.call_count == 0
 
     def test_it_does_not_run_dependent_function_of_multiple_errored_functions(mocker):
         handle_errors_a = mocker.stub()
@@ -318,12 +328,13 @@ def describe_errors():
         def c(a=Depends(a), b=Depends(b)):
             return mock_c()
 
-        dg = Diagraph(c).run()
-        assert handle_errors_a.call_count == 1
-        assert dg[a].error == thrown_exception_a
-        assert dg[b].error == thrown_exception_b
-        assert dg[c].error is None
-        assert mock_c.call_count == 0
+        with pytest.raises(Exception, match="Errors encountered"):
+            dg = Diagraph(c).run()
+            assert handle_errors_a.call_count == 1
+            assert dg[a].error == thrown_exception_a
+            assert dg[b].error == thrown_exception_b
+            assert dg[c].error is None
+            assert mock_c.call_count == 0
 
     def test_it_does_not_run_dependent_function_of_single_errored_functions(mocker):
         handle_errors_a = mocker.stub()
@@ -345,11 +356,12 @@ def describe_errors():
         def c(a=Depends(a), b=Depends(b)):
             return mock_c()
 
-        dg = Diagraph(c).run()
-        assert handle_errors_a.call_count == 1
-        assert dg[a].error == thrown_exception_a
-        assert dg[b].result == "012"
-        assert mock_c.call_count == 0
+        with pytest.raises(Exception, match="Errors encountered"):
+            dg = Diagraph(c).run()
+            assert handle_errors_a.call_count == 1
+            assert dg[a].error == thrown_exception_a
+            assert dg[b].result == "012"
+            assert mock_c.call_count == 0
 
     def test_it_does_run_dependent_function_of_non__errored_functions(mocker):
         handle_errors_a = mocker.stub()
@@ -375,11 +387,12 @@ def describe_errors():
         def c0(a1=Depends(a1), b0=Depends(b0)):
             return mock_c()
 
-        dg = Diagraph(c0).run()
-        assert dg[a0].result == "012"
-        assert dg[b0].result == "012"
-        assert dg[a1].error == thrown_exception_a
-        assert mock_c.call_count == 0
+        with pytest.raises(Exception, match="Errors encountered"):
+            dg = Diagraph(c0).run()
+            assert dg[a0].result == "012"
+            assert dg[b0].result == "012"
+            assert dg[a1].error == thrown_exception_a
+            assert mock_c.call_count == 0
 
     def test_it_does_run_deep_dependent_function_of_non_errored_functions(mocker):
         handle_errors_a = mocker.stub()
@@ -421,18 +434,19 @@ def describe_errors():
         def d0(c1=Depends(c1), c0=Depends(c0)):
             return mock_d()
 
-        dg = Diagraph(d0).run()
-        assert dg[a0].result == "012"
-        assert dg[b0].result == "012"
-        assert dg[c0].result == "012"
-        assert dg[a1].error == thrown_exception_a
-        assert dg[b1].error is None
-        assert dg[c1].error is None
-        assert dg[b1].result is None
-        assert dg[c1].result is None
-        assert mock_b1.call_count == 0
-        assert mock_c1.call_count == 0
-        assert mock_d.call_count == 0
+        with pytest.raises(Exception, match="Errors encountered"):
+            dg = Diagraph(d0).run()
+            assert dg[a0].result == "012"
+            assert dg[b0].result == "012"
+            assert dg[c0].result == "012"
+            assert dg[a1].error == thrown_exception_a
+            assert dg[b1].error is None
+            assert dg[c1].error is None
+            assert dg[b1].result is None
+            assert dg[c1].result is None
+            assert mock_b1.call_count == 0
+            assert mock_c1.call_count == 0
+            assert mock_d.call_count == 0
 
     def test_it_does_run_deep_dependent_function_of_errored_functions_returning_result(
         mocker,
@@ -490,10 +504,12 @@ def describe_errors():
         def fn():
             return "prompt"
 
-        dg = Diagraph(fn).run()
+        dg = Diagraph(fn)
+        dg.run()
         assert handle_errors.call_count == 1
         assert dg[fn].error is None
         assert dg[fn].result == "foo"
+
         handle_errors.return_value = "bar"
         dg.run()
         assert handle_errors.call_count == 2
@@ -511,10 +527,11 @@ def describe_errors():
         def fn():
             return "prompt"
 
-        dg = Diagraph(fn, error=handle_errors).run()
-        assert handle_errors.call_count == 1
-        assert dg[fn].error == thrown_exception
-        assert dg[fn].result is None
+        with pytest.raises(Exception, match="Errors encountered"):
+            dg = Diagraph(fn, error=handle_errors).run()
+            assert handle_errors.call_count == 1
+            assert dg[fn].error == thrown_exception
+            assert dg[fn].result is None
 
     def test_it_saves_exception_on_the_node_if_error_handler_is_defined_globally(
         mocker,
@@ -528,10 +545,11 @@ def describe_errors():
             return "prompt"
 
         Diagraph.set_error(handle_errors)
-        dg = Diagraph(fn).run()
-        assert handle_errors.call_count == 1
-        assert dg[fn].error == thrown_exception
-        assert dg[fn].result is None
+        with pytest.raises(Exception, match="Errors encountered"):
+            dg = Diagraph(fn).run()
+            assert handle_errors.call_count == 1
+            assert dg[fn].error == thrown_exception
+            assert dg[fn].result is None
 
     def test_a_function_error_handler_takes_precedence_over_a_global_error_handler(
         mocker,
@@ -549,10 +567,11 @@ def describe_errors():
             return "prompt"
 
         Diagraph.set_error(global_handle_errors)
-        dg = Diagraph(fn).run()
-        assert global_handle_errors.call_count == 0
-        assert function_handle_errors.call_count == 1
-        assert dg[fn].error == function_thrown_exception
+        with pytest.raises(Exception, match="Errors encountered"):
+            dg = Diagraph(fn).run()
+            assert global_handle_errors.call_count == 0
+            assert function_handle_errors.call_count == 1
+            assert dg[fn].error == function_thrown_exception
 
     def test_a_function_error_handler_takes_precedence_over_a_diagraph_error_handler(
         mocker,
@@ -569,10 +588,11 @@ def describe_errors():
         def fn():
             return "prompt"
 
-        dg = Diagraph(fn, error=diagraph_handle_errors).run()
-        assert diagraph_handle_errors.call_count == 0
-        assert function_handle_errors.call_count == 1
-        assert dg[fn].error == function_thrown_exception
+        with pytest.raises(Exception, match="Errors encountered"):
+            dg = Diagraph(fn, error=diagraph_handle_errors).run()
+            assert diagraph_handle_errors.call_count == 0
+            assert function_handle_errors.call_count == 1
+            assert dg[fn].error == function_thrown_exception
 
     def test_a_function_error_handler_takes_precedence_over_a_diagraph_and_global_error_handler(
         mocker,
@@ -594,11 +614,12 @@ def describe_errors():
         global_handle_errors.side_effect = global_thrown_exception
 
         Diagraph.set_error(global_handle_errors)
-        dg = Diagraph(fn, error=diagraph_handle_errors).run()
-        assert global_handle_errors.call_count == 0
-        assert diagraph_handle_errors.call_count == 0
-        assert function_handle_errors.call_count == 1
-        assert dg[fn].error == function_thrown_exception
+        with pytest.raises(Exception, match="Errors encountered"):
+            dg = Diagraph(fn, error=diagraph_handle_errors).run()
+            assert global_handle_errors.call_count == 0
+            assert diagraph_handle_errors.call_count == 0
+            assert function_handle_errors.call_count == 1
+            assert dg[fn].error == function_thrown_exception
 
     def test_a_diagraph_error_handler_takes_precedence_over_a_global_error_handler(
         mocker,
@@ -616,10 +637,11 @@ def describe_errors():
         global_handle_errors.side_effect = global_thrown_exception
 
         Diagraph.set_error(global_handle_errors)
-        dg = Diagraph(fn).run()
-        assert global_handle_errors.call_count == 0
-        assert function_handle_errors.call_count == 1
-        assert dg[fn].error == function_thrown_exception
+        with pytest.raises(Exception, match="Errors encountered"):
+            dg = Diagraph(fn).run()
+            assert global_handle_errors.call_count == 0
+            assert function_handle_errors.call_count == 1
+            assert dg[fn].error == function_thrown_exception
 
     def test_it_reruns_a_function_that_simulates_a_network_failure(
         mocker,
@@ -710,7 +732,8 @@ def describe_errors():
         def fn():
             return "prompt"
 
-        dg = Diagraph(fn).run()
-        function_handle_errors.assert_any_call(0)
-        assert dg.result is None
-        assert str(dg[fn].error) == "stop"
+        with pytest.raises(Exception, match="Errors encountered"):
+            dg = Diagraph(fn).run()
+            function_handle_errors.assert_any_call(0)
+            assert dg.result is None
+            assert str(dg[fn].error) == "stop"
