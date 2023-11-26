@@ -50,4 +50,4 @@ dg
 
 ## License
 
-[MIT](LICENSE)
+[MIT](https://github.com/thekevinscott/Diagraph/blob/main/LICENSE)
