@@ -424,6 +424,7 @@ def describe_run():
         mock_instance = mocker.Mock()
 
         def d0():
+            print("d0")
             return mock_instance()
 
         diagraph = Diagraph(d0)
@@ -1641,7 +1642,8 @@ def describe_inputs():
             return f"d1:{args}"
 
         with pytest.raises(
-            Exception, match="Errors encountered. Call .error to see errors.",
+            Exception,
+            match="Errors encountered. Call .error to see errors.",
         ):
             dg = Diagraph(d1).run("foo", "bar", "baz")
             assert dg.result is None
@@ -1683,7 +1685,8 @@ def describe_inputs():
                     return None
 
                 with pytest.raises(
-                    Exception, match="Errors encountered. Call .error to see errors.",
+                    Exception,
+                    match="Errors encountered. Call .error to see errors.",
                 ):
                     dg = Diagraph(fn).run()
                     assert dg.result is None

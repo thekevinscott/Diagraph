@@ -39,9 +39,10 @@ class DiagraphNode:
             str: The string representation of the node.
         """
         if isinstance(self.key, str):
-            return self.key
+            return f"DiagraphNode[{self.key!s}]"
 
-        return self.key.__name__
+        # return self.key.__name__
+        return f"DiagraphNode[{self.key!s}]"
 
     @property
     def fn(self) -> Fn:
@@ -80,7 +81,7 @@ class DiagraphNode:
         Returns:
             str: The string representation of the node.
         """
-        return str(self.key)
+        return f"Key: [{self.key!s}]"
 
     @property
     def __is_decorated__(self) -> bool:
@@ -105,6 +106,13 @@ class DiagraphNode:
 
         self.diagraph.__run_from__(self, *input_args, **kwargs)
         return self.diagraph
+
+    @property
+    def __ready__(self) -> bool:
+        for ancestor in self.ancestors:
+            if ancestor.result is None:
+                return False
+        return True
 
     @property
     def result(self) -> Result:

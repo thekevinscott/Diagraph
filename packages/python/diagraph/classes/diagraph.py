@@ -1,7 +1,5 @@
 from __future__ import annotations
 
-import concurrent.futures
-
 # import inspect
 from datetime import datetime
 from typing import Any, overload
@@ -19,6 +17,7 @@ from ..visualization.render_repr_html import render_repr_html
 from .diagraph_node import DiagraphNode
 from .diagraph_node_group import DiagraphNodeGroup
 from .graph import Graph
+from .graph_executor import GraphExecutor
 from .historical_bidict import HistoricalBidict
 from .ordered_set import OrderedSet
 from .types import ErrorHandler, Fn, LogHandler, Result
@@ -192,7 +191,7 @@ class Diagraph:
         self,
         group: DiagraphNodeGroup | DiagraphNode,
         *input_args,
-        **kwargs,
+        **input_kwargs,
     ) -> Diagraph:
         """
         Run the Diagraph from a specific node.
@@ -209,7 +208,7 @@ class Diagraph:
             "start": datetime.now(),
             "node_group": starting_node_group,
             "input": input_args,
-            "kwargs": kwargs,
+            "kwargs": input_kwargs,
             "nodes": {},
             "dirty": True,
         }
@@ -219,19 +218,19 @@ class Diagraph:
         validate_node_ancestors(starting_node_group)
         run["dirty"] = False
 
-        for node_layer in get_execution_graph(self.__graph__, starting_node_group):
-            with concurrent.futures.ThreadPoolExecutor(
-                max_workers=self.max_workers,
-            ) as executor:
-                executor.map(
-                    lambda node_key: self.__execute_node__(
-                        self[node_key],
-                        input_args,
-                        kwargs,
-                        rerun_kwargs={},
-                    ),
-                    node_layer,
-                )
+        GraphExecutor(
+            DiagraphNodeGroup(
+                self,
+                *next(get_execution_graph(self.__graph__, starting_node_group)),
+            ),
+            fn=lambda node: self.__execute_node_and_catch_errors__(
+                node,
+                input_args,
+                input_kwargs,
+                rerun_kwargs={},
+            ),
+            max_workers=self.max_workers,
+        )
         run["complete"] = True
 
         return self
@@ -281,21 +280,14 @@ class Diagraph:
     def nodes(self):
         return [DiagraphNode(self, node) for node in self.__graph__.nodes]
 
-    def __execute_node__(
+    def __execute_node_and_catch_errors__(
         self,
         node: DiagraphNode,
         input_args: tuple[Any, ...],
         input_kwargs: dict[Any, Any],
         rerun_kwargs: None | dict[Any, Any],
     ) -> None:
-        # if (
-        #     input_kwargs is not None
-        #     and "times" in input_kwargs
-        #     and input_kwargs.get("times") == 5
-        # ):
-        #     raise Exception("STOP IT NOT")
         try:
-            # print("incoming", input_args, input_kwargs)
             node.result = self.__run_node__(node, input_args, input_kwargs)
         except Exception as e:
             # TODO: Make this a custom error
@@ -307,7 +299,7 @@ class Diagraph:
             fn_error_handler = getattr(fn, "__function_error__", None)
 
             def rerun(**kwargs: dict[Any, Any]):
-                self.__execute_node__(
+                self.__execute_node_and_catch_errors__(
                     node,
                     input_args,
                     input_kwargs,
