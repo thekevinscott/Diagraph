@@ -17,7 +17,7 @@ jobs:
           version: 8
 
       - name: Check pypi versions
-        uses: thekevinscott/pyproject-check-version@test.rc10
+        uses: maybe-hello-world/pyproject-check-version
         id: versioncheck
         with:
           pyproject-path: "./packages/python/pyproject.toml"    # default value
