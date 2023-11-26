@@ -19,7 +19,8 @@ class Graph(Generic[K]):
         self.graph_def = {key: list(val) for key, val in graph_def.items()}
         self.__key_to_int__ = {}
         self.__G__ = nx.convert_node_labels_to_integers(
-            nx.DiGraph(self.graph_def), label_attribute="ref",
+            nx.DiGraph(self.graph_def),
+            label_attribute="ref",
         )
 
         for int_representation in self.__G__.nodes():
@@ -55,6 +56,10 @@ class Graph(Generic[K]):
         node = self.get_int_key_for_node(int_key)
         int_representations = [i for _, i in list(self.__G__.out_edges(node))]
         return [self.get_node_for_int_key(i) for i in int_representations]
+
+    @property
+    def nodes(self) -> list[K]:
+        return [self.get_node_for_int_key(i) for i in self.__G__.nodes()]
 
     @property
     def root_nodes(self) -> list[K]:
