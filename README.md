@@ -45,7 +45,7 @@ dg
 
 ## Usage
 
-[See the usage guide](https://github.com/thekevinscott/Diagraph/blob/main/docs/usage.md).
+[See the usage guide](https://github.com/thekevinscott/Diagraph/blob/main/docs/usage.ipynb).
 
 ## License
 
