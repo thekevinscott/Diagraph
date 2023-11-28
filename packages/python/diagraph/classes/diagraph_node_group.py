@@ -49,7 +49,7 @@ class DiagraphNodeGroup:
         Returns:
             str: A string representation of the layer.
         """
-        return f"DiagraphNodeGroup({[str(n) for n in self.nodes]})"
+        return f"({[str(n) for n in self.nodes]})"
 
     def __getitem__(self, key: Fn | int) -> DiagraphNode:
         """

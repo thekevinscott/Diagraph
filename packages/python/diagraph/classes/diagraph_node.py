@@ -81,7 +81,7 @@ class DiagraphNode:
         Returns:
             str: The string representation of the node.
         """
-        return f"Key: [{self.key!s}]"
+        return f"Node[{self.key!s}]"
 
     @property
     def __is_decorated__(self) -> bool:
