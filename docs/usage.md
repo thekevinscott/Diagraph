@@ -4,15 +4,20 @@ This is a guide on how to use Diagraph.
 
 ## Building a Diagraph
 
-Every Diagraph starts with a function:
+Start with a function:
+```python
+def foo():
+  return 'foo'
+```
+
+To build a Diagraph, pass in that function:
 
 ```python
 from diagraph import Diagraph
-def foo():
-  return 'foo'
-
-Diagraph(foo)
+dg = Diagraph(foo)
 ```
+
+You now have a graph with a single function. A single-node graph is not super useful; let's add a few more nodes and learn about expressing dependencies.
 
 ### Function Dependencies
 
@@ -20,20 +25,24 @@ To express a dependency, specify it with `Depends`:
 
 ```python
 from diagraph import Diagraph, Depends
+
 def foo():
   return 'foo'
 
+# foo is a dependency of bar
+# foo must run _before_ bar, and the result
+# of foo will be passed as an argument to bar
 def bar(foo = Depends(foo)):
   return 'bar'
 
 Diagraph(bar)
 ```
 
-You pass in the _terminal_ node(s) in the chain to the `Diagraph`.
+When constructing a Diagraph, you provide the _terminal_ node(s) - the final nodes in the chain, the nodes from which you want the final results - in the graph to `Diagraph`.
 
 ![Example of a foo-bar diagraph](https://raw.githubusercontent.com/thekevinscott/Diagraph/main/assets/foobar.png)
 
-## Running a Diagraph
+## Running
 
 Run a Diagraph by calling `.run()`:
 
@@ -41,66 +50,6 @@ Run a Diagraph by calling `.run()`:
 dg = Diagraph(bar)
 dg.run()
 ```
-
-### Concurrency
-
-Nodes are run _greedily_ and _concurrently_ when possible:
-
-- **Greedily** means functions are run as soon as all of that function's dependencies are satisfied.
-- **Concurrently** means that any nodes running at the same _level_ of depth in the graph will run at the same time.
-
-Consider this Diagraph:
-
-```python
-def a():
-  return 'a'
-
-def b():
-  return 'b'
-
-def c(a = Depends(a), b = Depends(b)):
-  return 'c'
-
-dg = Diagraph(c)
-```
-
-![Example of two nodes that point to a single terminal](https://raw.githubusercontent.com/thekevinscott/Diagraph/main/assets/abc.png)
-
-Nodes `a` and `b` will execute concurrently, while `c` will wait for both nodes to complete before executing.
-
-### Replay a graph
-
-You can replay a Diagraph from a specific function. Consider the Diagraph from above.
-
-To rerun just the `c` function, you could do:
-
-```python
-dg[c].run()
-```
-
-You could also rerun the left branch by specifying `a`. Diagraph will run function `a` and then `c`, but _not_ function `b`; instead, `c` will receive the cached result for `b` from the first run of the Diagraph.
-
-```python
-dg[a].run()
-```
-
-Diagraph will build the subgraph emanating from the specified node and run it. You can specify multiple nodes:
-
-```python
-dg[a, b].run()
-```
-
-Diagraph will run the subgraph emanating from the group of multiple nodes.
-
-Integer indices are also available as a shorthand:
-
-```python
-dg[0].run() # run the graph from the first layer (starting layer) of nodes
-dg[1].run() # run the graph from the second layer of nodes
-dg[-1].run() # run just the terminal layer of nodes
-```
-
-### Arguments
 
 Arguments can be passed to `.run()`, and will be forwarded to every function:
 
@@ -121,13 +70,56 @@ def foo(input1: str, input2: int, keyword_arg='some-default'):
 Diagraph(foo).run('input1', 'input2', keyword_arg='input3') # Inputs: "input1" "input2" "input3"
 ```
 
-### Editing
+Each node in a Diagraph is executed as soon as all of that node's dependencies are satisfied. Consider this Diagraph:
 
-You can edit the nodes of a Diagraph, and specifically can edit a node's function, prompt, or result.
+```python
+def a():
+  return 'a'
 
-Editing a node will automatically clear all downstream nodes' values. 
+def b():
+  return 'b'
 
-#### Editing a Result
+def c(a = Depends(a), b = Depends(b)):
+  return 'c'
+
+dg = Diagraph(c)
+```
+
+![Example of two nodes that point to a single terminal](https://raw.githubusercontent.com/thekevinscott/Diagraph/main/assets/abc.png)
+
+Nodes `a` and `b` will execute concurrently, while `c` will wait for both nodes to complete before executing.
+
+## Replaying
+
+You can replay a Diagraph from a specific function. Consider the Diagraph from above. To rerun just the `c` function, write:
+
+```python
+dg[c].run()
+```
+
+You could also rerun the left branch by specifying `dg[a].run()`. Diagraph will run function `a` and then `c`, but _not_ function `b`; instead, `c` will receive the cached result for `b` from the initial run of the Diagraph.
+
+You can also specify multiple nodes:
+
+```python
+dg[a, b].run()
+```
+
+Integer indices are also available as a shorthand:
+
+```python
+dg[0].run() # run the graph from the first layer (starting layer) of nodes
+dg[1].run() # run the graph from the second layer of nodes
+dg[-1].run() # run just the terminal layer of nodes
+```
+
+## Editing
+
+You can edit the nodes of a Diagraph, specifically a node's function, prompt, or result.
+
+Editing a node will clear all downstream nodes' values. 
+
+### Editing a Result
 
 Set a specific cached function's result:
 
@@ -137,7 +129,7 @@ dg[foo].result = 'Some fake result'
 
 Any nodes downstream of `foo` will receive `'Some fake result'` as `foo`'s input.
 
-#### Editing a Prompt
+### Editing a Prompt
 
 If a node is decorated with [`@prompt` (see prompt section)](#prompt), you can modify the node's _prompt_:
 
@@ -147,7 +139,7 @@ dg[foo].prompt = 'Some fake prompt'
 
 If `prompt` is edited, upon running the function will not be executed, but the associated LLM will be called with the specified prompt.
 
-#### Editing a Function
+### Editing a Function
 
 You can change the function defined for a node:
 
@@ -158,25 +150,26 @@ def new_foo():
 dg[foo] = new_foo
 ```
 
-**Important**: the original function, in this example `foo`, remains the "key" of the node. Ensure you keep a reference to the original function around.
+**Important**: the original function, in this example `foo`, remains the "key" of the node. Ensure you keep a reference to the original function around. Alternatively, when constructing a Diagraph you can provide `use_string_keys=True` to automatically use the string `__name__` property of the functions as the keys.
 
 ## `@prompt`
 
 Diagraph accepts regular functions, but functions decorated with the `@prompt` decorator sprout superpowers.
 
-Decorate a function with `@prompt` and return a plain string:
+Decorate a function with `@prompt` and return a plain string, which will be used to prompt an LLM:
 
 ```python
+# Default LLM is OpenAI gpt-3.5-turbo
 @prompt
 def formalize_query(user_query:str):
   return f'The user has provided the following query: {user_query}. Formalize it, fill it out, etc.'
 ```
 
-The returned string is automatically passed as a prompt to the LLM (default is OpenAI GPT-3.5-turbo).
+The returned string is automatically passed as a prompt to the LLM.
 
 You can also return a more complicated structure that matches the API of whichever LLM you are calling. For instance, to specify a system prompt for OpenAI:
 
-```
+```python
 @prompt
 def formalize_query(user_query:str):
   return {
@@ -189,7 +182,7 @@ def formalize_query(user_query:str):
 
 Or to make a function call:
 
-```
+```python
 @prompt
 def formalize_query(user_query:str):
   return {
@@ -246,44 +239,40 @@ Diagraph.log=handle_log
 
 `error` will first be called at the node level (if defined), then the Diagraph level (if defined), and finally at the global level (if defined).
 
-### Handling Errors
+## Errors
 
-Errors can come in a number of different formats.
-
-There can be LLM-related errors, like an authentication issue, billing issue, network issue, etc. These are exposed as whatever exception is raised by the core LLM library.
-
-There can also be validation exceptions, raised in conjunction with result coercion (see next section).
-
-The error handler receives the error:
+The error handler receives the raised exception:
 
 ```python
 def error_handler(e: Exception):
   pass
 ```
 
-The error handler has three choices:
+The error handler has three options:
 
-1. Return a value. This returned value will be treated as the result of the original function.
-2. Raise an exception
+1. Return a value. This returned value will be treated as if it were the result of the original function.
+2. Raise an exception. This will halt execution of the current node and all its downstream nodes, and store the exception on the node.
 3. Re-run the function the error handler is attached to.
 
-You can specify to rerun the function with:
+### Rerunning
+
+The error handler function receives a second function, `rerun`, that can be used to rerun the original function:
 
 ```python
 def error_handler(e: Exception, rerun):
   return rerun()
 ```
 
-You can also supply additional arguments:
+You can supply additional arguments to `rerun`; these arguments will be visible to both the original node's function, _and_ subsequent invocations of the `error_handler`:
 
 ```python
 def error_handler(e: Exception, rerun_fn):
   return rerun_fn('1', '2', kw='arg')
 ```
 
-A common pattern I use is to pass a numeric retry index, to allow for exiting after n failed attempts.
+(A common pattern I use is to pass a numeric retry index, to allow for exiting after n failed attempts.)
 
-When a function runs into an error that raises an exception, that node and all its descendants halt. Any unrelated nodes will continue processing.
+### Viewing errors
 
 Exceptions can be read by examining the function's `error`:
 
