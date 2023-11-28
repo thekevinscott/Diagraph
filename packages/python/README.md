@@ -4,12 +4,12 @@ Diagraph represents Large Language Model (LLM) interactions as a graph, which ma
 
 Key features:
 
-- **Code Faster & Save Money:** Diagraph's ability to cache and replay specific parts of your code saves on execution time and reduces prompt costs.
-- **Quick Iteration:** Edit interactions on the fly. Rewrite the LLM's results as well as the functions.
-- **Easy Refactoring:** Specify a function's dependencies as parameters for clean, readable, and _refactorable_ code.
-- **Bring Your Own Code:** Use any LLM or set of tools you want. Diagraph operates on top of plain Python functions.
-- **Visualize The System:** Get a straightforward view of your graph with a built-in Jupyter visualization tool.
-- **Concurrency:** Interactions that can be run in parallel, _should_ be run in parallel. Get this behavior for free.
+- **Cache & Replay:** Rerun starting from specific interactions. Save time and money.
+- **Edits:** Edit interactions - prompts, results, functions - on the fly.
+- **Dependencies:** Specify a function's dependencies as parameters for clean, readable, refactorable code.
+- **Functions:** Use any LLM or set of tools you want. Diagraph operates on top of plain Python functions.
+- **Visualizations:** Get a straightforward view of your graph with a built-in Jupyter visualization tool.
+- **Concurrency:** Diagraph takes care of deciding when to run your functions so that all dependencies are satisfied. Get concurrency for free.
 
 ## Requirements
 
