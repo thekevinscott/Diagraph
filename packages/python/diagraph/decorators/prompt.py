@@ -4,6 +4,7 @@ import functools
 from collections.abc import Awaitable
 from typing import Any
 
+from ..classes.diagraph_node import DiagraphNode
 from ..classes.types import Fn, FunctionErrorHandler, FunctionLogHandler, LogEventName
 from ..llm.llm import LLM
 from ..llm.openai_llm import OpenAI
@@ -94,7 +95,7 @@ def prompt(
     def prompt_fn(
         wrapper_fn,
         decorated_fn: Fn,
-        original_fn: Fn,
+        node: DiagraphNode,
         *args,
         **kwargs,
     ) -> Awaitable[Any]:
@@ -107,8 +108,9 @@ def prompt(
             elif diagraph_log:
                 diagraph_log(event, chunk)
 
-        original_fn.prompt = generate_prompt(decorated_fn, *args, **kwargs)
+        if node.prompt is None:
+            node.prompt = generate_prompt(decorated_fn, *args, **kwargs)
 
-        return llm.run(original_fn.prompt, log=_log)
+        return llm.run(node.prompt, log=_log)
 
     return decorate(prompt_fn, _func, __function_llm__=llm, __function_error__=error)
