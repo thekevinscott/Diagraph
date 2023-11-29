@@ -1,9 +1,10 @@
 from __future__ import annotations
-import networkx as nx
+
+from collections.abc import Callable
 
 # import inspect
 from datetime import datetime
-from typing import Any, Callable, overload
+from typing import Any, overload
 
 from bidict import bidict
 
@@ -139,7 +140,7 @@ class Diagraph:
         ...
 
     def __getitem__(
-        self, key: Fn | int | tuple[Fn, ...]
+        self, key: Fn | int | tuple[Fn, ...],
     ) -> DiagraphNode | DiagraphNodeGroup:
         """
         Retrieve a DiagraphNode or DiagraphNodeGroup associated with a function or depth key.
