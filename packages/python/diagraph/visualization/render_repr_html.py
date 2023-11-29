@@ -56,10 +56,10 @@ def render_repr_html(diagraph):
                 node_definition["prompt"] = node.prompt
             except Exception:
                 pass
-            try:
-                node_definition["result"] = node.result
-            except Exception:
-                pass
+        try:
+            node_definition["result"] = node.result
+        except Exception:
+            pass
         nodes.append(node_definition)
 
     # fn = diagraph.__graph__.get_node_for_int_key(0)
