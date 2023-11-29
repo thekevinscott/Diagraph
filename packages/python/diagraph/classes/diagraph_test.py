@@ -2200,7 +2200,9 @@ def test_it_calls_tokens_on_layer():
             return f"d1b {d0}"
 
         input = "foo bar"
+        print("1")
         diagraph = Diagraph(d1a, d1b).run(input)
+        print("2")
         assert diagraph[0].tokens == 2
         assert diagraph[1].tokens == (6, 6)
 

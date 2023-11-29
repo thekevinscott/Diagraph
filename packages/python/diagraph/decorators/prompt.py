@@ -108,7 +108,12 @@ def prompt(
             elif diagraph_log:
                 diagraph_log(event, chunk)
 
-        if node.prompt is None:
+        prompt = None
+        try:
+            prompt = node.prompt
+        except Exception:
+            pass
+        if prompt is None:
             node.prompt = generate_prompt(decorated_fn, *args, **kwargs)
 
         return llm.run(node.prompt, log=_log)
