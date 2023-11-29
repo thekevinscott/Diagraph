@@ -46,12 +46,6 @@ def build_parameters(diagraph: Diagraph, fn: Fn, input_args: tuple) -> list[Any]
                     raise Exception(
                         f"Failed to get result for {key_for_fn}: {e}",
                     ) from None
-            else:
-                if arg_index > len(input_args) - 1:
-                    args.append(parameter.default)
-                else:
-                    args.append(input_args[arg_index])
-                    arg_index += 1
         elif not str(parameter).startswith("*"):
             if encountered_star:
                 raise Exception(
