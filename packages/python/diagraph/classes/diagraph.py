@@ -364,6 +364,7 @@ class Diagraph:
         #     setattr(fn, "__diagraph_error__", lambda e: error_handler(e, fn))
         fn.__diagraph_llm__ = self.llm
         if is_decorated(fn):
+            # have we already set a prompt
             return fn(node, *args, **kwargs)
 
         # if inspect.iscoroutinefunction(fn):

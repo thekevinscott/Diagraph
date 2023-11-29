@@ -41,7 +41,7 @@ def build_parameters(diagraph: Diagraph, fn: Fn, input_args: tuple) -> list[Any]
                     result = diagraph[key_for_fn].result
                     if result is None:
                         raise Exception(f"Result is None for {key_for_fn}")
-                    args.append(diagraph[key_for_fn].result)
+                    args.append(result)
                 except Exception as e:
                     raise Exception(
                         f"Failed to get result for {key_for_fn}: {e}",
