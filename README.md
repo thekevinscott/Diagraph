@@ -2,6 +2,8 @@
 
 Diagraph represents Large Language Model (LLM) interactions as a graph, which makes it easy to build, edit, and re-execute a chain of structured dialogues.
 
+[![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/thekevinscott/Diagraph/blob/master/docs/usage.ipynb)
+
 Key features:
 
 - **Cache & Replay:** Rerun starting from specific interactions. Save time and money.
