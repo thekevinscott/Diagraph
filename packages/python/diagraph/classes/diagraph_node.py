@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Callable
 
 import tiktoken
 
@@ -27,6 +27,8 @@ class DiagraphNode:
             diagraph (Diagraph): The Diagraph instance that contains this node.
             key (Key): The key associated with the node.
         """
+        if not isinstance(key, Callable):
+            raise Exception(f'Key "{key}" is not a callable function')
         self.diagraph = diagraph
         self.__graph__ = diagraph.__graph__
         self.key = key
@@ -38,10 +40,7 @@ class DiagraphNode:
         Returns:
             str: The string representation of the node.
         """
-        if isinstance(self.key, str):
-            return f"DiagraphNode[{self.key!s}]"
 
-        # return self.key.__name__
         return f"DiagraphNode[{self.key!s}]"
 
     @property

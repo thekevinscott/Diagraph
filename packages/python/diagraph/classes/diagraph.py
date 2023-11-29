@@ -1,8 +1,9 @@
 from __future__ import annotations
+import networkx as nx
 
 # import inspect
 from datetime import datetime
-from typing import Any, overload
+from typing import Any, Callable, overload
 
 from bidict import bidict
 
@@ -137,7 +138,9 @@ class Diagraph:
     def __getitem__(self, key: Fn) -> DiagraphNode:
         ...
 
-    def __getitem__(self, key: Fn | int) -> DiagraphNode | DiagraphNodeGroup:
+    def __getitem__(
+        self, key: Fn | int | tuple[Fn, ...]
+    ) -> DiagraphNode | DiagraphNodeGroup:
         """
         Retrieve a DiagraphNode or DiagraphNodeGroup associated with a function or depth key.
 
@@ -158,7 +161,13 @@ class Diagraph:
 
             node_keys = execution_graph[key]
             return DiagraphNodeGroup(self, *node_keys)
-        return DiagraphNode(self, key)
+        if isinstance(key, Callable):
+            return DiagraphNode(self, key)
+
+        if isinstance(key, tuple):
+            return DiagraphNodeGroup(self, *key)
+
+        raise Exception(f"Invalid key {key}")
 
     def run(self, *input_args, **kwargs) -> Diagraph:
         """
@@ -371,6 +380,16 @@ class Diagraph:
             fn (Fn): The function to add to the Diagraph.
         """
         self.fns[node_key] = fn
+
+    def __str__(self) -> str:
+        """
+        Get a string representation of the diagraph.
+
+        Returns:
+            str: The string representation of the diagraph.
+        """
+
+        return str(self.__graph__)
 
     @staticmethod
     def set_llm(llm: LLM) -> None:

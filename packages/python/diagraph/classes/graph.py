@@ -69,7 +69,21 @@ class Graph(Generic[K]):
         return [self.get_node_for_int_key(i) for i in int_keys]
 
     def _repr_html_(self) -> str:
-        return nx.draw(self.__G__)
+        return nx.draw(
+            self.__G__,
+        )
 
     def __str__(self) -> str:
-        return str(self.__G__)
+        name_mapping = {
+            key: self.get_node_for_int_key(key).__name__ for key in self.__G__.nodes()
+        }
+        return "\n".join(
+            list(
+                nx.generate_network_text(
+                    nx.relabel_nodes(self.__G__, name_mapping).reverse(),
+                    vertical_chains=True,
+                    ascii_only=True,
+                    with_labels=True,
+                ),
+            ),
+        )
