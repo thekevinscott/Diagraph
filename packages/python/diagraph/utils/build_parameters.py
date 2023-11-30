@@ -38,7 +38,7 @@ def build_parameters(
             if isinstance(parameter.default, FnDependency):
                 dep: Fn = parameter.default.dependency
                 try:
-                    key_for_fn = diagraph.fns.inverse(dep)
+                    key_for_fn = dep
                 except Exception:
                     raise Exception(
                         f"No function has been set for dep {dep}. Available functions: {diagraph.fns}",
