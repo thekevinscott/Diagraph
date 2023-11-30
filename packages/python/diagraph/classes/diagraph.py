@@ -139,8 +139,13 @@ class Diagraph:
     def __getitem__(self, key: Fn) -> DiagraphNode:
         ...
 
+    @overload
+    def __getitem__(self, key: str) -> DiagraphNode:
+        ...
+
     def __getitem__(
-        self, key: Fn | int | tuple[Fn, ...],
+        self,
+        key: str | Fn | int | tuple[Fn, ...],
     ) -> DiagraphNode | DiagraphNodeGroup:
         """
         Retrieve a DiagraphNode or DiagraphNodeGroup associated with a function or depth key.
@@ -188,12 +193,12 @@ class Diagraph:
         if errors_encountered is not None:
             if isinstance(errors_encountered, Exception):
                 raise Exception(
-                    f"Errors encountered. Call .error to see errors. {errors_encountered}",
+                    f"Errors encountered. {errors_encountered} Call .error to see errors",
                 )
             errors_encountered = [e for e in errors_encountered if e is not None]
             if len(errors_encountered) > 0:
                 raise Exception(
-                    f"Errors encountered. Call .error to see errors. {errors_encountered}",
+                    f"Errors encountered. {errors_encountered} Call .error to see errors",
                 )
         return self
 
@@ -339,8 +344,8 @@ class Diagraph:
     def __run_node__(
         self,
         node: DiagraphNode,
-        input_args: tuple[Any, ...],
-        kwargs: dict[Any, Any],
+        provided_args: tuple[Any, ...],
+        provided_kwargs: dict[Any, Any],
     ) -> Result:
         """
         Execute a single node in the Diagraph.
@@ -354,7 +359,7 @@ class Diagraph:
         # in order
         fn = self.fns[node.key]
 
-        args = build_parameters(self, fn, input_args)
+        args, kwargs = build_parameters(self, fn, provided_args, provided_kwargs)
 
         if self.log_handler:
             log_handler = self.log_handler

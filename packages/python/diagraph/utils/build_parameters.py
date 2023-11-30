@@ -10,7 +10,12 @@ if TYPE_CHECKING:
     from ..classes.diagraph import Diagraph
 
 
-def build_parameters(diagraph: Diagraph, fn: Fn, input_args: tuple) -> list[Any]:
+def build_parameters(
+    diagraph: Diagraph,
+    fn: Fn,
+    provided_args: tuple,
+    provided_kwargs: dict[Any, Any],
+) -> tuple[list[Any], dict[str, Any]]:
     """
     Builds a list of parameters for a function based on its signature and provided arguments.
 
@@ -25,6 +30,9 @@ def build_parameters(diagraph: Diagraph, fn: Fn, input_args: tuple) -> list[Any]
     args = []
     arg_index = 0
     encountered_star = False
+    kwargs = {
+        **provided_kwargs,
+    }
     for parameter in inspect.signature(fn).parameters.values():
         if parameter.default is not None and parameter.default is not inspect._empty:
             if isinstance(parameter.default, FnDependency):
@@ -41,11 +49,26 @@ def build_parameters(diagraph: Diagraph, fn: Fn, input_args: tuple) -> list[Any]
                     result = diagraph[key_for_fn].result
                     if result is None:
                         raise Exception(f"Result is None for {key_for_fn}")
-                    args.append(result)
+                    # args.append(diagraph[key_for_fn].result)
+                    kwargs[parameter.name] = diagraph[key_for_fn].result
                 except Exception as e:
                     raise Exception(
                         f"Failed to get result for {key_for_fn}: {e}",
                     ) from None
+            else:
+                # This block is for handling the case of: a function has defined a keyword arg,
+                # but the user has passed a positional arg for that parameter.
+                # Consider:
+                # def foo(a, b=1):
+                #   ...
+                #
+                # foo(1, 2)
+                #
+                # This block of code is to ensure that the above scenario works
+                if arg_index <= len(provided_args) - 1:
+                    kwargs[parameter.name] = provided_args[arg_index]
+                    arg_index += 1
+
         elif not str(parameter).startswith("*"):
             if encountered_star:
                 raise Exception(
@@ -56,7 +79,7 @@ def build_parameters(diagraph: Diagraph, fn: Fn, input_args: tuple) -> list[Any]
                         ],
                     ),
                 )
-            if arg_index > len(input_args) - 1:
+            if arg_index > len(provided_args) - 1:
                 raise Exception(
                     " ".join(
                         [
@@ -65,11 +88,12 @@ def build_parameters(diagraph: Diagraph, fn: Fn, input_args: tuple) -> list[Any]
                         ],
                     ),
                 )
-            args.append(input_args[arg_index])
+
+            args.append(provided_args[arg_index])
             arg_index += 1
         else:
             encountered_star = True
 
-            if arg_index < len(input_args):
-                args += input_args[arg_index:]
-    return args
+            if arg_index < len(provided_args):
+                args += provided_args[arg_index:]
+    return args, kwargs

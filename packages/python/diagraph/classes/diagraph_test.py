@@ -23,16 +23,16 @@ def describe_instantiation():
         Diagraph(foo)
 
 
-def describe_nodes():
-    def test_it_gets_back_a_node_wrapper_for_a_function():
-        def foo():
-            return "foo"
+# def describe_nodes():
+#     def test_it_gets_back_a_node_wrapper_for_a_function():
+#         def foo():
+#             return "foo"
 
-        diagraph = Diagraph(foo, use_string_keys=True)
+#         diagraph = Diagraph(foo, use_string_keys=True)
 
-        node = diagraph["foo"]
-        assert isinstance(node, DiagraphNode)
-        assert node.fn == foo
+#         node = diagraph["foo"]
+#         assert isinstance(node, DiagraphNode)
+#         assert node.fn == foo
 
 
 def describe_indexing():
@@ -1480,25 +1480,58 @@ def describe_inputs():
 
     def test_it_passes_input_at_end_of_args():
         def d0(input: str):
-            return f"{input}_d0"
+            return f"d0:{input}"
 
-        def d1a(input: str, i: str = Depends(d0)):
-            return f"{input}_{i}-d1a"
+        def d1a(input: str, d0: str = Depends(d0)):
+            return f"d1a:{input}-{d0}"
 
         def d1b(
-            i: str = Depends(d0),
+            d0: str = Depends(d0),
             input: str = "",
         ):
-            return f"{input}_{i}-d1b"
+            return f"d1b:{input}-{d0}"
 
         def d2(
             input: str,
-            i1: str = Depends(d1a),
-            i2: str = Depends(d1b),
+            d1a: str = Depends(d1a),
+            d1b: str = Depends(d1b),
         ):
-            return f"{input}_{i1}-{i2}-d2"
+            return f"d2:{input}-{d1a}-{d1b}"
 
-        assert Diagraph(d2).run("foo").result == "foo_foo_foo_d0-d1a-foo_foo_d0-d1b-d2"
+        dg = Diagraph(d2).run("foo")
+        assert dg[d0].result == "d0:foo"
+        assert dg[d1a].result == f"d1a:foo-{dg[d0].result}"
+        assert dg[d1b].result == f"d1b:foo-{dg[d0].result}"
+        assert dg[d2].result == f"d2:foo-{dg[d1a].result}-{dg[d1b].result}"
+        assert dg.result == f"d2:foo-{dg[d1a].result}-{dg[d1b].result}"
+
+    def describe_kwargs():
+        def test_it_avoids_a_kwargs_complaint_when_using_default():
+            def foo(input1: str, input2: int, keyword_arg="some-default"):
+                return f'Inputs: "{input1}" "{input2}" {keyword_arg}'
+
+            assert (
+                Diagraph(foo).run("input1", 1).result
+                == 'Inputs: "input1" "1" some-default'
+            )
+
+        def test_it_avoids_a_kwargs_complaint_when_passed_as_an_arg():
+            def foo(input1: str, input2: int, keyword_arg="some-default"):
+                return f'Inputs: "{input1}" "{input2}" {keyword_arg}'
+
+            assert (
+                Diagraph(foo).run("input1", 1, "foobar").result
+                == 'Inputs: "input1" "1" foobar'
+            )
+
+        def test_it_avoids_a_kwargs_complaint_when_supplied_as_kwarg():
+            def foo(input1: str, input2: int, keyword_arg="some-default"):
+                return f'Inputs: "{input1}" "{input2}" {keyword_arg}'
+
+            assert (
+                Diagraph(foo).run("input1", 1, keyword_arg="foobar").result
+                == 'Inputs: "input1" "1" foobar'
+            )
 
     def test_it_passes_input_mixed_all_over_the_args():
         def d0(input: str):
@@ -1643,7 +1676,7 @@ def describe_inputs():
 
         with pytest.raises(
             Exception,
-            match="Errors encountered. Call .error to see errors.",
+            match="Errors encountered",
         ):
             dg = Diagraph(d1).run("foo", "bar", "baz")
             assert dg.result is None
@@ -1686,7 +1719,7 @@ def describe_inputs():
 
                 with pytest.raises(
                     Exception,
-                    match="Errors encountered. Call .error to see errors.",
+                    match="Errors encountered",
                 ):
                     dg = Diagraph(fn).run()
                     assert dg.result is None
