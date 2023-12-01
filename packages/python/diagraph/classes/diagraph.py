@@ -18,9 +18,9 @@ from ..utils.validate_node_ancestors import validate_node_ancestors
 from ..visualization.render_repr_html import render_repr_html
 from .diagraph_node import DiagraphNode
 from .diagraph_node_group import DiagraphNodeGroup
+from .diagraph_state import DiagraphState, StateKey, StateValue
 from .graph import Graph
 from .graph_executor import GraphExecutor
-from .historical_bidict import HistoricalBidict
 from .ordered_set import OrderedSet
 from .types import ErrorHandler, Fn, LogHandler, Result
 
@@ -48,14 +48,12 @@ class Diagraph:
     and executing a graph of functions."""
 
     __graph__: Graph[Fn]
+    __state__: DiagraphState
 
     terminal_nodes: tuple[DiagraphNode, ...]
     log_handler: LogHandler | None
     error_handler: ErrorHandler | None
-    results: HistoricalBidict[Fn, Any]
-    errors: HistoricalBidict[Fn, Exception]
-    prompts: HistoricalBidict[Fn, str]
-    fns: HistoricalBidict[Fn, Fn]
+    fns: dict[Fn, Fn]
     runs: list[Any]
     graph_mapping: bidict[Fn, str]
     llm: LLM | None
@@ -80,6 +78,7 @@ class Diagraph:
             use_string_keys (bool): Whether to use string keys
                                     for functions in the graph.
         """
+        self.__state__ = DiagraphState()
         self.max_workers = max_workers
         graph_def: dict[Fn, OrderedSet[Fn]] = build_graph(*terminal_nodes)
         graph_mapping: dict[Fn, str | Fn] = dict()
@@ -105,10 +104,9 @@ class Diagraph:
             graph_def[get_fn_key(item)] = new_val
         self.graph_mapping = bidict(graph_mapping)
         self.__graph__ = Graph(graph_def)
-        self.results = HistoricalBidict()
-        self.fns = HistoricalBidict()
-        self.errors = HistoricalBidict()
-        self.prompts = HistoricalBidict()
+        # self.results = HistoricalBidict()
+        # self.fns = HistoricalBidict()
+        self.fns = {}
         self.runs = []
         self.llm = llm
 
@@ -117,8 +115,13 @@ class Diagraph:
 
         self.terminal_nodes = tuple(DiagraphNode(self, node) for node in terminal_nodes)
         self.log_handler = log or global_log_fn
-        # self.error_handler = error or default_error_fn
         self.error_handler = error
+
+    def __set__(self, key: StateKey, value: StateValue) -> None:
+        self.__state__.__set_state__(key, value)
+
+    def __get__(self, key: StateKey) -> Any:
+        return self.__state__.__get_state__(key)
 
     def _repr_html_(self) -> str:
         return render_repr_html(self)
@@ -139,13 +142,9 @@ class Diagraph:
     def __getitem__(self, key: Fn) -> DiagraphNode:
         ...
 
-    @overload
-    def __getitem__(self, key: str) -> DiagraphNode:
-        ...
-
     def __getitem__(
         self,
-        key: str | Fn | int | tuple[Fn, ...],
+        key: Fn | int | tuple[Fn, ...],
     ) -> DiagraphNode | DiagraphNodeGroup:
         """
         Retrieve a DiagraphNode or DiagraphNodeGroup associated with a function or depth key.

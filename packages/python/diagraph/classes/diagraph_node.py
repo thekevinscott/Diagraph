@@ -123,7 +123,7 @@ class DiagraphNode:
             Any: The result associated with the node.
         """
         try:
-            return self.diagraph.results[self.key]
+            return self.diagraph.__get__(("results", self.key))
         except Exception:
             return None
 
@@ -138,7 +138,7 @@ class DiagraphNode:
         Returns:
             None
         """
-        self.diagraph.results[self.key] = value
+        return self.diagraph.__set__(("results", self.key), value)
 
     @property
     def error(self) -> None | Exception:
@@ -149,7 +149,7 @@ class DiagraphNode:
             Exception | None: The error associated with the node.
         """
         try:
-            return self.diagraph.errors[self.key]
+            return self.diagraph.__get__(("errors", self.key))
         except Exception:
             return None
 
@@ -164,7 +164,7 @@ class DiagraphNode:
         Returns:
             None
         """
-        self.diagraph.errors[self.key] = error
+        return self.diagraph.__set__(("errors", self.key), error)
 
     @property
     def prompt(self) -> str:
@@ -177,7 +177,7 @@ class DiagraphNode:
         if self.__is_decorated__ is False:
             raise Exception("This function has not been decorated with @prompt")
 
-        return self.diagraph.prompts[self.key]
+        return self.diagraph.__get__(("prompt", self.key))
 
     @prompt.setter
     def prompt(self, value: str) -> None:
@@ -193,7 +193,7 @@ class DiagraphNode:
         if self.__is_decorated__ is False:
             raise Exception("This function has not been decorated with @prompt")
 
-        self.diagraph.prompts[self.key] = value
+        self.diagraph.__set__(("prompt", self.key), value)
 
     @property
     def tokens(self) -> int:

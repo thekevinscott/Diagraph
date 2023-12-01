@@ -115,7 +115,7 @@ class DiagraphNodeGroup:
         Returns:
             Any or tuple[Any]: The result of the nodes, either as a single value or a tuple of values.
         """
-        results = [self.diagraph.results[node.key] for node in self.nodes]
+        results = [node.result for node in self.nodes]
         if len(results) == 1:
             return results[0]
         return tuple(results)
@@ -168,7 +168,7 @@ class DiagraphNodeGroup:
                         ],
                     ),
                 )
-            self.diagraph.results[self.nodes[0].key] = values
+            self.nodes[0].result = values
         else:
             if len(self.nodes) != len(values):
                 raise Exception(
@@ -176,4 +176,4 @@ class DiagraphNodeGroup:
                 )
 
             for node, value in zip(self.nodes, values, strict=True):
-                self.diagraph.results[node.key] = value
+                node.result = value
