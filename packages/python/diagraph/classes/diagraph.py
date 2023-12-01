@@ -6,12 +6,10 @@ from collections.abc import Callable
 from datetime import datetime
 from typing import Any, overload
 
-from bidict import bidict
-
 from ..decorators.is_decorated import is_decorated
 from ..decorators.prompt import set_default_llm
 from ..llm.llm import LLM
-from ..utils.build_graph import build_graph
+from ..utils.build_graph import build_graph_mapping
 from ..utils.build_parameters import build_parameters
 from ..utils.get_execution_graph import get_execution_graph
 from ..utils.validate_node_ancestors import validate_node_ancestors
@@ -21,7 +19,6 @@ from .diagraph_node_group import DiagraphNodeGroup
 from .diagraph_state import DiagraphState, StateKey, StateValue
 from .graph import Graph
 from .graph_executor import GraphExecutor
-from .ordered_set import OrderedSet
 from .types import ErrorHandler, Fn, LogHandler, Result
 
 global_log_fn: LogHandler | None = None
@@ -55,9 +52,9 @@ class Diagraph:
     error_handler: ErrorHandler | None
     fns: dict[Fn, Fn]
     runs: list[Any]
-    graph_mapping: bidict[Fn, str]
     llm: LLM | None
     max_workers: int = MAX_WORKERS
+    use_string_keys: bool
 
     def __init__(
         self,
@@ -80,38 +77,16 @@ class Diagraph:
         """
         self.__state__ = DiagraphState()
         self.max_workers = max_workers
-        graph_def: dict[Fn, OrderedSet[Fn]] = build_graph(*terminal_nodes)
-        graph_mapping: dict[Fn, str | Fn] = dict()
-        graph_def_keys: list[Fn] = list(graph_def.keys())
-
-        def get_fn_key(fn: Fn) -> str | Fn:
-            if use_string_keys:
-                return fn.__name__
-            return fn
-
-        for item in graph_def_keys:
-            val = graph_def[item]
-            graph_mapping[item] = get_fn_key(item)
-            new_val = set()
-            while len(val):
-                _item = val.pop()
-                # for _item in val:
-                graph_mapping[_item] = get_fn_key(_item)
-                # val.remove(_item)
-                new_val.add(get_fn_key(_item))
-
-            del graph_def[item]
-            graph_def[get_fn_key(item)] = new_val
-        self.graph_mapping = bidict(graph_mapping)
-        self.__graph__ = Graph(graph_def)
-        # self.results = HistoricalBidict()
-        # self.fns = HistoricalBidict()
+        self.use_string_keys = use_string_keys
         self.fns = {}
         self.runs = []
         self.llm = llm
 
-        for key in self.__graph__.get_nodes():
-            self.fns[key] = self.graph_mapping.inverse[key]
+        graph_def, self.fns = build_graph_mapping(
+            *terminal_nodes,
+            use_string_keys=use_string_keys,
+        )
+        self.__graph__ = Graph(graph_def)
 
         self.terminal_nodes = tuple(DiagraphNode(self, node) for node in terminal_nodes)
         self.log_handler = log or global_log_fn
