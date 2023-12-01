@@ -11,8 +11,6 @@ name: Release to Test PyPI
       # create and push a tag as follows:
       #     git tag -a 0.21.3.rc1 -m "Tag 0.21.3.rc1 for release to test.pypi.org"
       #     git push --tags
-      # Go to https://github.com/jab/bidict/actions?query=workflow%3A%22Release+to+Test+PyPI%22
-      # and watch for a new run of this workflow to publish to test.pypi.org.
       # IMPORTANT: Run the following to clean up after:
       #     git tag -d 0.21.3.rc1
       #     git push origin :0.21.3.rc1

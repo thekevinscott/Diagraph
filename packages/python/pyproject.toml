@@ -5,7 +5,7 @@ version = "0.4.3"
 authors = [{ name = "Kevin Scott", email = "kevin@diagraph.dev" }]
 readme = "README.md"
 requires-python = ">=3.10"
-dependencies = ["pydantic", "networkx", "bidict", "openai>=1.3.0", "tiktoken"]
+dependencies = ["pydantic", "networkx", "openai>=1.3.0", "tiktoken"]
 description = "DAGs for LLM interactions"
 classifiers = [
   "Programming Language :: Python :: 3",

@@ -49,3 +49,31 @@ def build_graph(*_nodes: Fn) -> dict[Fn, OrderedSet[Fn]]:
                 graph[node].add(dep)
 
     return graph
+
+
+def build_graph_mapping(*terminal_nodes: Fn, use_string_keys=False):
+    graph_def: dict[Fn, OrderedSet[Fn]] = build_graph(*terminal_nodes)
+    # graph_mapping: dict[Fn, str | Fn] = dict()
+    graph_def_keys: list[Fn] = list(graph_def.keys())
+    fns = {}
+
+    def get_fn_key(fn: Fn) -> str | Fn:
+        if use_string_keys:
+            return fn.__name__
+        return fn
+
+    for item in graph_def_keys:
+        fns[get_fn_key(item)] = item
+        val = graph_def[item]
+        # graph_mapping[item] = get_fn_key(item)
+        new_val = set()
+        while len(val):
+            _item = val.pop()
+            # for _item in val:
+            # graph_mapping[_item] = get_fn_key(_item)
+            # val.remove(_item)
+            new_val.add(get_fn_key(_item))
+
+        del graph_def[item]
+        graph_def[item] = new_val
+    return graph_def, fns
