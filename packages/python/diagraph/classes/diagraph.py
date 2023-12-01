@@ -160,6 +160,9 @@ class Diagraph:
             Diagraph: The Diagraph instance.
         """
 
+        # make a new snapshot
+        self.__state__.add_snapshot()
+
         root_nodes: list[Fn] = self.__graph__.root_nodes
         group = DiagraphNodeGroup(self, *root_nodes)
         self.__run_from__(group, *input_args, **kwargs)
