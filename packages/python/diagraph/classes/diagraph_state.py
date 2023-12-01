@@ -1,7 +1,6 @@
 # This is a class for maintaining state of a diagraph.
 # Eventually it will track snapshots of state, but for now, it
 # simply records the most recent value
-import re
 from typing import Any
 
 StateArgs = tuple[Any, ...]
