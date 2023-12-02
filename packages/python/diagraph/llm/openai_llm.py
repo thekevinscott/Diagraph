@@ -1,4 +1,3 @@
-from collections.abc import Awaitable
 from typing import Any
 
 from openai import AsyncOpenAI
@@ -11,12 +10,16 @@ from .llm import LLM
 
 def cast_to_input(
     prompt_str: str | list[ChatCompletionMessageParam] | dict[str, Any],
-) -> list[ChatCompletionMessageParam]:
+) -> tuple[list[ChatCompletionMessageParam], dict[str, Any]]:
     if isinstance(prompt_str, str):
-        return [{"role": "user", "content": prompt_str}], None
+        return [{"role": "user", "content": prompt_str}], {}
     if isinstance(prompt_str, dict):
-        return prompt_str.get("messages"), prompt_str.get("functions")
-    return prompt_str, None
+        prompt_str = {**prompt_str}
+        messages = prompt_str.get("messages")
+        del prompt_str["messages"]
+
+        return messages, prompt_str
+    return prompt_str, {}
 
 
 DEFAULT_MODEL = "gpt-3.5-turbo"
@@ -56,12 +59,12 @@ class OpenAI(LLM):
         log: FunctionLogHandler,
         model=None,
         **kwargs,
-    ) -> Awaitable[Any]:
+    ) -> str | dict[str, str]:
         client = self.client
         model = model if model else self.kwargs.get("model", DEFAULT_MODEL)
-        messages, functions = cast_to_input(prompt)
+        messages, rest = cast_to_input(prompt)
 
-        response = ""
+        response: dict[str, str] = {}
         if "stream" in kwargs:
             del kwargs["stream"]
         kwargs = {
@@ -71,8 +74,8 @@ class OpenAI(LLM):
             "model": model,
             "messages": messages,
         }
-        if functions is not None:
-            kwargs["functions"] = functions
+        for key in rest.keys():
+            kwargs[key] = rest[key]
         started = False
         for resp in client.chat.completions.create(**kwargs):
             if started is False:
@@ -81,11 +84,17 @@ class OpenAI(LLM):
             choices = resp.choices
             choice = choices[0]
             delta = choice.delta
-            content = delta.content
-            if content:
-                response += content
-                log("data", content)
+            delta = delta.model_dump(exclude_unset=True)
+            response = build_dict(response, delta)
         log("end", None)
+
+        # TODO: Remove this block once we have return type coercion.
+        # LLM should not alter the response, that should be the provenance
+        # of the return type.
+        if len(response.keys()) == 1:
+            if "content" not in response:
+                raise Exception(f"Unknown key found: {response.keys()}")
+            return response["content"]
         return response
 
     # async def arun(
@@ -124,3 +133,20 @@ class OpenAI(LLM):
     #             log("data", content)
     #     log("end", None)
     #     return response
+
+
+RecursiveDict = dict[str, str | dict[str, str]]
+
+
+def build_dict(response: RecursiveDict, delta: RecursiveDict):
+    for key in delta.keys():
+        if delta.get(key) is not None:
+            if type(delta[key]) is str:
+                if response.get(key) is None:
+                    response[key] = ""
+                response[key] += delta[key]
+            else:
+                if response.get(key) is None:
+                    response[key] = {}
+                response[key] = build_dict(response[key], delta[key])
+    return response
