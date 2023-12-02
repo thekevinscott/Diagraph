@@ -3,6 +3,7 @@ from __future__ import annotations
 import inspect
 from typing import TYPE_CHECKING, Any
 
+from ..classes.diagraph_state.diagraph_state_record import DiagraphStateValueEmpty
 from ..classes.types import Fn
 from .depends import FnDependency
 
@@ -47,7 +48,7 @@ def build_parameters(
                     raise Exception(f"Error found for {key_for_fn}")
                 try:
                     result = diagraph[key_for_fn].result
-                    if result is None:
+                    if result == DiagraphStateValueEmpty():
                         raise Exception(f"Result is None for {key_for_fn}")
                     # args.append(diagraph[key_for_fn].result)
                     kwargs[parameter.name] = diagraph[key_for_fn].result

@@ -16,7 +16,11 @@ from ..utils.validate_node_ancestors import validate_node_ancestors
 from ..visualization.render_repr_html import render_repr_html
 from .diagraph_node import DiagraphNode
 from .diagraph_node_group import DiagraphNodeGroup
-from .diagraph_state import DiagraphState, StateKey, StateValue
+from .diagraph_state.diagraph_state import DiagraphState
+from .diagraph_state.diagraph_state_record import (
+    DiagraphStateValueEmpty,
+)
+from .diagraph_state.types import StateValue
 from .graph import Graph
 from .graph_executor import GraphExecutor
 from .types import ErrorHandler, Fn, LogHandler, Result
@@ -92,12 +96,6 @@ class Diagraph:
         self.log_handler = log or global_log_fn
         self.error_handler = error
 
-    def __set__(self, key: StateKey, value: StateValue) -> None:
-        self.__state__.__set_state__(key, value)
-
-    def __get__(self, key: StateKey) -> Any:
-        return self.__state__.__get_state__(key)
-
     def _repr_html_(self) -> str:
         return render_repr_html(self)
 
@@ -161,7 +159,7 @@ class Diagraph:
         """
 
         # make a new snapshot
-        self.__state__.add_snapshot()
+        self.__state__.add_timestamp()
 
         root_nodes: list[Fn] = self.__graph__.root_nodes
         group = DiagraphNodeGroup(self, *root_nodes)
@@ -196,6 +194,7 @@ class Diagraph:
             Diagraph: The Diagraph instance.
         """
         starting_node_group = get_diagraph_node_group(self, group)
+        self.__state__.add_timestamp()
         run = {
             "start": datetime.now(),
             "node_group": starting_node_group,
@@ -236,6 +235,8 @@ class Diagraph:
             Any or tuple[Any]: The result of the terminal nodes, either as a single value or a tuple of values.
         """
         results = []
+        if len(self.runs) == 0:
+            raise Exception("Diagraph has not been run yet")
         latest_run = self.runs[-1]
         if latest_run is None:
             raise Exception("Diagraph has not been run yet")
@@ -260,7 +261,12 @@ class Diagraph:
         if latest_run is None:
             raise Exception("Diagraph has not been run yet")
 
-        errors = [node.error for node in self.nodes]
+        errors = []
+        for node in self.nodes:
+            try:
+                errors.append(node.error)
+            except Exception:  # noqa: PERF203
+                errors.append(None)
         if len(errors) == 0:
             return None
         if len(errors) == 1:
@@ -280,7 +286,8 @@ class Diagraph:
         rerun_kwargs: None | dict[Any, Any],
     ) -> None:
         try:
-            node.result = self.__run_node__(node, input_args, input_kwargs)
+            result = self.__run_node__(node, input_args, input_kwargs)
+            self.__state__[("result", node.key)] = result
         except Exception as e:
             # TODO: Make this a custom error
             if "Error found for " in str(e):
@@ -311,12 +318,12 @@ class Diagraph:
                         err_handler_args.append(fn)
                     try:
                         result = err_handler(*err_handler_args, **(rerun_kwargs or {}))
-                        node.result = result
+                        self.__state__[("result", node.key)] = result
                     except Exception as raised_exception:
-                        node.error = raised_exception
+                        self.__state__[("error", node.key)] = raised_exception
                     return
             # if no error functions are defined, save the error
-            node.error = e
+            self.__state__[("error", node.key)] = e
 
     def __run_node__(
         self,
@@ -363,7 +370,32 @@ class Diagraph:
             node_key (Key): The key associated with the function.
             fn (Fn): The function to add to the Diagraph.
         """
+        self.__inc_timestamp__(DiagraphNode(self, node_key))
         self.fns[node_key] = fn
+
+    def __inc_timestamp__(self, node: DiagraphNode):
+        self.__state__.add_timestamp()
+
+        def recurse_through_children(node: DiagraphNode, nodes: set[DiagraphNode]):
+            nodes.add(node)
+            for child in node.children:
+                recurse_through_children(child, nodes)
+            return nodes
+
+        children = recurse_through_children(node, set())
+
+        def clear(node: DiagraphNode) -> None:
+            if node.__is_decorated__:
+                self.__state__[("prompt", node.key)] = DiagraphStateValueEmpty()
+            self.__state__[("result", node.key)] = DiagraphStateValueEmpty()
+            self.__state__[("error", node.key)] = DiagraphStateValueEmpty()
+
+        for child in children:
+            clear(child)
+
+    def __set_state__(self, node: DiagraphNode, key: str, value: StateValue) -> None:
+        self.__inc_timestamp__(node)
+        self.__state__[(key, node.key)] = value
 
     def __str__(self) -> str:
         """

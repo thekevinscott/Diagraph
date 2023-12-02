@@ -7,6 +7,9 @@ def make_completion(_content: str):
     class Delta:
         content = _content
 
+        def model_dump(self, **kwargs):
+            return {"content": self.content}
+
     class Choice:
         delta = Delta()
 
@@ -84,14 +87,34 @@ def describe_openai_llm():
             with patch("diagraph.llm.openai_llm.SyncOpenAI", MockSyncOpenAI):
                 from .openai_llm import cast_to_input
 
-                assert cast_to_input("foo") == [{"role": "user", "content": "foo"}]
+                assert cast_to_input("foo") == (
+                    [{"role": "user", "content": "foo"}],
+                    {},
+                )
 
         def test_it_returns_if_not_a_string():
             with patch("diagraph.llm.openai_llm.SyncOpenAI", MockSyncOpenAI):
                 from .openai_llm import cast_to_input
 
                 input = [{"role": "user", "content": "foo"}]
-                assert cast_to_input(input) == input
+                assert cast_to_input(
+                    {
+                        "messages": input,
+                    },
+                ) == (input, {})
+
+        def test_it_returns_extra_kwargs():
+            with patch("diagraph.llm.openai_llm.SyncOpenAI", MockSyncOpenAI):
+                from .openai_llm import cast_to_input
+
+                input = [{"role": "user", "content": "foo"}]
+                kwargs = {
+                    "foo": "foo",
+                }
+                assert cast_to_input({"messages": input, **kwargs}) == (
+                    input,
+                    kwargs,
+                )
 
     def test_it_instantiates():
         from .openai_llm import OpenAI
@@ -180,9 +203,9 @@ def describe_openai_llm():
             OpenAI(model="gpt-foo").run("foo", log=handle_log)
 
             handle_log.assert_any_call("start", None)
-            handle_log.assert_any_call("data", "0")
-            handle_log.assert_any_call("data", "1")
-            handle_log.assert_any_call("data", "2")
+            handle_log.assert_any_call("data", {"content": "0"})
+            handle_log.assert_any_call("data", {"content": "1"})
+            handle_log.assert_any_call("data", {"content": "2"})
             handle_log.assert_any_call("end", None)
 
     def test_it_returns_content_response(mocker):

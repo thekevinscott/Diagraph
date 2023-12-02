@@ -10,8 +10,8 @@ Result = Any
 LogEventName = Literal["start", "end", "data"]
 Rerunner = Callable[..., None]
 
-LogHandler = Callable[[str, str, Fn], None]
-FunctionLogHandler = Callable[[LogEventName, str | None], None]
+LogHandler = Callable[[str, dict | None, Fn], None]
+FunctionLogHandler = Callable[[LogEventName, dict | None], None]
 ErrorHandler = Callable[[Exception, Rerunner, Fn], None]
 # TODO: Support arbitrary args and kwargs.
 FunctionErrorHandler = Callable[[Exception, Rerunner], None]

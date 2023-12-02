@@ -14,10 +14,12 @@ def validate_node_ancestor(node: DiagraphNode) -> None:
     Raises:
     - Exception: If the node's result is None, indicating a missing result.
     """
-    if node.result is None:
+    try:
+        assert node.result
+    except Exception:
         raise Exception(
             "An ancestor is missing a result, run the traversal first",
-        )
+        ) from None
 
 
 def validate_node_ancestors(node_group: DiagraphNodeGroup) -> None:

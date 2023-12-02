@@ -102,7 +102,7 @@ def prompt(
         llm = get_llm(wrapper_fn)
         diagraph_log = getattr(wrapper_fn, "__diagraph_log__", None)
 
-        def _log(event: LogEventName, chunk: str | None) -> None:
+        def _log(event: LogEventName, chunk: dict | None) -> None:
             if log:
                 log(event, chunk)
             elif diagraph_log:
@@ -114,7 +114,9 @@ def prompt(
         except Exception:
             pass
         if prompt is None:
-            node.prompt = generate_prompt(decorated_fn, *args, **kwargs)
+            node.diagraph.__state__[("prompt", node.key)] = generate_prompt(
+                decorated_fn, *args, **kwargs,
+            )
 
         return llm.run(node.prompt, log=_log)
 

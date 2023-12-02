@@ -3,7 +3,8 @@ from __future__ import annotations
 from collections.abc import Iterator
 from typing import Generic, TypeVar
 
-T = TypeVar('T')
+T = TypeVar("T")
+
 
 class OrderedSet(Generic[T]):
     items: list[T]
@@ -32,3 +33,12 @@ class OrderedSet(Generic[T]):
             if item not in self._set:
                 return False
         return True
+
+    def __str__(self):
+        return str(self.items)
+
+    def get(self, key) -> T:
+        return self.items[key]
+
+    def __getitem__(self, key) -> T:
+        return self.items[key]
