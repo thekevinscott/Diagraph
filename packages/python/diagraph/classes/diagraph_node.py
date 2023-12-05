@@ -42,7 +42,7 @@ class DiagraphNode:
             str: The string representation of the node.
         """
 
-        return f"DiagraphNode[{self.key!s}]"
+        return f"DiagraphNode{self.key!s}"
 
     @property
     def fn(self) -> Fn:
@@ -109,10 +109,12 @@ class DiagraphNode:
 
     @property
     def __ready__(self) -> bool:
-        for ancestor in self.ancestors:
-            if ancestor.result is None:
-                return False
-        return True
+        try:
+            [ancestor.result for ancestor in self.ancestors]
+            return True
+        except Exception:
+            pass
+        return False
 
     @property
     def result(self) -> Result:
@@ -122,10 +124,7 @@ class DiagraphNode:
         Returns:
             Any: The result associated with the node.
         """
-        try:
-            return self.diagraph.__get__(("results", self.key))
-        except Exception:
-            return None
+        return self.diagraph.__state__[("result", self.key)]
 
     @result.setter
     def result(self, value: Result) -> None:
@@ -138,7 +137,7 @@ class DiagraphNode:
         Returns:
             None
         """
-        return self.diagraph.__set__(("results", self.key), value)
+        self.diagraph.__set_state__(self, "result", value)
 
     @property
     def error(self) -> None | Exception:
@@ -149,7 +148,7 @@ class DiagraphNode:
             Exception | None: The error associated with the node.
         """
         try:
-            return self.diagraph.__get__(("errors", self.key))
+            return self.diagraph.__state__[("error", self.key)]
         except Exception:
             return None
 
@@ -164,7 +163,7 @@ class DiagraphNode:
         Returns:
             None
         """
-        return self.diagraph.__set__(("errors", self.key), error)
+        self.diagraph.__set_state__(self, "error", error)
 
     @property
     def prompt(self) -> str:
@@ -177,7 +176,7 @@ class DiagraphNode:
         if self.__is_decorated__ is False:
             raise Exception("This function has not been decorated with @prompt")
 
-        return self.diagraph.__get__(("prompt", self.key))
+        return self.diagraph.__state__[("prompt", self.key)]
 
     @prompt.setter
     def prompt(self, value: str) -> None:
@@ -193,7 +192,7 @@ class DiagraphNode:
         if self.__is_decorated__ is False:
             raise Exception("This function has not been decorated with @prompt")
 
-        self.diagraph.__set__(("prompt", self.key), value)
+        self.diagraph.__set_state__(self, "prompt", value)
 
     @property
     def tokens(self) -> int:

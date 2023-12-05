@@ -85,6 +85,7 @@ class OpenAI(LLM):
             choice = choices[0]
             delta = choice.delta
             delta = delta.model_dump(exclude_unset=True)
+            log("data", delta)
             response = build_dict(response, delta)
         log("end", None)
 

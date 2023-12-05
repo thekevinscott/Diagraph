@@ -1663,44 +1663,50 @@ def describe_inputs():
             == f"d2:foo+{d1a_result}+{d1b_result}"
         )
 
-    def test_it_passes_star_args():
-        def d0(*args):
-            args = "|".join(args)
-            return f"d0:{args}"
+    def describe_star_args():
+        def test_it_passes_star_args():
+            def d0(*args):
+                args = "|".join(args)
+                return f"d0:{args}"
 
-        assert Diagraph(d0).run("foo", "bar", "baz").result == "d0:foo|bar|baz"
+            assert Diagraph(d0).run("foo", "bar", "baz").result == "d0:foo|bar|baz"
 
-        def d1(*args, foo: str):
-            args = "|".join(args)
-            return f"d1:{args}"
+        def test_it_passes_star_args_and_input():
+            def d1(*args, foo: str):
+                args = "|".join(args)
+                return f"d1:{args}"
 
-        with pytest.raises(
-            Exception,
-            match="Errors encountered",
-        ):
-            dg = Diagraph(d1).run("foo", "bar", "baz")
-            assert dg.result is None
+            dg = None
+            with pytest.raises(
+                Exception,
+                match="Errors encountered.",
+            ):
+                dg = Diagraph(d1)
+                dg.run("foo", "bar", "baz")
             assert "Found arguments defined after * args" in str(dg[d1].error)
 
-        def d2(foo, *args):
-            args = "|".join(args)
-            return f"d2:{foo}|{args}"
+        def test_it_passes_star_args_after_input():
+            def d2(foo, *args):
+                args = "|".join(args)
+                return f"d2:{foo}|{args}"
 
-        assert Diagraph(d2).run("foo", "bar", "baz").result == "d2:foo|bar|baz"
+            assert Diagraph(d2).run("foo", "bar", "baz").result == "d2:foo|bar|baz"
 
-        def d3(foo, bar, *args):
-            return f"d3:{foo}|{args[0]}"
+        def test_it_passes_star_args_after_multiple_input():
+            def d3(foo, bar, *args):
+                return f"d3:{foo}|{args[0]}"
 
-        assert Diagraph(d3).run("foo", "bar", "baz").result == "d3:foo|baz"
+            assert Diagraph(d3).run("foo", "bar", "baz").result == "d3:foo|baz"
 
-    def test_it_passes_starstar_kwargs():
-        def d0(**kwargs):
-            args = "|".join(kwargs.values())
-            return f"d0:{args}"
+        def test_it_passes_starstar_kwargs():
+            def d0(**kwargs):
+                args = "|".join(kwargs.values())
+                return f"d0:{args}"
 
-        assert (
-            Diagraph(d0).run(foo="foo", bar="bar", baz="baz").result == "d0:foo|bar|baz"
-        )
+            assert (
+                Diagraph(d0).run(foo="foo", bar="bar", baz="baz").result
+                == "d0:foo|bar|baz"
+            )
 
     def describe_real_world_example():
         def test_it_raises_if_returning_non_from_a_prompt():
@@ -1963,12 +1969,21 @@ def describe_replay():
 
         diagraph[d0].result = "newresult"
 
+        with pytest.raises(Exception, match='unset'):
+            diagraph[d1a].result
+        with pytest.raises(Exception, match='unset'):
+            diagraph[d1b].result
+        with pytest.raises(Exception, match='unset'):
+            diagraph[d2].result
+
+        diagraph[d1b].result = 'd1b'
+
         diagraph[d1a].run("bar")
 
         assert diagraph.result == "*".join(
             [
                 "bar_newresult-d1a",
-                "foo_foo_d0-d1b",
+                "d1b",
                 "d2",
                 "bar",
             ],
@@ -2425,3 +2440,182 @@ def describe_llm():
             i = f"{i}"
             log.assert_any_call("data", i, fn)
         log.assert_any_call("end", None, fn)
+
+
+def describe_state():
+    def test_it_gets_fns():
+        def foo():
+            return "foo"
+
+        def bar(foo: str = Depends(foo)):
+            return "bar"
+
+        dg = Diagraph(bar)
+        assert dg[foo].fn == foo
+        assert dg[bar].fn == bar
+
+    @pytest.mark.parametrize(
+        (
+            "match",
+            "fn",
+        ),
+        [
+            ("Diagraph has not been run yet", lambda dg, _foo, _bar: dg.result),
+            ("No record for", lambda dg, foo, _bar: dg[foo].result),
+            ("No record for", lambda dg, _foo, bar: dg[bar].result),
+        ],
+    )
+    def test_it_raises_for_a_missing_result(match, fn):
+        def foo():
+            return "foo"
+
+        def bar(foo: str = Depends(foo)):
+            return "bar"
+
+        dg = Diagraph(bar)
+        with pytest.raises(Exception, match=match):
+            fn(
+                dg,
+                foo,
+                bar,
+            )
+
+    @pytest.mark.parametrize(
+        (
+            "expectation",
+            "fn",
+        ),
+        [
+            ("bar", lambda dg, _foo, _bar: dg.result),
+            ("foo", lambda dg, foo, _bar: dg[foo].result),
+            ("bar", lambda dg, _foo, bar: dg[bar].result),
+        ],
+    )
+    def test_it_gets_results(expectation, fn):
+        def foo():
+            return "foo"
+
+        def bar(foo: str = Depends(foo)):
+            return "bar"
+
+        dg = Diagraph(bar).run()
+        result = fn(dg, foo, bar)
+        assert result == expectation
+
+    def test_it_gets_subsequent_results():
+        times = 0
+
+        def foo():
+            return f"foo{times}"
+
+        def bar(foo: str = Depends(foo)):
+            return f"bar{times}"
+
+        dg = Diagraph(bar).run()
+        assert dg.result == "bar0"
+        assert dg[foo].result == "foo0"
+        assert dg[bar].result == "bar0"
+        times += 1
+        dg.run()
+        assert dg.result == "bar1"
+        assert dg[foo].result == "foo1"
+        assert dg[bar].result == "bar1"
+        times += 1
+        dg[bar].run()
+        assert dg.result == "bar2"
+        assert dg[foo].result == "foo1"
+        assert dg[bar].result == "bar2"
+
+    def test_that_none_is_a_valid_result():
+        def foo():
+            return None
+
+        def bar(foo: str = Depends(foo)):
+            return None
+
+        dg = Diagraph(bar).run()
+        assert dg.result is None
+        assert dg[foo].result is None
+        assert dg[bar].result is None
+
+    def test_it_clears_out_subsequent_results_when_setting_upstream_result():
+        times = 0
+
+        def foo():
+            return f"foo{times}"
+
+        def bar(foo: str = Depends(foo)):
+            return f"bar{times}"
+
+        dg = Diagraph(bar).run()
+        assert dg.result == "bar0"
+        assert dg[foo].result == "foo0"
+        assert dg[bar].result == "bar0"
+        dg[foo].result = "fooo"
+        assert dg[foo].result == "fooo"
+
+        with pytest.raises(Exception, match="unset"):
+            dg[bar].result
+        with pytest.raises(Exception, match="unset"):
+            dg.result
+
+    def test_it_clears_out_subsequent_results_when_setting_upstream_function():
+        times = 0
+
+        def foo():
+            return f"foo{times}"
+
+        def bar(foo: str = Depends(foo)):
+            return f"bar{times}"
+
+        dg = Diagraph(bar).run()
+        assert dg.result == "bar0"
+        assert dg[foo].result == "foo0"
+        assert dg[bar].result == "bar0"
+
+        def new_foo():
+            return f"new_foo{times}"
+
+        dg[foo] = new_foo
+
+        with pytest.raises(Exception, match="unset"):
+            dg.result
+        with pytest.raises(Exception, match="unset"):
+            dg[foo].result
+        with pytest.raises(Exception, match="unset"):
+            dg[bar].result
+
+    def test_it_does_not_clear_for_unrelated_branches():
+        def d0a():
+            return "d0a"
+
+        def d1a(d0a=Depends(d0a)):
+            return "d1a"
+
+        def d0b():
+            return "d0b"
+
+        def d1b(d0b=Depends(d0b)):
+            return "d1b"
+
+        def d2(d1a=Depends(d1a), d1b=Depends(d1b)):
+            return "d2"
+
+        dg = Diagraph(d2).run()
+        assert dg.result == "d2"
+        assert dg[d2].result == "d2"
+
+        dg[d0a].result = "cleared"
+
+        assert dg[d0a].result == "cleared"
+        assert dg[d0b].result == "d0b"
+        assert dg[d1b].result == "d1b"
+
+        with pytest.raises(Exception, match="unset"):
+            dg.result
+        with pytest.raises(Exception, match="unset"):
+            dg[d1a].result
+        with pytest.raises(Exception, match="unset"):
+            dg[d2].result
+
+    # test it uses historical records correctly (e.g., set an explicit result, run a child multiple times)
