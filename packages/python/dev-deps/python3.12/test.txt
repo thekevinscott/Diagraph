@@ -22,10 +22,13 @@ pytest==7.4.3
     #   -r dev-deps/test.in
     #   pytest-asyncio
     #   pytest-cov
+    #   pytest-describe
     #   pytest-mock
 pytest-asyncio==0.23.2
     # via -r dev-deps/test.in
 pytest-cov==4.1.0
+    # via -r dev-deps/test.in
+pytest-describe==2.1.0
     # via -r dev-deps/test.in
 pytest-mock==3.12.0
     # via -r dev-deps/test.in
