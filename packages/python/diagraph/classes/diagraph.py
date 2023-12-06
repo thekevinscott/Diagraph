@@ -55,7 +55,6 @@ class Diagraph:
     log_handler: LogHandler | None
     error_handler: ErrorHandler | None
     fns: dict[Fn, Fn]
-    runs: list[Any]
     llm: LLM | None
     max_workers: int = MAX_WORKERS
     use_string_keys: bool
@@ -83,7 +82,6 @@ class Diagraph:
         self.max_workers = max_workers
         self.use_string_keys = use_string_keys
         self.fns = {}
-        self.runs = []
         self.llm = llm
 
         graph_def, self.fns = build_graph_mapping(
@@ -158,9 +156,6 @@ class Diagraph:
             Diagraph: The Diagraph instance.
         """
 
-        # make a new snapshot
-        self.__state__.add_timestamp()
-
         root_nodes: list[Fn] = self.__graph__.root_nodes
         group = DiagraphNodeGroup(self, *root_nodes)
         self.__run_from__(group, *input_args, **kwargs)
@@ -196,18 +191,13 @@ class Diagraph:
         starting_node_group = get_diagraph_node_group(self, group)
         self.__state__.add_timestamp()
         run = {
-            "start": datetime.now(),
             "node_group": starting_node_group,
             "input": input_args,
             "kwargs": input_kwargs,
-            "nodes": {},
-            "dirty": True,
         }
-        self.runs.append(run)
+        self.__state__[("run")] = run
 
-        run["starting_nodes"] = starting_node_group
         validate_node_ancestors(starting_node_group)
-        run["dirty"] = False
 
         GraphExecutor(
             DiagraphNodeGroup(
@@ -227,6 +217,13 @@ class Diagraph:
         return self
 
     @property
+    def __latest_run__(self):
+        try:
+            return self.__state__[("run")]
+        except Exception:
+            raise Exception("Diagraph has not been run yet") from None
+
+    @property
     def result(self) -> Result | tuple[Result, ...] | None:
         """
         Get the results of the terminal nodes.
@@ -234,13 +231,8 @@ class Diagraph:
         Returns:
             Any or tuple[Any]: The result of the terminal nodes, either as a single value or a tuple of values.
         """
-        results = []
-        if len(self.runs) == 0:
-            raise Exception("Diagraph has not been run yet")
-        latest_run = self.runs[-1]
-        if latest_run is None:
-            raise Exception("Diagraph has not been run yet")
-        if latest_run.get("complete"):
+        latest_run = self.__latest_run__
+        if latest_run.get("complete") is True:
             results = [node.result for node in self.terminal_nodes]
             if len(results) == 1:
                 return results[0]
@@ -256,10 +248,7 @@ class Diagraph:
             Exception or tuple[Exception]: The errors of the terminal nodes,
             either as a single value or a tuple of values.
         """
-        errors = []
-        latest_run = self.runs[-1]
-        if latest_run is None:
-            raise Exception("Diagraph has not been run yet")
+        latest_run = self.__latest_run__
 
         errors = []
         for node in self.nodes:
@@ -272,7 +261,6 @@ class Diagraph:
         if len(errors) == 1:
             return errors[0]
         return tuple(errors)
-        # return None
 
     @property
     def nodes(self):
