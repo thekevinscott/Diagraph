@@ -3,13 +3,11 @@ from __future__ import annotations
 from collections.abc import Callable
 
 # import inspect
-from typing import Any, overload
+from typing import overload
 
-from ..decorators.is_decorated import is_decorated
 from ..decorators.prompt import set_default_llm
 from ..llm.llm import LLM
 from ..utils.build_graph import build_graph_mapping
-from ..utils.build_parameters import build_parameters
 from ..utils.get_execution_graph import get_execution_graph
 from ..utils.validate_node_ancestors import validate_node_ancestors
 from ..visualization.render_repr_html import render_repr_html
@@ -199,17 +197,15 @@ class Diagraph:
         validate_node_ancestors(starting_node_group)
 
         GraphExecutor(
+            self,
             DiagraphNodeGroup(
                 self,
                 *next(get_execution_graph(self.__graph__, starting_node_group)),
             ),
-            fn=lambda node: self.__execute_node_and_catch_errors__(
-                node,
-                input_args,
-                input_kwargs,
-                rerun_kwargs={},
-            ),
+            input_args=input_args,
+            input_kwargs=input_kwargs,
             max_workers=self.max_workers,
+            global_error_fn=global_error_fn,
         )
         run["complete"] = True
 
@@ -268,89 +264,6 @@ class Diagraph:
     def nodes(self):
         return [DiagraphNode(self, node) for node in self.__graph__.nodes]
 
-    def __execute_node_and_catch_errors__(
-        self,
-        node: DiagraphNode,
-        input_args: tuple[Any, ...],
-        input_kwargs: dict[Any, Any],
-        rerun_kwargs: None | dict[Any, Any],
-    ) -> None:
-        try:
-            result = self.__run_node__(node, input_args, input_kwargs)
-            self.__state__[("result", node.key)] = result
-        except Exception as e:
-            # TODO: Make this a custom error
-            if "Error found for " in str(e):
-                return
-            if "Failed to get result for " in str(e):
-                return
-            fn = self.fns[node.key]
-            fn_error_handler = getattr(fn, "__function_error__", None)
-
-            def rerun(**kwargs: dict[Any, Any]):
-                self.__execute_node_and_catch_errors__(
-                    node,
-                    input_args,
-                    input_kwargs,
-                    rerun_kwargs=kwargs,
-                )
-                # TODO: Refactor or remove this
-                return node.result
-
-            for err_handler, accepts_fn in [
-                (fn_error_handler, False),
-                (self.error_handler, True),
-                (global_error_fn, True),
-            ]:
-                if err_handler:
-                    err_handler_args = [e, rerun]
-                    if accepts_fn:
-                        err_handler_args.append(fn)
-                    try:
-                        result = err_handler(*err_handler_args, **(rerun_kwargs or {}))
-                        self.__state__[("result", node.key)] = result
-                    except Exception as raised_exception:
-                        self.__state__[("error", node.key)] = raised_exception
-                    return
-            # if no error functions are defined, save the error
-            self.__state__[("error", node.key)] = e
-
-    def __run_node__(
-        self,
-        node: DiagraphNode,
-        provided_args: tuple[Any, ...],
-        provided_kwargs: dict[Any, Any],
-    ) -> Result:
-        """
-        Execute a single node in the Diagraph.
-
-        Returns:
-            Any: The result of executing the node.
-        """
-        # If a user has explicitly specified a dependency via an annotation, we hydrate
-        # it below.
-        # If an argument is _not_ specified as a dependency, pull off the next input arg
-        # in order
-        fn = self.fns[node.key]
-
-        args, kwargs = build_parameters(self, fn, provided_args, provided_kwargs)
-
-        if self.log_handler:
-            log_handler = self.log_handler
-            fn.__diagraph_log__ = lambda event, chunk: log_handler(event, chunk, fn)
-        # if self.error_handler:
-        #     error_handler = self.error_handler
-        #     setattr(fn, "__diagraph_error__", lambda e: error_handler(e, fn))
-        fn.__diagraph_llm__ = self.llm
-        if is_decorated(fn):
-            # have we already set a prompt
-            return fn(node, *args, **kwargs)
-
-        # if inspect.iscoroutinefunction(fn):
-        #     return await fn(*args, **kwargs)
-        # else:
-        #     return fn(*args, **kwargs)
-        return fn(*args, **kwargs)
 
     def __setitem__(self, node_key: Fn, fn: Fn) -> None:
         """
