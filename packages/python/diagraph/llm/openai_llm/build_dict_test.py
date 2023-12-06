@@ -18,6 +18,7 @@ def describe_build_dict():
 
     def test_it_ignores_a_none_on_existing_dict():
         assert build_dict({"a": "d"}, {"a": None}) == {"a": "d"}
+        assert 1 == 2
 
     def test_it_raises_if_encountering_conflicting_types():
         with pytest.raises(Exception, match='Type mismatch'):
