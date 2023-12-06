@@ -1,8 +1,11 @@
 from collections.abc import Callable
 from inspect import getsource as _getsource
+import json
+from pathlib import Path
+import pickle
 from textwrap import dedent
 from typing import Any
-from unittest.mock import patch
+from unittest.mock import ANY, mock_open, patch
 
 import pytest
 
@@ -3264,7 +3267,9 @@ def describe_serialization():
                     return f"bar{foo1}"
 
                 dg = Diagraph(
-                    bar, node_dict={"foo": foo, "bar": bar}, use_string_keys=True,
+                    bar,
+                    node_dict={"foo": foo, "bar": bar},
+                    use_string_keys=True,
                 )
 
                 config = dg.to_json()
@@ -3486,12 +3491,11 @@ def describe_serialization():
                                 "fn": getsource(foo),
                                 "is_terminal": True,
                                 # "args": {
-                                        # "log_handler": log_handler,
+                                # "log_handler": log_handler,
                                 # },
                             },
                         },
                     }
-
 
             def test_it_serializes_a_diagraph_with_custom_code_defined_locally(
                 mocker,
@@ -3534,9 +3538,9 @@ def describe_serialization():
                             "fn": getsource(foo),
                             "is_terminal": True,
                             # "args": {
-                                    # "llm": llm,
-                                    # "error_handler": error_handler,
-                                    # "log_handler": log_handler,
+                            # "llm": llm,
+                            # "error_handler": error_handler,
+                            # "log_handler": log_handler,
                             # },
                         },
                     },
@@ -3584,9 +3588,136 @@ def describe_serialization():
                             "is_terminal": True,
                         },
                     },
-                        # "args": {
-                        #     "llm": llm,
-                        #     "error": error_handler,
-                        #     "log": log_handler,
-                        # },
+                    # "args": {
+                    #     "llm": llm,
+                    #     "error": error_handler,
+                    #     "log": log_handler,
+                    # },
                 }
+
+
+def describe_saving_and_loading():
+    @pytest.mark.parametrize(
+        ("filepath", "mode"),
+        [
+            ("foo", "wb"),
+            ("foo.foo", "wb"),
+            ("foo.json", "w"),
+        ],
+    )
+    def test_it_saves(filepath, mode):
+        with patch("pathlib.Path.open", mock_open()) as mock_file_handle, patch(
+            "pickle.dumps",
+        ) as mock_pickle_dump, patch("json.dump") as mock_json_dump:
+
+            def fn():
+                ...
+
+            dg = Diagraph(fn)
+
+            dg.save(filepath)
+
+            mock_file_handle.assert_called_once_with(mode)
+
+            if mode == "wb":
+                mock_pickle_dump.assert_called_once_with(ANY)
+            else:
+                mock_json_dump.assert_called_once_with(ANY, ANY)
+
+    @pytest.mark.parametrize(
+        ("filepath", "filetype"),
+        [
+            ("foo", "pickle"),
+            ("foo", "json"),
+            ("foo.foo", "pickle"),
+            ("foo.foo", "json"),
+            ("foo.json", "pickle"),
+            ("foo.json", "json"),
+        ],
+    )
+    def test_it_saves_with_specific_filetype(filepath, filetype):
+        with patch("pathlib.Path.open", mock_open()) as _mock_file_handle, patch(
+            "pickle.dumps",
+        ) as mock_pickle_dump, patch("json.dump") as mock_json_dump:
+
+            def fn():
+                ...
+
+            dg = Diagraph(fn)
+
+            dg.save(filepath, filetype)
+
+            if filetype == "pickle":
+                mock_pickle_dump.assert_called_once_with(ANY)
+            else:
+                mock_json_dump.assert_called_once_with(ANY, ANY)
+
+    @pytest.mark.parametrize(
+        ("filepath", "filetype"),
+        [
+            # ("foo", "pickle"), ("foo.pkl", "pickle"),
+            ("bar", "json"),
+            ("bar.json", None),
+            ("bar.json", "json"),
+        ],
+    )
+    def test_it_loads_from_json(filepath, filetype):
+        with patch(
+            "pathlib.Path.open",
+            mock_open(read_data='{ "nodes": []}'),
+        ) as mock_path_open, patch("json.load") as mock_json_load:
+            # Call the function under test
+
+            mock_json_load.return_value = {
+                "version": "1",
+                "nodes": {
+                    "foo": {
+                        "fn": "def foo():\n    return 'foo'",
+                        "is_terminal": True,
+                    }
+                },
+            }
+            Diagraph.load(filepath, filetype)
+
+            mock_path_open.assert_called_once_with("r")
+            mock_json_load.assert_called_once()
+
+    @pytest.mark.parametrize(
+        ("filepath", "filetype"),
+        [
+            ("bar", None),
+            ("bar", "pickle"),
+            ("bar.pkl", None),
+            ("bar.pkl", "pickle"),
+            ("bar.json", "pickle"),
+        ],
+    )
+    def test_it_loads_from_pickle(filepath, filetype):
+        with patch(
+            "pathlib.Path.open",
+            mock_open(read_data='{ "nodes": []}'),
+        ) as mock_path_open, patch("json.loads") as mock_json_load:
+            # Call the function under test
+
+            # Setup the return value for pathlib.Path.open
+            mock_file_handle = mock_open().return_value
+            config = {
+                "version": "1",
+                "nodes": {
+                    "foo": {
+                        "fn": "def foo():\n    return 'foo'",
+                        "is_terminal": True,
+                    }
+                },
+            }
+            pickled_content = pickle.dumps(config)
+            mock_file_handle.read.return_value = pickled_content
+            mock_path_open.return_value = mock_file_handle
+            mock_json_load.return_value = config
+
+            # Setup the return value for pickle.load
+            Diagraph.load(filepath, filetype)
+
+            mock_path_open.assert_called_once_with("rb")
+
+            mock_json_load.assert_called_once_with(config)
