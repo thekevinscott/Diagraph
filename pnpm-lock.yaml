@@ -103,9 +103,6 @@ importers:
       nodemon:
         specifier: ^3.0.1
         version: 3.0.1
-      vite:
-        specifier: ^4.5.0
-        version: 4.5.0(@types/node@20.8.10)
       vite-plugin-dts:
         specifier: ^3.6.1
         version: 3.6.3(@types/node@20.8.10)(typescript@5.2.2)(vite@4.5.0)
