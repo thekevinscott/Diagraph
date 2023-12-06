@@ -22,8 +22,8 @@ jobs:
         include:
           # https://github.com/actions/python-versions/blob/main/versions-manifest.json
           - pyversion: "3.12"
-          - pyversion: "3.11"
             enable_coverage: true
+          - pyversion: "3.11"
           - pyversion: "3.10"
             more_hypothesis_examples_if_cron: true
     steps:
@@ -34,7 +34,7 @@ jobs:
           cache: pip
           cache-dependency-path: ./packages/python/${{ format('python{0}', matrix.pyversion) }}/test.txt
 
-      - run: python -m pip install -U pip setuptools wheel 
+      - run: python -m pip install -U pip setuptools wheel
         working-directory: ./packages/python
 
       - name: Install dev dependencies
@@ -44,6 +44,11 @@ jobs:
       - name: Install Diagraph dependencies
         run: pip install .
         working-directory: ./packages/python
+
+      - name: Setup tmate session
+        uses: mxschmitt/action-tmate@v3
+        with:
+          detached: true
 
       - run: python -m pytest
         working-directory: ./packages/python
