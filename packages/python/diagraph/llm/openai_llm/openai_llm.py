@@ -4,12 +4,10 @@ from openai import AsyncOpenAI
 from openai import OpenAI as SyncOpenAI
 from openai.types.chat import ChatCompletionMessageParam
 
-from .cast_to_input import cast_to_input
-
 from ...classes.types import FunctionLogHandler
 from ..llm import LLM
 from .build_dict import build_dict
-
+from .cast_to_input import cast_to_input
 
 DEFAULT_MODEL = "gpt-3.5-turbo"
 

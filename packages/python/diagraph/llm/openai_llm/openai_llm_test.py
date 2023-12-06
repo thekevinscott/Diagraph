@@ -95,7 +95,7 @@ def describe_openai_llm():
 
     def test_it_passes_kwargs_and_parses_string_by_default():
         with patch(
-            "diagraph.llm.openai_llm.openai_llm.SyncOpenAI"
+            "diagraph.llm.openai_llm.openai_llm.SyncOpenAI",
         ) as mocked_sync_openai:
             fake_create = Mock(return_value=iterable(1))
             mocked_sync_openai.return_value.chat.completions.create = fake_create
@@ -111,7 +111,7 @@ def describe_openai_llm():
 
     def test_it_accepts_alternate_models():
         with patch(
-            "diagraph.llm.openai_llm.openai_llm.SyncOpenAI"
+            "diagraph.llm.openai_llm.openai_llm.SyncOpenAI",
         ) as mocked_sync_openai:
             fake_create = Mock(return_value=iterable(1))
             mocked_sync_openai.return_value.chat.completions.create = fake_create
@@ -125,7 +125,7 @@ def describe_openai_llm():
             )
 
         with patch(
-            "diagraph.llm.openai_llm.openai_llm.SyncOpenAI"
+            "diagraph.llm.openai_llm.openai_llm.SyncOpenAI",
         ) as mocked_sync_openai:
             fake_create = Mock(return_value=iterable(1))
             mocked_sync_openai.return_value.chat.completions.create = fake_create
@@ -139,7 +139,7 @@ def describe_openai_llm():
             )
 
         with patch(
-            "diagraph.llm.openai_llm.openai_llm.SyncOpenAI"
+            "diagraph.llm.openai_llm.openai_llm.SyncOpenAI",
         ) as mocked_sync_openai:
             fake_create = Mock(return_value=iterable(3))
             mocked_sync_openai.return_value.chat.completions.create = fake_create
@@ -157,7 +157,7 @@ def describe_openai_llm():
             handle_log = mocker.stub()
 
             with patch(
-                "diagraph.llm.openai_llm.openai_llm.SyncOpenAI"
+                "diagraph.llm.openai_llm.openai_llm.SyncOpenAI",
             ) as mocked_sync_openai:
                 fake_create = Mock(return_value=iterable(1))
                 mocked_sync_openai.return_value.chat.completions.create = fake_create
@@ -172,7 +172,7 @@ def describe_openai_llm():
         handle_log = mocker.stub()
 
         with patch(
-            "diagraph.llm.openai_llm.openai_llm.SyncOpenAI"
+            "diagraph.llm.openai_llm.openai_llm.SyncOpenAI",
         ) as mocked_sync_openai:
             fake_create = Mock(return_value=iterable(3))
             mocked_sync_openai.return_value.chat.completions.create = fake_create
@@ -190,7 +190,7 @@ def describe_openai_llm():
         handle_log = mocker.stub()
 
         with patch(
-            "diagraph.llm.openai_llm.openai_llm.SyncOpenAI"
+            "diagraph.llm.openai_llm.openai_llm.SyncOpenAI",
         ) as mocked_sync_openai:
             fake_create = Mock(return_value=iterable(3))
             mocked_sync_openai.return_value.chat.completions.create = fake_create

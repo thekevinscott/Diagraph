@@ -8,7 +8,7 @@ def for_key(delta: RecursiveDict):
 
 
 def check_types(
-    response: RecursiveDict | str | None, delta: RecursiveDict | str | None
+    response: RecursiveDict | str | None, delta: RecursiveDict | str | None,
 ) -> None:
     if response is not None and delta is not None and type(response) != type(delta):
         raise Exception(f"Type mismatch: {type(response)} {type(delta)}")

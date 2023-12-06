@@ -1,4 +1,5 @@
 import pytest
+
 from .build_dict import build_dict
 
 
@@ -25,16 +26,16 @@ def describe_build_dict():
 
     def test_it_operates_recursively():
         assert build_dict({
-            "foo": { "one": "foo", },
-            "bar": { "one": "bar", },
+            "foo": {"one": "foo"},
+            "bar": {"one": "bar"},
         }, {
             "foo": {
                 "one": "foo1",
                 "two": "foo",
             },
-            "bar": { "bar": "bar", "deep": { "one": "bar"}},
+            "bar": {"bar": "bar", "deep": {"one": "bar"}},
             "baz": {
-                "one": { "baz": "baz", }
+                "one": {"baz": "baz"},
             },
         }) == {
                 "foo": {

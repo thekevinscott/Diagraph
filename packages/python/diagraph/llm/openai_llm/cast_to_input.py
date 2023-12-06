@@ -1,4 +1,5 @@
 from typing import Any
+
 from openai.types.chat import ChatCompletionMessageParam
 
 

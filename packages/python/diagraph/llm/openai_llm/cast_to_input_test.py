@@ -1,7 +1,5 @@
 from unittest.mock import patch
 
-import pytest
-
 
 def make_completion(_content: str):
     class Delta:
