@@ -192,7 +192,7 @@ class Diagraph:
             "input": input_args,
             "kwargs": input_kwargs,
         }
-        self.__state__[("run")] = run
+        self.__state__["run"] = run
 
         validate_node_ancestors(starting_node_group)
 
@@ -214,7 +214,7 @@ class Diagraph:
     @property
     def __latest_run__(self):
         try:
-            return self.__state__[("run")]
+            return self.__state__["run"]
         except Exception:
             raise Exception("Diagraph has not been run yet") from None
 
@@ -244,7 +244,7 @@ class Diagraph:
             either as a single value or a tuple of values.
         """
         try:
-            assert self.__state__[("run")]
+            assert self.__state__["run"]
 
             errors = []
             for node in self.nodes:
@@ -263,7 +263,6 @@ class Diagraph:
     @property
     def nodes(self):
         return [DiagraphNode(self, node) for node in self.__graph__.nodes]
-
 
     def __setitem__(self, node_key: Fn, fn: Fn) -> None:
         """
