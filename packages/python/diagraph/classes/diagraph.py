@@ -3,7 +3,6 @@ from __future__ import annotations
 from collections.abc import Callable
 
 # import inspect
-from datetime import datetime
 from typing import Any, overload
 
 from ..decorators.is_decorated import is_decorated
@@ -248,19 +247,22 @@ class Diagraph:
             Exception or tuple[Exception]: The errors of the terminal nodes,
             either as a single value or a tuple of values.
         """
-        latest_run = self.__latest_run__
+        try:
+            assert self.__state__[("run")]
 
-        errors = []
-        for node in self.nodes:
-            try:
-                errors.append(node.error)
-            except Exception:  # noqa: PERF203
-                errors.append(None)
-        if len(errors) == 0:
-            return None
-        if len(errors) == 1:
-            return errors[0]
-        return tuple(errors)
+            errors = []
+            for node in self.nodes:
+                try:
+                    errors.append(node.error)
+                except Exception:  # noqa: PERF203
+                    errors.append(None)
+            if len(errors) == 0:
+                return None
+            if len(errors) == 1:
+                return errors[0]
+            return tuple(errors)
+        except Exception:
+            raise Exception("Diagraph has not been run yet") from None
 
     @property
     def nodes(self):
