@@ -18,41 +18,42 @@ def describe_build_dict():
 
     def test_it_ignores_a_none_on_existing_dict():
         assert build_dict({"a": "d"}, {"a": None}) == {"a": "d"}
-        assert 1 == 2
 
     def test_it_raises_if_encountering_conflicting_types():
-        with pytest.raises(Exception, match='Type mismatch'):
+        with pytest.raises(Exception, match="Type mismatch"):
             build_dict({"a": "d"}, {"a": {"a": "b"}})
 
-
     def test_it_operates_recursively():
-        assert build_dict({
-            "foo": {"one": "foo"},
-            "bar": {"one": "bar"},
-        }, {
-            "foo": {
-                "one": "foo1",
-                "two": "foo",
+        assert build_dict(
+            {
+                "foo": {"one": "foo"},
+                "bar": {"one": "bar"},
             },
-            "bar": {"bar": "bar", "deep": {"one": "bar"}},
-            "baz": {
-                "one": {"baz": "baz"},
-            },
-        }) == {
+            {
                 "foo": {
-                    "one": "foofoo1",
+                    "one": "foo1",
                     "two": "foo",
                 },
-                "bar": {
-                    "one": "bar",
-                    "bar": "bar",
-                    "deep": {
-                        "one": "bar",
-                        },
-                    },
+                "bar": {"bar": "bar", "deep": {"one": "bar"}},
                 "baz": {
-                    "one": {
-                        "baz": "baz",
-                        },
-                    },
-                }
+                    "one": {"baz": "baz"},
+                },
+            },
+        ) == {
+            "foo": {
+                "one": "foofoo1",
+                "two": "foo",
+            },
+            "bar": {
+                "one": "bar",
+                "bar": "bar",
+                "deep": {
+                    "one": "bar",
+                },
+            },
+            "baz": {
+                "one": {
+                    "baz": "baz",
+                },
+            },
+        }
