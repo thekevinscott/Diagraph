@@ -34,16 +34,6 @@ class DiagraphNode:
         self.__graph__ = diagraph.__graph__
         self.key = diagraph.get_key_for_fn(key)
 
-    def __str__(self) -> str:
-        """
-        Get a string representation of the node.
-
-        Returns:
-            str: The string representation of the node.
-        """
-
-        return f"DiagraphNode{self.key!s}"
-
     @property
     def fn(self) -> Fn:
         """
@@ -77,6 +67,17 @@ class DiagraphNode:
         """
         return self.diagraph.get_children_of_node(self)
 
+    def __str__(self) -> str:
+        """
+        Get a string representation of the node.
+
+        Returns:
+            str: The string representation of the node.
+        """
+
+        key = f"{self.key!s}" if type(self.key) is Callable else f"<{self.key}>"
+        return f"DiagraphNode{key}"
+
     def __repr__(self) -> str:
         """
         Get a string representation of the node.
@@ -84,7 +85,7 @@ class DiagraphNode:
         Returns:
             str: The string representation of the node.
         """
-        return f"Node[{self.key!s}]"
+        return self.__str__()
 
     @property
     def __is_decorated__(self) -> bool:

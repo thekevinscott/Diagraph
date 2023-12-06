@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import functools
-from collections.abc import Awaitable
 from typing import Any
 
 from ..classes.diagraph_node import DiagraphNode
@@ -67,7 +66,7 @@ def decorate(prompt_fn, _func=None, **kwargs):
         func: Fn,
     ):  # -> _Wrapped[Callable[..., Any], Any, Callable[..., Any], Generator[Any | Literal[''] | None, Any, None]]:
         @functools.wraps(func)
-        def wrapper_fn(*args, **kwargs) -> Awaitable[Any]:
+        def wrapper_fn(*args, **kwargs) -> Any:
             return prompt_fn(wrapper_fn, func, *args, **kwargs)
 
         setattr(wrapper_fn, IS_DECORATED_KEY, True)
@@ -98,7 +97,7 @@ def prompt(
         node: DiagraphNode,
         *args,
         **kwargs,
-    ) -> Awaitable[Any]:
+    ) -> Any:
         llm = get_llm(wrapper_fn)
         diagraph_log = getattr(wrapper_fn, "__diagraph_log__", None)
 
@@ -115,7 +114,9 @@ def prompt(
             pass
         if prompt is None:
             node.diagraph.__state__[("prompt", node.key)] = generate_prompt(
-                decorated_fn, *args, **kwargs,
+                decorated_fn,
+                *args,
+                **kwargs,
             )
 
         return llm.run(node.prompt, log=_log)

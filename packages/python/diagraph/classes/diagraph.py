@@ -1,8 +1,6 @@
 from __future__ import annotations
 
 from collections.abc import Callable
-
-# import inspect
 from typing import overload
 
 from ..decorators.prompt import set_default_llm
@@ -20,6 +18,7 @@ from .diagraph_state.diagraph_state_record import (
 from .diagraph_state.types import StateValue
 from .graph import Graph
 from .graph_executor import GraphExecutor
+from .serializers import SERIALIZERS
 from .types import ErrorHandler, Fn, KeyIdentifier, LogHandler, Result
 
 global_log_fn: LogHandler | None = None
@@ -55,6 +54,7 @@ class Diagraph:
     llm: LLM | None
     max_workers: int = MAX_WORKERS
     use_string_keys: bool
+    created_from_json: bool
 
     def __init__(
         self,
@@ -64,6 +64,7 @@ class Diagraph:
         llm=None,
         node_dict: None | NodeDict = None,
         use_string_keys=False,
+        created_from_json=False,
         max_workers=MAX_WORKERS,
     ) -> None:
         """
@@ -79,6 +80,7 @@ class Diagraph:
         self.__state__ = DiagraphState()
         self.max_workers = max_workers
         self.use_string_keys = use_string_keys
+        self.created_from_json = created_from_json
         if use_string_keys and node_dict is None:
             raise Exception(
                 "If relying on string keys, a dict mapping of all functions must be provided",
@@ -168,7 +170,9 @@ class Diagraph:
         if isinstance(key, int):
             execution_graph = list(
                 get_execution_graph(
-                    self.__graph__, self.__graph__.root_nodes, self.get_fn_for_key,
+                    self.__graph__,
+                    self.__graph__.root_nodes,
+                    self.get_fn_for_key,
                 ),
             )
 
@@ -185,6 +189,16 @@ class Diagraph:
             if isinstance(key, str):
                 return DiagraphNode(self, key)
 
+            if self.created_from_json:
+                raise Exception(
+                    " ".join(
+                        [
+                            "This Diagraph was created from JSON, and therefore functions must be specified",
+                            "with their string names, _not_ the functions themselves.",
+                            f'Instead of specifying the function {key}, specify its name "{key.__name__}"',
+                        ],
+                    ),
+                )
             raise Exception(f"Invalid key: {key}, expected a str")
         if isinstance(key, Callable):
             return DiagraphNode(self, key)
@@ -240,7 +254,9 @@ class Diagraph:
                 self,
                 *next(
                     get_execution_graph(
-                        self.__graph__, starting_node_group, self.get_fn_for_key,
+                        self.__graph__,
+                        starting_node_group,
+                        self.get_fn_for_key,
                     ),
                 ),
             ),
@@ -360,7 +376,53 @@ class Diagraph:
             str: The string representation of the diagraph.
         """
 
-        return str(self.__graph__)
+        graph = str(self.__graph__)
+        return "\n".join(
+            [
+                "Diagraph " + "-" * 40,
+                graph,
+                "-" * (len("Diagraph ") + 40),
+            ],
+        )
+
+    # def to_json(self):
+    #     graph_def = self.__graph__.graph_def
+    #     return {
+    #         "version": 1,
+    #         # 'graph': {key.__name__: [v.__name__ for v in val] for key, val
+    #         #     in self.graph_def.items()},
+    #         # 'graph': self.__graph__.to_json(),
+    #         "nodes": {
+    #             node.key.__name__: {
+    #                 "inputs": [a.key.__name__ for a in node.ancestors],
+    #                 "fn": pickle.dumps(node.fn),
+    #                 "is_decorated": is_decorated(node.key),
+    #             }
+    #             for node in self.nodes
+    #         },
+    #     }
+
+    @staticmethod
+    def from_json(config: dict):
+        if isinstance(config, dict) is False:
+            raise Exception("Please pass a valid Diagraph configuration")
+        version = config.get("version")
+        available_serializers = list(SERIALIZERS.keys())
+        if str(version) not in available_serializers:
+            raise Exception(
+                f"Unsupported version: {version}. Available versions: {available_serializers}",
+            )
+
+        terminal_nodes, node_mapping, kwargs = SERIALIZERS[str(version)]["deserialize"](
+            config,
+        )
+        return Diagraph(
+            *terminal_nodes,
+            use_string_keys=True,
+            created_from_json=True,
+            node_dict=node_mapping,
+            **kwargs,
+        )
 
     @staticmethod
     def set_llm(llm: LLM) -> None:

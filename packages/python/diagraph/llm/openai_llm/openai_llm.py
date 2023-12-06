@@ -44,6 +44,7 @@ class OpenAI(LLM):
         self,
         prompt: str | list[ChatCompletionMessageParam] | dict[str, Any],
         log: FunctionLogHandler,
+        # TODO: Deprecate model as an arg
         model=None,
         **kwargs,
     ) -> str | dict[str, str]:

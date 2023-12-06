@@ -69,7 +69,7 @@ more-itertools==10.1.0
     # via jaraco-classes
 nest-asyncio==1.5.8
     # via -r dev-deps/dev.in
-nh3==0.2.14
+nh3==0.2.15
     # via readme-renderer
 openai==1.3.7
     # via -r dev-deps/dev.in
