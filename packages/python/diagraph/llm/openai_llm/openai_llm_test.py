@@ -82,53 +82,21 @@ def handle_log(_event, _data):
 
 
 def describe_openai_llm():
-    def describe_cast_to_input():
-        def test_it_casts_to_parsed_input():
-            with patch("diagraph.llm.openai_llm.SyncOpenAI", MockSyncOpenAI):
-                from .openai_llm import cast_to_input
-
-                assert cast_to_input("foo") == (
-                    [{"role": "user", "content": "foo"}],
-                    {},
-                )
-
-        def test_it_returns_if_not_a_string():
-            with patch("diagraph.llm.openai_llm.SyncOpenAI", MockSyncOpenAI):
-                from .openai_llm import cast_to_input
-
-                input = [{"role": "user", "content": "foo"}]
-                assert cast_to_input(
-                    {
-                        "messages": input,
-                    },
-                ) == (input, {})
-
-        def test_it_returns_extra_kwargs():
-            with patch("diagraph.llm.openai_llm.SyncOpenAI", MockSyncOpenAI):
-                from .openai_llm import cast_to_input
-
-                input = [{"role": "user", "content": "foo"}]
-                kwargs = {
-                    "foo": "foo",
-                }
-                assert cast_to_input({"messages": input, **kwargs}) == (
-                    input,
-                    kwargs,
-                )
-
     def test_it_instantiates():
         from .openai_llm import OpenAI
 
         OpenAI()
 
     def test_it_runs_foo():
-        with patch("diagraph.llm.openai_llm.SyncOpenAI", MockSyncOpenAI):
+        with patch("diagraph.llm.openai_llm.openai_llm.SyncOpenAI", MockSyncOpenAI):
             from .openai_llm import OpenAI
 
             assert OpenAI().run("foo", log=handle_log) == "0"
 
     def test_it_passes_kwargs_and_parses_string_by_default():
-        with patch("diagraph.llm.openai_llm.SyncOpenAI") as mocked_sync_openai:
+        with patch(
+            "diagraph.llm.openai_llm.openai_llm.SyncOpenAI"
+        ) as mocked_sync_openai:
             fake_create = Mock(return_value=iterable(1))
             mocked_sync_openai.return_value.chat.completions.create = fake_create
             from .openai_llm import DEFAULT_MODEL, OpenAI
@@ -142,7 +110,9 @@ def describe_openai_llm():
             )
 
     def test_it_accepts_alternate_models():
-        with patch("diagraph.llm.openai_llm.SyncOpenAI") as mocked_sync_openai:
+        with patch(
+            "diagraph.llm.openai_llm.openai_llm.SyncOpenAI"
+        ) as mocked_sync_openai:
             fake_create = Mock(return_value=iterable(1))
             mocked_sync_openai.return_value.chat.completions.create = fake_create
             from .openai_llm import OpenAI
@@ -154,7 +124,9 @@ def describe_openai_llm():
                 stream=True,
             )
 
-        with patch("diagraph.llm.openai_llm.SyncOpenAI") as mocked_sync_openai:
+        with patch(
+            "diagraph.llm.openai_llm.openai_llm.SyncOpenAI"
+        ) as mocked_sync_openai:
             fake_create = Mock(return_value=iterable(1))
             mocked_sync_openai.return_value.chat.completions.create = fake_create
             from .openai_llm import OpenAI
@@ -166,7 +138,9 @@ def describe_openai_llm():
                 stream=True,
             )
 
-        with patch("diagraph.llm.openai_llm.SyncOpenAI") as mocked_sync_openai:
+        with patch(
+            "diagraph.llm.openai_llm.openai_llm.SyncOpenAI"
+        ) as mocked_sync_openai:
             fake_create = Mock(return_value=iterable(3))
             mocked_sync_openai.return_value.chat.completions.create = fake_create
             from .openai_llm import OpenAI
@@ -182,7 +156,9 @@ def describe_openai_llm():
         def test_it_does_not_call_start_if_encountering_an_error(mocker):
             handle_log = mocker.stub()
 
-            with patch("diagraph.llm.openai_llm.SyncOpenAI") as mocked_sync_openai:
+            with patch(
+                "diagraph.llm.openai_llm.openai_llm.SyncOpenAI"
+            ) as mocked_sync_openai:
                 fake_create = Mock(return_value=iterable(1))
                 mocked_sync_openai.return_value.chat.completions.create = fake_create
                 from .openai_llm import OpenAI
@@ -195,7 +171,9 @@ def describe_openai_llm():
     def test_it_calls_all_events(mocker):
         handle_log = mocker.stub()
 
-        with patch("diagraph.llm.openai_llm.SyncOpenAI") as mocked_sync_openai:
+        with patch(
+            "diagraph.llm.openai_llm.openai_llm.SyncOpenAI"
+        ) as mocked_sync_openai:
             fake_create = Mock(return_value=iterable(3))
             mocked_sync_openai.return_value.chat.completions.create = fake_create
             from .openai_llm import OpenAI
@@ -211,7 +189,9 @@ def describe_openai_llm():
     def test_it_returns_content_response(mocker):
         handle_log = mocker.stub()
 
-        with patch("diagraph.llm.openai_llm.SyncOpenAI") as mocked_sync_openai:
+        with patch(
+            "diagraph.llm.openai_llm.openai_llm.SyncOpenAI"
+        ) as mocked_sync_openai:
             fake_create = Mock(return_value=iterable(3))
             mocked_sync_openai.return_value.chat.completions.create = fake_create
             from .openai_llm import OpenAI
