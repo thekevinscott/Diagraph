@@ -4,7 +4,7 @@ from collections.abc import Iterator
 from typing import TYPE_CHECKING
 
 from .diagraph_node import DiagraphNode
-from .types import Fn, Result
+from .types import Fn, KeyIdentifier, Result
 
 if TYPE_CHECKING:
     from .diagraph import Diagraph
@@ -16,7 +16,9 @@ class DiagraphNodeGroup:
     diagraph: Diagraph
     nodes: tuple[DiagraphNode, ...]
 
-    def __init__(self, diagraph: Diagraph, *node_keys: Fn | DiagraphNode) -> None:
+    def __init__(
+        self, diagraph: Diagraph, *node_keys: KeyIdentifier | DiagraphNode,
+    ) -> None:
         """
         Initialize a DiagraphNodeGroup.
 

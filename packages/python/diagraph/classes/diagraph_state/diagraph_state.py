@@ -39,7 +39,8 @@ class DiagraphState:
         # validate_key(key[0])
         record = self.__internal_state__.get(key, None)
         if record is None:
-            raise Exception(f"No record for {get_key(key)}")
+            state = {key: str(val) for key, val in self.__internal_state__.items()}
+            raise Exception(f"No record for {get_key(key)}, {state}")
         value = record[timestamp]
         if isinstance(value, DiagraphStateValue):
             return value.value
@@ -63,6 +64,7 @@ def get_name(f: str | Callable) -> str:
     if isinstance(f, str):
         return f
     return f.__name__
+
 
 # def validate_key(key: str):
 #     if key not in ['prompt', 'result', 'error']:

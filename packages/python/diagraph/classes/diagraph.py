@@ -7,7 +7,7 @@ from typing import overload
 
 from ..decorators.prompt import set_default_llm
 from ..llm.llm import LLM
-from ..utils.build_graph import build_graph_mapping
+from ..utils.build_graph import NodeDict, build_graph_mapping
 from ..utils.get_execution_graph import get_execution_graph
 from ..utils.validate_node_ancestors import validate_node_ancestors
 from ..visualization.render_repr_html import render_repr_html
@@ -20,7 +20,7 @@ from .diagraph_state.diagraph_state_record import (
 from .diagraph_state.types import StateValue
 from .graph import Graph
 from .graph_executor import GraphExecutor
-from .types import ErrorHandler, Fn, LogHandler, Result
+from .types import ErrorHandler, Fn, KeyIdentifier, LogHandler, Result
 
 global_log_fn: LogHandler | None = None
 
@@ -51,17 +51,18 @@ class Diagraph:
     terminal_nodes: tuple[DiagraphNode, ...]
     log_handler: LogHandler | None
     error_handler: ErrorHandler | None
-    fns: dict[Fn, Fn]
+    fns: dict[KeyIdentifier, Fn]
     llm: LLM | None
     max_workers: int = MAX_WORKERS
     use_string_keys: bool
 
     def __init__(
         self,
-        *terminal_nodes: Fn,
+        *terminal_fns: Fn,
         log=None,
         error=None,
         llm=None,
+        node_dict: None | NodeDict = None,
         use_string_keys=False,
         max_workers=MAX_WORKERS,
     ) -> None:
@@ -78,47 +79,87 @@ class Diagraph:
         self.__state__ = DiagraphState()
         self.max_workers = max_workers
         self.use_string_keys = use_string_keys
+        if use_string_keys and node_dict is None:
+            raise Exception(
+                "If relying on string keys, a dict mapping of all functions must be provided",
+            )
         self.fns = {}
         self.llm = llm
 
         graph_def, self.fns = build_graph_mapping(
-            *terminal_nodes,
-            use_string_keys=use_string_keys,
+            self,
+            terminal_fns,
+            # optionally, provide a dict of _all_ nodes, which
+            # is required if relying on string keys to build the graph
+            node_dict=node_dict,
         )
         self.__graph__ = Graph(graph_def)
 
-        self.terminal_nodes = tuple(DiagraphNode(self, node) for node in terminal_nodes)
+        self.terminal_nodes = tuple(DiagraphNode(self, fn) for fn in terminal_fns)
         self.log_handler = log or global_log_fn
         self.error_handler = error
+
+    def get_fn_for_key(self, key: KeyIdentifier) -> Fn:
+        if self.use_string_keys:
+            fn = self.fns.get(key)
+            if fn is None:
+                raise Exception(f"No fn found for key {key}. Fns: {self.fns}")
+            return fn
+
+        if isinstance(key, Callable):
+            return key
+        raise Exception(f"Invalid key: {key}")
+
+    def get_key_for_fn(self, fn: KeyIdentifier) -> KeyIdentifier:
+        if self.use_string_keys:
+            if isinstance(fn, str):
+                return fn
+            return fn.__name__
+        if isinstance(fn, str):
+            raise Exception(
+                f"Cannot use string key for function {fn}. "
+                "Set use_string_keys=True to use string keys.",
+            )
+        return fn
 
     def _repr_html_(self) -> str:
         return render_repr_html(self)
 
     def get_children_of_node(self, node: DiagraphNode | Fn) -> list[DiagraphNode]:
         key = node.key if isinstance(node, DiagraphNode) else node
-        return [DiagraphNode(self, node) for node in self.__graph__.in_edges(key)]
+        return [
+            DiagraphNode(self, node)
+            for node in self.__graph__.in_edges(self.get_fn_for_key(key))
+        ]
 
     def get_ancestors_of_node(self, node: DiagraphNode | Fn) -> list[DiagraphNode]:
         key = node.key if isinstance(node, DiagraphNode) else node
-        return [DiagraphNode(self, node) for node in self.__graph__.out_edges(key)]
+        return [
+            DiagraphNode(self, node)
+            for node in self.__graph__.out_edges(self.get_fn_for_key(key))
+        ]
 
     @overload
     def __getitem__(self, key: int) -> DiagraphNodeGroup:
         ...
 
     @overload
-    def __getitem__(self, key: Fn) -> DiagraphNode:
+    def __getitem__(self, key: tuple[KeyIdentifier, ...]) -> DiagraphNodeGroup:
+        ...
+
+    @overload
+    def __getitem__(self, key: KeyIdentifier) -> DiagraphNode:
         ...
 
     def __getitem__(
         self,
-        key: Fn | int | tuple[Fn, ...],
+        key: KeyIdentifier | int | tuple[KeyIdentifier, ...],
     ) -> DiagraphNode | DiagraphNodeGroup:
         """
         Retrieve a DiagraphNode or DiagraphNodeGroup associated with a function or depth key.
 
         Args:
-            key (Fn | int): A function or depth key.
+            key (str | Fn | int | tuple): A function, string for a function, or depth key.
 
         Returns:
             DiagraphNode or tuple[DiagraphNode]: The DiagraphNode or
@@ -126,7 +167,9 @@ class Diagraph:
         """
         if isinstance(key, int):
             execution_graph = list(
-                get_execution_graph(self.__graph__, self.__graph__.root_nodes),
+                get_execution_graph(
+                    self.__graph__, self.__graph__.root_nodes, self.get_fn_for_key,
+                ),
             )
 
             if key < 0:
@@ -134,13 +177,19 @@ class Diagraph:
 
             node_keys = execution_graph[key]
             return DiagraphNodeGroup(self, *node_keys)
-        if isinstance(key, Callable):
-            return DiagraphNode(self, key)
 
         if isinstance(key, tuple):
             return DiagraphNodeGroup(self, *key)
 
-        raise Exception(f"Invalid key {key}")
+        if self.use_string_keys:
+            if isinstance(key, str):
+                return DiagraphNode(self, key)
+
+            raise Exception(f"Invalid key: {key}, expected a str")
+        if isinstance(key, Callable):
+            return DiagraphNode(self, key)
+
+        raise Exception(f"Invalid key: {key}, expected a callable")
 
     def run(self, *input_args, **kwargs) -> Diagraph:
         """
@@ -189,7 +238,11 @@ class Diagraph:
             self,
             DiagraphNodeGroup(
                 self,
-                *next(get_execution_graph(self.__graph__, starting_node_group)),
+                *next(
+                    get_execution_graph(
+                        self.__graph__, starting_node_group, self.get_fn_for_key,
+                    ),
+                ),
             ),
             input_args=input_args,
             input_kwargs=input_kwargs,
@@ -264,7 +317,7 @@ class Diagraph:
     def nodes(self):
         return [DiagraphNode(self, node) for node in self.__graph__.nodes]
 
-    def __setitem__(self, node_key: Fn, fn: Fn) -> None:
+    def __setitem__(self, node_key: KeyIdentifier, fn: Fn) -> None:
         """
         Add a function to the Diagraph.
 

@@ -23,16 +23,74 @@ def describe_instantiation():
         Diagraph(foo)
 
 
-# def describe_nodes():
-#     def test_it_gets_back_a_node_wrapper_for_a_function():
-#         def foo():
-#             return "foo"
+def describe_nodes():
+    def test_it_gets_back_a_node_wrapper_for_a_function():
+        def foo():
+            return "foo"
 
-#         diagraph = Diagraph(foo, use_string_keys=True)
+        dg = Diagraph(foo, use_string_keys=False)
 
-#         node = diagraph["foo"]
-#         assert isinstance(node, DiagraphNode)
-#         assert node.fn == foo
+        node = dg[foo]
+        assert isinstance(node, DiagraphNode)
+        assert node.fn == foo
+
+    def describe_string_keys():
+
+        def test_it_gets_back_a_node_wrapper_for_a_function_using_string_keys():
+            def foo():
+                return "foo"
+
+            dg = Diagraph(foo, use_string_keys=True, node_dict={"foo": foo})
+
+            node = dg["foo"]
+            assert isinstance(node, DiagraphNode)
+            assert node.fn == foo
+
+        def test_it_can_run_from_a_string_key():
+            def foo():
+                return "foo"
+
+            dg = Diagraph(foo, use_string_keys=True, node_dict={"foo": foo})
+
+            dg.run("foo")
+            assert dg.result == "foo"
+
+        # def test_nodes_can_specify_dependencies_as_functions_alongside_string_keys():
+        #     def foo():
+        #         return "foo"
+
+        #     def bar(foo=Depends(foo)):
+        #         return f"bar: {foo}"
+
+        #     def baz(bar=Depends(bar)):
+        #         return f"baz: {bar}"
+
+        #     dg = Diagraph(baz, use_string_keys=True, node_dict={'foo': foo, 'bar':
+        #         bar, 'baz': baz})
+        #     dg["foo"].result = "foo1"
+
+        #   dg["bar"].run()
+        #     assert dg.result == "baz: bar: foo1"
+
+        def test_nodes_can_specify_dependencies_as_strings_alongside_string_keys():
+            def foo():
+                return "foo"
+
+            def bar(foo=Depends("foo")):
+                return f"bar: {foo}"
+
+            def baz(bar=Depends("bar")):
+                return f"baz: {bar}"
+
+            dg = Diagraph(
+                baz,
+                use_string_keys=True,
+                node_dict={"foo": foo, "bar": bar, "baz": baz},
+            )
+            dg["foo"].result = "foo1"
+
+            dg["bar"].run()
+            assert dg.result == "baz: bar: foo1"
 
 
 def describe_indexing():
@@ -1969,14 +2027,14 @@ def describe_replay():
 
         diagraph[d0].result = "newresult"
 
-        with pytest.raises(Exception, match='unset'):
+        with pytest.raises(Exception, match="unset"):
             diagraph[d1a].result
-        with pytest.raises(Exception, match='unset'):
+        with pytest.raises(Exception, match="unset"):
             diagraph[d1b].result
-        with pytest.raises(Exception, match='unset'):
+        with pytest.raises(Exception, match="unset"):
             diagraph[d2].result
 
-        diagraph[d1b].result = 'd1b'
+        diagraph[d1b].result = "d1b"
 
         diagraph[d1a].run("bar")
 
