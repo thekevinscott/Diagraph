@@ -1,14 +1,22 @@
 from __future__ import annotations
 
 import inspect
-from collections.abc import Generator
+from collections.abc import Callable, Generator
+from typing import TYPE_CHECKING
 
 from ..classes.ordered_set import OrderedSet
 from ..classes.types import Fn
 from .depends import FnDependency
 
+if TYPE_CHECKING:
+    from ..classes.diagraph import Diagraph
 
-def get_dependencies(node: Fn) -> Generator[Fn, None, None]:
+NodeDict = dict[str, Fn]
+
+
+def get_dependencies(
+    diagraph: Diagraph, node: Fn, node_dict: None | NodeDict = None,
+) -> Generator[Fn, None, None]:
     """
     Extracts dependencies from the default values of a function's parameters.
 
@@ -20,15 +28,39 @@ def get_dependencies(node: Fn) -> Generator[Fn, None, None]:
     """
     for val in inspect.signature(node).parameters.values():
         if isinstance(val.default, FnDependency):
-            yield val.default.dependency
+            dep = val.default.dependency
+
+            if diagraph.use_string_keys:
+                if node_dict is None:
+                    raise Exception(
+                        "Cannot use string keys without providing a dictionary mapping",
+                    )
+                if isinstance(dep, str):
+                    fn = node_dict.get(dep)
+                    if fn is None:
+                        raise Exception(
+                            f'Function "{dep}" not found in nodes dictionary mapping',
+                        )
+                    yield fn
+                else:
+                    raise Exception(f"Dependency {dep} is not a string")
+            else:
+                if isinstance(dep, Callable):
+                    yield dep
+                else:
+                    raise Exception(f"Dependency {dep} is not a callable function")
 
 
-def build_graph(*_nodes: Fn) -> dict[Fn, OrderedSet[Fn]]:
+def build_graph(
+    diagraph: Diagraph,
+    terminal_nodes: tuple[Fn, ...],
+    node_dict: None | NodeDict = None,
+) -> dict[Fn, OrderedSet[Fn]]:
     """
     Builds a dependency graph for a set of functions.
 
     Parameters:
-    - *_nodes (Fn): Variable-length argument list of functions to include in the graph.
+    - terminal_nodes (Fn): Variable-length argument list of functions to include in the graph.
 
     Returns:
     dict[Fn, OrderedSet[Fn]]: A dictionary representing the dependency graph,
@@ -36,13 +68,15 @@ def build_graph(*_nodes: Fn) -> dict[Fn, OrderedSet[Fn]]:
     """
     graph: dict[Fn, OrderedSet[Fn]] = {}
     seen = set()
-    nodes: list[Fn] = list(_nodes)
+    nodes: list[Fn] = list(terminal_nodes)
     for node in nodes:
+        if isinstance(node, Callable) is False:
+            raise Exception(f"Node {node} is not a callable function")
         if node not in graph:
             graph[node] = OrderedSet()
         if node not in seen:
             seen.add(node)
-            for dep in get_dependencies(node):
+            for dep in get_dependencies(diagraph, node, node_dict):
                 if dep not in seen:
                     nodes.append(dep)
 
@@ -51,28 +85,29 @@ def build_graph(*_nodes: Fn) -> dict[Fn, OrderedSet[Fn]]:
     return graph
 
 
-def build_graph_mapping(*terminal_nodes: Fn, use_string_keys=False):
-    graph_def: dict[Fn, OrderedSet[Fn]] = build_graph(*terminal_nodes)
+GetFnKey = Callable[[Fn], str | Fn]
+
+
+def build_graph_mapping(
+    diagraph: Diagraph,
+    terminal_nodes: tuple[Fn, ...],
+    node_dict: NodeDict | None = None,
+):
+    get_fn_key = diagraph.get_key_for_fn
+    graph_def: dict[Fn, OrderedSet[Fn]] = build_graph(
+        diagraph, terminal_nodes, node_dict,
+    )
     # graph_mapping: dict[Fn, str | Fn] = dict()
     graph_def_keys: list[Fn] = list(graph_def.keys())
     fns = {}
 
-    def get_fn_key(fn: Fn) -> str | Fn:
-        if use_string_keys:
-            return fn.__name__
-        return fn
-
     for item in graph_def_keys:
         fns[get_fn_key(item)] = item
         val = graph_def[item]
-        # graph_mapping[item] = get_fn_key(item)
-        new_val = set()
+        new_val: OrderedSet[Fn] = OrderedSet()
         while len(val):
             _item = val.pop()
-            # for _item in val:
-            # graph_mapping[_item] = get_fn_key(_item)
-            # val.remove(_item)
-            new_val.add(get_fn_key(_item))
+            new_val.add(_item)
 
         del graph_def[item]
         graph_def[item] = new_val

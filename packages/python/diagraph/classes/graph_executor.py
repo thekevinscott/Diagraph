@@ -1,23 +1,26 @@
 import concurrent.futures
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 from ..decorators.is_decorated import is_decorated
 from ..utils.build_parameters import build_parameters
-
-# from .diagraph import Diagraph
 from .diagraph_node import DiagraphNode
 from .diagraph_node_group import DiagraphNodeGroup
-from .types import ErrorHandler, Fn, Result
+from .types import ErrorHandler, KeyIdentifier, Result
+
+if TYPE_CHECKING:
+    pass
 
 
 class GraphExecutor:
+    # diagraph: Diagraph
     diagraph: Any
     executor: concurrent.futures.ThreadPoolExecutor
     global_error_fn: ErrorHandler | None = None
-    seen_keys: set[Fn]
+    seen_keys: set[KeyIdentifier]
 
     def __init__(
         self,
+        # diagraph: Diagraph,
         diagraph: Any,
         starting_nodes: DiagraphNodeGroup,
         input_args,
@@ -117,7 +120,12 @@ class GraphExecutor:
         # in order
         fn = self.diagraph.fns[node.key]
 
-        args, kwargs = build_parameters(self.diagraph, fn, provided_args, provided_kwargs)
+        args, kwargs = build_parameters(
+            self.diagraph,
+            fn,
+            provided_args,
+            provided_kwargs,
+        )
 
         if self.diagraph.log_handler:
             log_handler = self.diagraph.log_handler

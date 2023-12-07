@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from typing import Any
 
-from diagraph.classes.types import Fn
+from diagraph.classes.types import Fn, KeyIdentifier
 
 
 def Depends(dependency: Fn) -> Any:
@@ -17,9 +17,9 @@ class FnDependency:
     - dependency (Fn): The dependency to be injected.
     """
 
-    dependency: Fn
+    dependency: KeyIdentifier
 
-    def __init__(self, dependency: Fn):
+    def __init__(self, dependency: KeyIdentifier):
         """
         Initializes a Depends instance with a given dependency.
 

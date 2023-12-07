@@ -7,7 +7,7 @@ import tiktoken
 
 from ..decorators.is_decorated import is_decorated
 from .graph import Graph
-from .types import Fn, Result
+from .types import Fn, KeyIdentifier, Result
 
 if TYPE_CHECKING:
     from .diagraph import Diagraph
@@ -18,9 +18,9 @@ class DiagraphNode:
 
     diagraph: Diagraph
     __graph__: Graph
-    key: Fn
+    key: KeyIdentifier
 
-    def __init__(self, diagraph: Diagraph, key: Fn) -> None:
+    def __init__(self, diagraph: Diagraph, key: KeyIdentifier) -> None:
         """
         Initialize a DiagraphNode.
 
@@ -28,11 +28,11 @@ class DiagraphNode:
             diagraph (Diagraph): The Diagraph instance that contains this node.
             key (Key): The key associated with the node.
         """
-        if not isinstance(key, Callable):
-            raise Exception(f'Key "{key}" is not a callable function')
+        if not isinstance(key, Callable) and not isinstance(key, str):
+            raise Exception(f'Key "{key}" is not a callable function or string')
         self.diagraph = diagraph
         self.__graph__ = diagraph.__graph__
-        self.key = key
+        self.key = diagraph.get_key_for_fn(key)
 
     def __str__(self) -> str:
         """
@@ -52,7 +52,10 @@ class DiagraphNode:
         Returns:
             Fn: The function associated with the node.
         """
-        return self.diagraph.fns[self.key]
+        fn = self.diagraph.fns.get(self.key)
+        if fn is None:
+            raise Exception(f'Function "{self.key}" not found in Diagraph')
+        return fn
 
     @property
     def ancestors(self) -> list[DiagraphNode]:

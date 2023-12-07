@@ -2,6 +2,7 @@ import pytest
 
 from ..classes.diagraph import Diagraph
 from ..classes.graph import Graph
+from ..classes.types import KeyIdentifier
 from .depends import Depends
 from .get_execution_graph import get_execution_graph
 
@@ -201,7 +202,15 @@ def describe_execution_graph():
         ],
     )
     def test_it_gets_execution_graph_for_nodes(graph_def, starting_nodes, expectation):
-        execution_graph = list(get_execution_graph(Graph(graph_def), starting_nodes))
+        def get_key_for_fn(fn: KeyIdentifier):
+            return fn
+            # if type(fn) is Callable:
+            #     return fn
+            # raise Exception(f"Dependency {fn} is a string")
+
+        execution_graph = list(
+            get_execution_graph(Graph(graph_def), starting_nodes, get_key_for_fn),
+        )
 
         try:
             assert execution_graph == expectation
@@ -225,6 +234,8 @@ def describe_execution_graph():
         dg = Diagraph(b, c)
         group = dg[0]
 
-        execution_graph = list(get_execution_graph(dg.__graph__, group))
+        execution_graph = list(
+            get_execution_graph(dg.__graph__, group, dg.get_fn_for_key),
+        )
 
         assert execution_graph == [[a], [b, c]]
