@@ -18,7 +18,7 @@ from .diagraph_state.diagraph_state_record import (
 from .diagraph_state.types import StateValue
 from .graph import Graph
 from .graph_executor import GraphExecutor
-from .serializers import SERIALIZERS
+from .serializers import DEFAULT_SERIALIZER, SERIALIZERS
 from .types import ErrorHandler, Fn, KeyIdentifier, LogHandler, Result
 
 global_log_fn: LogHandler | None = None
@@ -385,22 +385,15 @@ class Diagraph:
             ],
         )
 
-    # def to_json(self):
-    #     graph_def = self.__graph__.graph_def
-    #     return {
-    #         "version": 1,
-    #         # 'graph': {key.__name__: [v.__name__ for v in val] for key, val
-    #         #     in self.graph_def.items()},
-    #         # 'graph': self.__graph__.to_json(),
-    #         "nodes": {
-    #             node.key.__name__: {
-    #                 "inputs": [a.key.__name__ for a in node.ancestors],
-    #                 "fn": pickle.dumps(node.fn),
-    #                 "is_decorated": is_decorated(node.key),
-    #             }
-    #             for node in self.nodes
-    #         },
-    #     }
+    def to_json(self, version=DEFAULT_SERIALIZER):
+        available_serializers = list(SERIALIZERS.keys())
+        if str(version) not in available_serializers:
+            raise Exception(
+                f"Unsupported version: {version}. Available versions: {available_serializers}",
+            )
+        return SERIALIZERS[version]["serialize"](
+            self,
+        )
 
     @staticmethod
     def from_json(config: dict):

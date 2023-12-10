@@ -1,17 +1,23 @@
+import inspect
+from collections.abc import Callable
 from typing import Any
 
 from pydantic import BaseModel
 from pydantic.functional_validators import field_validator
 
+from ...utils.depends import FnDependency
 from ..types import Fn
-from .get_fn import get_fn
+from .get_fn import dump_fn, get_fn
 
 Vars = dict[str, Any]
+
+# if TYPE_CHECKING:
+#     from ..diagraph import Diagraph
 
 
 class V1NodeConfig(BaseModel):
     fn: str
-    inputs: list[str]
+    inputs: list[str] | None = None
     args: None | Vars = None
     is_terminal: bool = False
 
@@ -41,8 +47,38 @@ class V1Config(BaseModel):
         return nodes
 
 
-def serialize():
-    pass
+def collect_dependencies(fn: Callable) -> list[FnDependency]:
+    dependencies: list[FnDependency] = []
+    for parameter in inspect.signature(fn).parameters.values():
+        if parameter.default is not None and parameter.default is not inspect._empty:
+            if isinstance(parameter.default, FnDependency):
+                dependencies.append(parameter.default.dependency)
+    return dependencies
+
+
+def collect_string_dependencies(fn: Callable) -> list[str]:
+    dependencies = collect_dependencies(fn)
+    return [d if isinstance(d, str) else d.__name__ for d in dependencies]
+
+
+def serialize(diagraph: Any) -> dict[str, Any]:
+    nodes = {}
+    for node in diagraph.nodes:
+        inputs = collect_string_dependencies(node.fn)
+        nodes[node.fn.__name__] = {
+            "fn": dump_fn(node.fn),
+            # TODO: need to supply inputs, _and then_ does deserialize know how to read a Depends?
+            "inputs": inputs if len(inputs) > 0 else None,
+            "is_terminal": node.key in [n.key for n in diagraph.terminal_nodes],
+        }
+    config = V1Config(
+        nodes=nodes,
+        args=None,
+    ).model_dump(exclude_none=True, exclude_defaults=True)
+    return {
+        **config,
+        "version": "1",
+    }
 
 
 def build_vars(local_vars: Vars | None, args: Vars | None) -> Vars:
