@@ -6,3 +6,5 @@ SERIALIZERS = {
         "deserialize": deserialize,
     },
 }
+
+DEFAULT_SERIALIZER = "1"

@@ -40,6 +40,7 @@ def build_parameters(
                 dep: Fn = parameter.default.dependency
                 try:
                     key_for_fn = dep
+                    diagraph[key_for_fn]
                 except Exception:
                     raise Exception(
                         f"No function has been set for dep {dep}. Available functions: {diagraph.fns}",

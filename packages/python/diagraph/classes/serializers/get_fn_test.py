@@ -5,7 +5,8 @@ from textwrap import dedent
 
 import pytest
 
-from .get_fn import get_fn
+from ...utils.depends import Depends
+from .get_fn import dump_fn, get_fn
 
 
 def getsource(fn: Callable):
@@ -122,3 +123,50 @@ def describe_get_fn():
         fn = get_fn(dedent(inspect.getsource(foo)), "foo", {"decorate": decorate})
         assert fn() == "decorated: foo: arg1 {'foo': 'foo'}"
         assert fn("a") == "decorated: foo: a {'foo': 'foo'}"
+
+
+def describe_dump_fn():
+    def test_it_dumps_fn():
+        def foo():
+            return "foo"
+
+        assert dump_fn(foo) == '''def foo():\n    return "foo"'''
+
+    def test_it_does_not_rewrite_arg():
+        def foo(a: int = 1):
+            return "foo"
+
+        assert dump_fn(foo) == '''def foo(a: int = 1):\n    return "foo"'''
+
+    def test_it_does_not_rewrite_depends_string_arg():
+        def foo(a=Depends("a")):
+            return "foo"
+
+        assert dump_fn(foo) == '''def foo(a=Depends("a")):\n    return "foo"'''
+
+    def test_it_does_rewrite_depends_fn_arg():
+        def a():
+            return "a"
+
+        def foo(a=Depends(a)):
+            return "foo"
+
+        assert dump_fn(foo) == '''def foo(a=Depends("a")):\n    return "foo"'''
+
+    def test_it_does_rewrite_multiple_depends_fn_arg():
+        def a():
+            return "a"
+
+        def b():
+            return "b"
+
+        def c():
+            return "x"
+
+        def foo(a=Depends(a), b=Depends(b), c=Depends(c)):
+            return "foo"
+
+        assert (
+            dump_fn(foo)
+            == '''def foo(a=Depends("a"), b=Depends("b"), c=Depends("c")):\n    return "foo"'''
+        )

@@ -1,6 +1,8 @@
 # from types import CodeType, FunctionType
-
-
+import re
+from collections.abc import Callable
+from inspect import getsource as _getsource
+from textwrap import dedent
 from typing import Any
 
 from ...decorators.prompt import prompt
@@ -49,3 +51,13 @@ def get_fn(
     if callable(fn):
         return fn
     raise ValueError("Invalid function string")
+
+
+def dump_fn(fn: Callable) -> str:
+    fn_str = dedent(_getsource(fn)).strip()
+
+    def rewrite_depends(s: re.Match[str]) -> str:
+        arg = s.group(1).strip("\"'")
+        return f'Depends("{arg}")'
+
+    return re.sub(r"Depends\((.*?)\)", rewrite_depends, fn_str)
