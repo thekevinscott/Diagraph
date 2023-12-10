@@ -1,7 +1,12 @@
+from collections.abc import Callable
+from inspect import getsource as _getsource
+from textwrap import dedent
+from typing import Any
 from unittest.mock import patch
 
 import pytest
 
+from ..decorators import prompt as _prompt
 from ..decorators.prompt import prompt
 from ..llm.llm import LLM
 from ..llm.openai_llm import OpenAI
@@ -10,6 +15,16 @@ from .diagraph import Diagraph
 from .diagraph_node import DiagraphNode
 from .diagraph_node_group import DiagraphNodeGroup
 from .types import Fn
+
+
+@pytest.fixture(autouse=True)
+def _set_default_llm(request):
+    _prompt.__default_llm__ = None
+    return  # allows us to have cleanup after the test
+
+
+def getsource(fn: Callable):
+    return dedent(_getsource(fn))
 
 
 def describe_instantiation():
@@ -35,7 +50,6 @@ def describe_nodes():
         assert node.fn == foo
 
     def describe_string_keys():
-
         def test_it_gets_back_a_node_wrapper_for_a_function_using_string_keys():
             def foo():
                 return "foo"
@@ -2677,3 +2691,558 @@ def describe_state():
             dg[d2].result
 
     # test it uses historical records correctly (e.g., set an explicit result, run a child multiple times)
+
+
+def describe_serialization():
+    def describe_from_json():
+        @pytest.mark.parametrize(
+            "version",
+            [
+                ("foo",),
+                (None,),
+                (999,),
+            ],
+        )
+        def test_it_raises_on_an_unsupported_version(version):
+            with pytest.raises(Exception, match="Unsupported version"):
+                Diagraph.from_json(
+                    {
+                        "version": version,
+                    },
+                )
+
+        def describe_version_1():
+            def test_it_deserializes_a_one_node_diagraph():
+                def foo():
+                    return "foo"
+
+                dg = Diagraph.from_json(
+                    {
+                        "version": "1",
+                        "nodes": {
+                            "foo": {
+                                "inputs": [],
+                                "fn": getsource(foo),
+                                "is_terminal": True,
+                            },
+                        },
+                    },
+                )
+                assert dg["foo"].fn() == "foo"
+                assert dg.run().result == "foo"
+
+            def test_it_raises_appropriately_if_not_using_string_keys():
+                def foo():
+                    return "foo"
+
+                dg = Diagraph.from_json(
+                    {
+                        "version": "1",
+                        "nodes": {
+                            "foo": {
+                                "inputs": [],
+                                "fn": getsource(foo),
+                                "is_terminal": True,
+                            },
+                        },
+                    },
+                )
+                with pytest.raises(
+                    Exception,
+                    match="This Diagraph was created from JSON",
+                ):
+                    dg[foo].fn()
+
+            def test_it_deserializes_a_one_node_diagraph_with_args():
+                def foo(arg):
+                    return f"foo: {arg}"
+
+                dg = Diagraph.from_json(
+                    {
+                        "version": "1",
+                        "nodes": {
+                            "foo": {
+                                "inputs": [],
+                                "fn": getsource(foo),
+                                "is_terminal": True,
+                            },
+                        },
+                    },
+                )
+                assert dg["foo"].fn("a") == "foo: a"
+                assert dg.run("b").result == "foo: b"
+
+            def test_it_deserializes_a_one_node_diagraph_with_args_and_types():
+                def foo(arg: str):
+                    return f"foo: {arg}"
+
+                dg = Diagraph.from_json(
+                    {
+                        "version": "1",
+                        "nodes": {
+                            "foo": {
+                                "inputs": [],
+                                "is_terminal": True,
+                                "fn": getsource(foo),
+                            },
+                        },
+                    },
+                )
+                assert dg["foo"].fn("a") == "foo: a"
+                assert dg.run("b").result == "foo: b"
+
+            def test_it_deserializes_a_diagraph_with_dependencies():
+                def foo():
+                    return "foo"
+
+                def bar(foo1=Depends("foo")):
+                    return f"bar{foo1}"
+
+                dg = Diagraph.from_json(
+                    {
+                        "version": "1",
+                        "nodes": {
+                            "foo": {
+                                "inputs": [],
+                                "fn": getsource(foo),
+                            },
+                            "bar": {
+                                "inputs": [
+                                    "foo",
+                                ],
+                                "fn": getsource(bar),
+                                "is_terminal": True,
+                            },
+                        },
+                    },
+                )
+                assert dg["foo"].fn() == "foo"
+                assert dg["bar"].fn("foo1") == "barfoo1"
+                assert dg.run().result == "barfoo"
+
+            def test_it_deserializes_a_diagraph_with_prompt(mocker):
+                stub = mocker.stub()
+
+                def fake_run(self, string, stream=None, **kwargs):
+                    stub(string)
+                    return string + "_"
+
+                with patch.object(
+                    OpenAI,
+                    "run",
+                    fake_run,
+                ):
+
+                    @prompt
+                    def foo():
+                        return "foo"
+
+                    dg = Diagraph.from_json(
+                        {
+                            "version": "1",
+                            "nodes": {
+                                "foo": {
+                                    "inputs": [],
+                                    "fn": getsource(foo),
+                                    "is_terminal": True,
+                                },
+                            },
+                        },
+                    )
+                    assert dg.run().result == "foo_"
+                assert stub.call_count == 1
+                stub.assert_any_call("foo")
+
+            def test_it_deserializes_a_diagraph_with_prompt_fn(mocker):
+                stub = mocker.stub()
+
+                def fake_run(self, string, stream=None, **kwargs):
+                    stub(string)
+                    return string + "_"
+
+                with patch.object(
+                    OpenAI,
+                    "run",
+                    fake_run,
+                ):
+
+                    @prompt()
+                    def foo():
+                        return "foo"
+
+                    dg = Diagraph.from_json(
+                        {
+                            "version": "1",
+                            "nodes": {
+                                "foo": {
+                                    "inputs": [],
+                                    "fn": getsource(foo),
+                                    "is_terminal": True,
+                                },
+                            },
+                        },
+                    )
+                    assert dg.run().result == "foo_"
+                assert stub.call_count == 1
+                stub.assert_any_call("foo")
+
+            def test_it_deserializes_a_diagraph_with_builtin_llm(mocker):
+                stub = mocker.stub()
+
+                def fake_run(self, string, stream=None, **kwargs):
+                    stub(string, **self.kwargs)
+                    return string + "_"
+
+                with patch.object(
+                    OpenAI,
+                    "run",
+                    fake_run,
+                ):
+
+                    @prompt(llm=OpenAI(model="gpt-foo"))
+                    def foo():
+                        return "foo"
+
+                    dg = Diagraph.from_json(
+                        {
+                            "version": "1",
+                            "nodes": {
+                                "foo": {
+                                    "inputs": [],
+                                    "fn": getsource(foo),
+                                    "is_terminal": True,
+                                },
+                            },
+                        },
+                    )
+                    assert dg.run().result == "foo_"
+                assert stub.call_count == 1
+                stub.assert_any_call("foo", model="gpt-foo")
+
+            def test_it_deserializes_a_diagraph_with_custom_llm_defined_locally(
+                mocker,
+            ):
+                stub = mocker.stub()
+
+                class MockLLM(LLM):
+                    def run(self, prompt, log, model=None, stream=None, **kwargs):
+                        stub(prompt)
+                        return f"{prompt}__"
+
+                llm = MockLLM()
+
+                @prompt(llm=llm)
+                def foo():
+                    return "foo"
+
+                dg = Diagraph.from_json(
+                    {
+                        "version": "1",
+                        "nodes": {
+                            "foo": {
+                                "inputs": [],
+                                "fn": getsource(foo),
+                                "is_terminal": True,
+                                "args": {
+                                    "llm": llm,
+                                },
+                            },
+                        },
+                    },
+                )
+                assert dg.run().result == "foo__"
+                assert stub.call_count == 1
+                stub.assert_any_call("foo")
+
+            def test_it_deserializes_a_diagraph_with_custom_error_handler_defined_locally(
+                mocker,
+            ):
+                stub = mocker.stub()
+                e = Exception("test error")
+
+                def fake_run(self, string, stream=None, **kwargs):
+                    raise e
+
+                with patch.object(
+                    OpenAI,
+                    "run",
+                    fake_run,
+                ):
+
+                    def error_handler(e: Exception, r: Any) -> str:
+                        stub(e)
+                        return "errored"
+
+                    @prompt(error=error_handler)
+                    def foo():
+                        return "foo"
+
+                    dg = Diagraph.from_json(
+                        {
+                            "version": "1",
+                            "nodes": {
+                                "foo": {
+                                    "inputs": [],
+                                    "fn": getsource(foo),
+                                    "is_terminal": True,
+                                    "args": {
+                                        "error_handler": error_handler,
+                                    },
+                                },
+                            },
+                        },
+                    )
+                    assert dg.run().result == "errored"
+                    assert stub.call_count == 1
+                    stub.assert_any_call(e)
+
+            def test_it_deserializes_a_diagraph_with_custom_log_handler_defined_locally(
+                mocker,
+            ):
+                stub = mocker.stub()
+
+                def fake_run(self, string, log, stream=None, **kwargs):
+                    log("start", None)
+                    log("data", string)
+                    log("end", None)
+                    return string + "_"
+
+                with patch.object(
+                    OpenAI,
+                    "run",
+                    fake_run,
+                ):
+
+                    def log_handler(*args, **kwargs):
+                        stub(*args, **kwargs)
+
+                    @prompt(log=log_handler)
+                    def foo():
+                        return "foo"
+
+                    dg = Diagraph.from_json(
+                        {
+                            "version": "1",
+                            "nodes": {
+                                "foo": {
+                                    "inputs": [],
+                                    "fn": getsource(foo),
+                                    "is_terminal": True,
+                                    "args": {
+                                        "log_handler": log_handler,
+                                    },
+                                },
+                            },
+                        },
+                    )
+                    assert dg.run("foo").result == "foo_"
+                    assert stub.call_count == 3
+                    stub.assert_any_call("start", None)
+                    stub.assert_any_call("data", "foo")
+                    stub.assert_any_call("end", None)
+
+            def test_it_deserializes_a_diagraph_with_custom_code_defined_locally(
+                mocker,
+            ):
+                log_stub = mocker.stub()
+                error_stub = mocker.stub()
+                llm_stub = mocker.stub()
+
+                e = Exception("test error")
+
+                class MockLLM(LLM):
+                    def run(self, prompt, log, model=None, stream=None, **kwargs):
+                        llm_stub(prompt)
+                        log("start", None)
+                        log("data", prompt)
+                        log("end", None)
+                        raise e
+
+                llm = MockLLM()
+
+                def error_handler(e: Exception, r: Any) -> str:
+                    error_stub(e)
+                    return "errored"
+
+                def log_handler(*args, **kwargs):
+                    log_stub(*args, **kwargs)
+
+                @prompt(llm=llm, error=error_handler, log=log_handler)
+                def foo():
+                    return "foo"
+
+                dg = Diagraph.from_json(
+                    {
+                        "version": "1",
+                        "nodes": {
+                            "foo": {
+                                "inputs": [],
+                                "fn": getsource(foo),
+                                "is_terminal": True,
+                                "args": {
+                                    "llm": llm,
+                                    "error_handler": error_handler,
+                                    "log_handler": log_handler,
+                                },
+                            },
+                        },
+                    },
+                )
+                assert dg.run("foo").result == "errored"
+                assert log_stub.call_count == 3
+                log_stub.assert_any_call("start", None)
+                log_stub.assert_any_call("data", "foo")
+                log_stub.assert_any_call("end", None)
+                assert error_stub.call_count == 1
+                error_stub.assert_any_call(e)
+                assert llm_stub.call_count == 1
+                llm_stub.assert_any_call("foo")
+
+            def test_it_deserializes_a_diagraph_with_custom_code_defined_globally(
+                mocker,
+            ):
+                log_stub = mocker.stub()
+                error_stub = mocker.stub()
+                llm_stub = mocker.stub()
+
+                e = Exception("test error")
+
+                class MockLLM(LLM):
+                    def run(self, prompt, log, model=None, stream=None, **kwargs):
+                        llm_stub(prompt)
+                        log("start", None)
+                        log("data", prompt)
+                        log("end", None)
+                        raise e
+
+                llm = MockLLM()
+
+                def error_handler(e: Exception, r: Any, fn) -> str:
+                    error_stub(e)
+                    return "errored"
+
+                def log_handler(event, chunk, _fn):
+                    log_stub(event, chunk)
+
+                @prompt
+                def foo():
+                    return "foo"
+
+                dg = Diagraph.from_json(
+                    {
+                        "version": "1",
+                        "nodes": {
+                            "foo": {
+                                "inputs": [],
+                                "fn": getsource(foo),
+                                "is_terminal": True,
+                            },
+                        },
+                        "args": {
+                            "llm": llm,
+                            "error": error_handler,
+                            "log": log_handler,
+                        },
+                    },
+                )
+                assert dg.run("foo").result == "errored"
+                assert log_stub.call_count == 3
+                log_stub.assert_any_call("start", None)
+                log_stub.assert_any_call("data", "foo")
+                log_stub.assert_any_call("end", None)
+                assert error_stub.call_count == 1
+                error_stub.assert_any_call(e)
+                assert llm_stub.call_count == 1
+                llm_stub.assert_any_call("foo")
+
+
+#     # def describe_to_json():
+#     #     def test_it_serializes_an_unrun_simple_diagraph_to_json():
+#     #         def foo():
+#     #             return 'foo'
+
+#     #         def bar(foo1=Depends(foo)):
+#     #             return f'bar: {foo1}'
+
+#     #         dg = Diagraph(bar)
+
+#     #         result = dg.to_json()
+#     #         assert result == {
+#     #             'version': 1,
+#     #             'nodes': {
+#     #                 'foo': {
+#     #                     'inputs': [],
+#     #                     'fn': getsource(foo),
+#     #                     'is_decorated': False,
+#     #                     },
+#     #                 'bar': {
+#     #                     'inputs': ['foo'],
+#     #                     'fn': getsource(bar),
+#     #                     'is_decorated': False,
+#     #                     },
+#     #                 },
+#     #                 }
+
+#     #     def test_it_serializes_an_unrun_prompted_diagraph_to_json():
+#     #         @prompt
+#     #         def foo():
+#     #             return 'foo'
+
+#     #         @prompt
+#     #         def bar(foo1=Depends(foo)):
+#     #             return f'bar: {foo1}'
+
+#     #         dg = Diagraph(bar)
+
+#     #         result = dg.to_json()
+#     #         assert result == {
+#     #             'version': 1,
+#     #             'nodes': {
+#     #                 'foo': {
+#     #                     'inputs': [],
+#     #                     'fn': getsource(foo),
+#     #                     'is_decorated': True,
+#     #                     },
+#     #                 'bar': {
+#     #                     'inputs': ['foo'],
+#     #                     'fn': getsource(bar),
+#     #                     'is_decorated': True,
+#     #                     },
+#     #                 },
+#     #                 }
+
+#     #     # def test_it_serializes_an_unrun_prompted_diagraph_with_node_attributes_to_json():
+#     #     #     def error_1(e):
+#     #     #         return 1
+
+#     #     #     def log_1():
+#     #     #         return 'log'
+#     #     #     class LLM:
+#     #     #         pass
+#     #     #     @prompt(llm=LLM(), error=error_1, log=log_1)
+#     #     #     def foo():
+#     #     #         return 'foo'
+
+#     #     #     @prompt(llm='bar', error=lambda e: 2, log=lambda: print('log'))
+#     #     #     def bar(foo1=Depends(foo)):
+#     #     #         return f'bar: {foo1}'
+
+#     #     #     dg = Diagraph(bar)
+
+#     #     #     result = dg.to_json()
+#     #     #     print(result)
+#     #     #     assert result == {
+#     #     #         'version': 1,
+#     #     #         'nodes': {
+#     #     #             'foo': {
+#     #     #                 'inputs': [],
+#     #     #                 'fn': getsource(foo),
+#     #     #                 'is_decorated': True,
+#     #     #                 },
+#     #     #             'bar': {
+#     #     #                 'inputs': ['foo'],
+#     #     #                 'fn': getsource(bar),
+#     #     #                 'is_decorated': True,
+#     #     #                 },
+#     #     #             },
+#     #     #             }
