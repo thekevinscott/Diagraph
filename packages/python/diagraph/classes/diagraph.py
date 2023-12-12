@@ -1,12 +1,16 @@
 from __future__ import annotations
 
+import json
+import pickle
 from collections.abc import Callable
+from pathlib import Path
 from typing import overload
 
 from ..decorators.prompt import set_default_llm
 from ..llm.llm import LLM
 from ..utils.build_graph import NodeDict, build_graph_mapping
 from ..utils.get_execution_graph import get_execution_graph
+from ..utils.get_filetype import get_filetype
 from ..utils.validate_node_ancestors import validate_node_ancestors
 from ..visualization.render_repr_html import render_repr_html
 from .diagraph_node import DiagraphNode
@@ -416,6 +420,33 @@ class Diagraph:
             node_dict=node_mapping,
             **kwargs,
         )
+
+    def save(self, filepath: str | Path, filetype: str | None = None):
+        filetype = get_filetype(filepath, filetype)
+
+        mode = "wb" if filetype == "pickle" else "w"
+
+        with Path(filepath).open(mode) as file_handle:
+            if filetype == "json":
+                json.dump(self.to_json(), file_handle)
+            else:
+                file_handle.write(pickle.dumps(self.to_json()))
+
+    @staticmethod
+    def load(filepath: str | Path, filetype: str | None = None):
+        filetype = get_filetype(filepath, filetype)
+
+        mode = "rb" if filetype == "pickle" else "r"
+
+        with Path(filepath).open(mode) as file_handle:
+            if filetype == "json":
+                config = json.load(file_handle)
+            else:
+                contents = file_handle.read()
+                unpickled_content = pickle.loads(contents)
+                config = json.loads(unpickled_content)
+
+        return Diagraph.from_json(config)
 
     @staticmethod
     def set_llm(llm: LLM) -> None:
