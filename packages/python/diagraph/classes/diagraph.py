@@ -28,7 +28,7 @@ from .types import ErrorHandler, Fn, KeyIdentifier, LogHandler, Result
 global_log_fn: LogHandler | None = None
 
 
-def set_global_log(log_fn: LogHandler) -> None:
+def set_global_log(log_fn: None | LogHandler) -> None:
     global global_log_fn
     global_log_fn = log_fn
 
@@ -36,7 +36,7 @@ def set_global_log(log_fn: LogHandler) -> None:
 global_error_fn: ErrorHandler | None = None
 
 
-def set_global_error(error_fn: ErrorHandler) -> None:
+def set_global_error(error_fn: None | ErrorHandler) -> None:
     global global_error_fn
     global_error_fn = error_fn
 
@@ -449,15 +449,15 @@ class Diagraph:
         return Diagraph.from_json(config)
 
     @staticmethod
-    def set_llm(llm: LLM) -> None:
+    def set_llm(llm: None | LLM) -> None:
         set_default_llm(llm)
 
     @staticmethod
-    def set_log(log_fn: LogHandler) -> None:
+    def set_log(log_fn: None | LogHandler) -> None:
         set_global_log(log_fn)
 
     @staticmethod
-    def set_error(error_fn: ErrorHandler) -> None:
+    def set_error(error_fn: None | ErrorHandler) -> None:
         set_global_error(error_fn)
 
 

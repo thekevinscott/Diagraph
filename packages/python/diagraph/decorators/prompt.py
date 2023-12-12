@@ -19,10 +19,8 @@ class UserHandledException(Exception):
 __default_llm__: LLM | None = None
 
 
-def set_default_llm(llm: LLM) -> None:
+def set_default_llm(llm: None | LLM) -> None:
     global __default_llm__
-    if llm is None:
-        raise Exception("You cannot pass a null LLM")
     __default_llm__ = llm
 
 

@@ -30,7 +30,7 @@ build-backend = "setuptools.build_meta"
 # pyproject.toml
 [tool.pytest.ini_options]
 minversion = "6.0"
-testpaths = ["diagraph/**/*_test.py"]
+testpaths = ["diagraph/**/*_test.py", "test/**/*_test.py"]
 
 
 [tool.ruff]
