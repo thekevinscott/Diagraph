@@ -1,8 +1,6 @@
+import pickle
 from collections.abc import Callable
 from inspect import getsource as _getsource
-import json
-from pathlib import Path
-import pickle
 from textwrap import dedent
 from typing import Any
 from unittest.mock import ANY, mock_open, patch
@@ -3674,7 +3672,7 @@ def describe_saving_and_loading():
                     "foo": {
                         "fn": "def foo():\n    return 'foo'",
                         "is_terminal": True,
-                    }
+                    },
                 },
             }
             Diagraph.load(filepath, filetype)
@@ -3707,7 +3705,7 @@ def describe_saving_and_loading():
                     "foo": {
                         "fn": "def foo():\n    return 'foo'",
                         "is_terminal": True,
-                    }
+                    },
                 },
             }
             pickled_content = pickle.dumps(config)
